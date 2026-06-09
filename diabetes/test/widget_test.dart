@@ -46,10 +46,9 @@ void main() {
       find.widgetWithText(TextFormField, 'Food name'),
       'Eggs',
     );
-    await tester.enterText(find.widgetWithText(TextFormField, 'Amount'), '12');
     await tester.enterText(
-      find.widgetWithText(TextFormField, 'Measurement'),
-      'pieces',
+      find.widgetWithText(TextFormField, 'Amount'),
+      '12 eggs',
     );
     await tester.enterText(
       find.widgetWithText(TextFormField, 'Description (optional)'),
@@ -70,10 +69,9 @@ void main() {
       find.widgetWithText(TextFormField, 'Food name'),
       'Milk',
     );
-    await tester.enterText(find.widgetWithText(TextFormField, 'Amount'), '1');
     await tester.enterText(
-      find.widgetWithText(TextFormField, 'Measurement'),
-      'carton',
+      find.widgetWithText(TextFormField, 'Amount'),
+      '1 carton',
     );
 
     await tester.tap(find.text('Save Changes'));
@@ -99,7 +97,7 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.enterText(
-      find.widgetWithText(TextFormField, 'What kind of foods do you like?'),
+      find.widgetWithText(TextFormField, 'What do you want to eat?'),
       'bananas and drinks',
     );
 

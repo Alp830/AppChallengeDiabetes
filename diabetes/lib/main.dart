@@ -219,11 +219,11 @@ class _AddFoodSheetState extends State<AddFoodSheet> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _amountController = TextEditingController();
-  final _measurementController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _imagePicker = ImagePicker();
 
   Uint8List? _imageBytes;
+  FoodType _foodType = FoodType.other;
 
   bool get _isEditing => widget.foodItem != null;
 
@@ -238,16 +238,15 @@ class _AddFoodSheetState extends State<AddFoodSheet> {
 
     _nameController.text = foodItem.name;
     _amountController.text = foodItem.amount;
-    _measurementController.text = foodItem.measurement;
     _descriptionController.text = foodItem.description ?? '';
     _imageBytes = foodItem.imageBytes;
+    _foodType = foodItem.foodType;
   }
 
   @override
   void dispose() {
     _nameController.dispose();
     _amountController.dispose();
-    _measurementController.dispose();
     _descriptionController.dispose();
     super.dispose();
   }
@@ -275,7 +274,7 @@ class _AddFoodSheetState extends State<AddFoodSheet> {
       FoodItem(
         name: _nameController.text.trim(),
         amount: _amountController.text.trim(),
-        measurement: _measurementController.text.trim(),
+        foodType: _foodType,
         description: _descriptionController.text.trim().isEmpty
             ? null
             : _descriptionController.text.trim(),
@@ -337,44 +336,52 @@ class _AddFoodSheetState extends State<AddFoodSheet> {
                 },
               ),
               const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: _amountController,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        border: OutlineInputBorder(),
-                        labelText: 'Amount',
-                      ),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Enter amount';
-                        }
+              TextFormField(
+                controller: _amountController,
+                keyboardType: TextInputType.text,
+                textCapitalization: TextCapitalization.words,
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  labelText: 'Amount',
+                  hintText: 'Example: 2 cups, 1 carton, 12 eggs',
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Enter amount';
+                  }
 
-                        return null;
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: TextFormField(
-                      controller: _measurementController,
-                      textCapitalization: TextCapitalization.words,
-                      decoration: const InputDecoration(
-                        border: OutlineInputBorder(),
-                        labelText: 'Measurement',
+                  return null;
+                },
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<FoodType>(
+                value: _foodType,
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  labelText: 'Food type',
+                ),
+                items: [
+                  for (final foodType in FoodType.values)
+                    DropdownMenuItem(
+                      value: foodType,
+                      child: Row(
+                        children: [
+                          Icon(foodType.icon),
+                          const SizedBox(width: 12),
+                          Text(foodType.label),
+                        ],
                       ),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Enter measurement';
-                        }
-
-                        return null;
-                      },
                     ),
-                  ),
                 ],
+                onChanged: (foodType) {
+                  if (foodType == null) {
+                    return;
+                  }
+
+                  setState(() {
+                    _foodType = foodType;
+                  });
+                },
               ),
               const SizedBox(height: 12),
               TextFormField(
@@ -416,12 +423,16 @@ class FoodItemTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       child: ListTile(
-        leading: FoodImage(imageBytes: foodItem.imageBytes),
+        leading: FoodImage(
+          imageBytes: foodItem.imageBytes,
+          foodType: foodItem.foodType,
+        ),
         title: Text(foodItem.name),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('${foodItem.amount} ${foodItem.measurement}'),
+            Text(foodItem.amount),
+            Text(foodItem.foodType.label),
             if (foodItem.description != null) Text(foodItem.description!),
           ],
         ),
@@ -446,14 +457,15 @@ class FoodItemTile extends StatelessWidget {
 }
 
 class FoodImage extends StatelessWidget {
-  const FoodImage({super.key, required this.imageBytes});
+  const FoodImage({super.key, required this.imageBytes, required this.foodType});
 
   final Uint8List? imageBytes;
+  final FoodType foodType;
 
   @override
   Widget build(BuildContext context) {
     if (imageBytes == null) {
-      return const CircleAvatar(child: Icon(Icons.restaurant));
+      return CircleAvatar(child: Icon(foodType.icon));
     }
 
     return ClipRRect(
@@ -480,15 +492,18 @@ class AgentPage extends StatefulWidget {
 class _AgentPageState extends State<AgentPage> {
   final _formKey = GlobalKey<FormState>();
   final _budgetController = TextEditingController();
+  final _timeController = TextEditingController();
   final _preferencesController = TextEditingController();
   final _feedbackController = TextEditingController();
 
   bool _useFridgeItems = true;
   bool _hasBudget = false;
+  bool _hasTimeShortage = false;
+  int _recommendationCount = 1;
   MealType _mealType = MealType.breakfast;
   CookingExperience _cookingExperience = CookingExperience.beginner;
   AgentRequest? _lastRequest;
-  MealRecommendation? _recommendation;
+  List<MealRecommendation> _recommendations = const [];
   final List<String> _feedbackHistory = [];
   bool _isLoadingRecommendation = false;
   String? _recommendationError;
@@ -496,6 +511,7 @@ class _AgentPageState extends State<AgentPage> {
   @override
   void dispose() {
     _budgetController.dispose();
+    _timeController.dispose();
     _preferencesController.dispose();
     _feedbackController.dispose();
     super.dispose();
@@ -510,9 +526,12 @@ class _AgentPageState extends State<AgentPage> {
       useFridgeItems: _useFridgeItems,
       hasBudget: _hasBudget,
       budget: _hasBudget ? _budgetController.text.trim() : null,
+      hasTimeShortage: _hasTimeShortage,
+      timeAvailable: _hasTimeShortage ? _timeController.text.trim() : null,
       foodPreferences: _preferencesController.text.trim(),
       mealType: _mealType,
       cookingExperience: _cookingExperience,
+      recommendationCount: _recommendationCount,
       fridgeItems: _useFridgeItems ? List.of(widget.foodItems) : const [],
       feedbackHistory: List.of(_feedbackHistory),
     );
@@ -541,7 +560,7 @@ class _AgentPageState extends State<AgentPage> {
       _lastRequest = request;
       _isLoadingRecommendation = true;
       _recommendationError = null;
-      _recommendation = null;
+      _recommendations = const [];
     });
 
     try {
@@ -549,10 +568,10 @@ class _AgentPageState extends State<AgentPage> {
         GeminiMealService.generate(request),
         Future<void>.delayed(const Duration(seconds: 1)),
       ]);
-      final recommendation = results.first as MealRecommendation;
+      final recommendations = results.first as List<MealRecommendation>;
 
       setState(() {
-        _recommendation = recommendation;
+        _recommendations = recommendations;
       });
     } catch (error) {
       setState(() {
@@ -606,6 +625,7 @@ class _AgentPageState extends State<AgentPage> {
                   });
                 },
               ),
+
               if (_hasBudget) ...[
                 const SizedBox(height: 8),
                 TextFormField(
@@ -629,6 +649,44 @@ class _AgentPageState extends State<AgentPage> {
                   },
                 ),
               ],
+
+              const SizedBox(height: 16),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Set a time shortage'),
+                subtitle: const Text('Turn this on if you have limited time.'),
+                value: _hasTimeShortage,
+                onChanged: (value) {
+                  setState(() {
+                    _hasTimeShortage = value;
+                  });
+                },
+              ),
+
+              if (_hasTimeShortage) ...[
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: _timeController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                    labelText: 'Time available',
+                    suffixText: 'minutes',
+                  ),
+                  validator: (value) {
+                    if (!_hasTimeShortage) {
+                      return null;
+                    }
+
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Enter the time you have or turn this off';
+                    }
+
+                    return null;
+                  },
+                ),
+              ],
+
               const SizedBox(height: 16),
               TextFormField(
                 controller: _preferencesController,
@@ -637,7 +695,7 @@ class _AgentPageState extends State<AgentPage> {
                 textCapitalization: TextCapitalization.sentences,
                 decoration: const InputDecoration(
                   border: OutlineInputBorder(),
-                  labelText: 'What kind of foods do you like?',
+                  labelText: 'What do you want to eat?',
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
@@ -674,7 +732,7 @@ class _AgentPageState extends State<AgentPage> {
               ),
               const SizedBox(height: 16),
               Text(
-                'How much cooking experience do you have?',
+                'What difficulty of food do you want to cook?',
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: 8),
@@ -696,6 +754,27 @@ class _AgentPageState extends State<AgentPage> {
                       },
                     ),
                 ],
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'How many recommendations do you want?',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 8),
+              SegmentedButton<int>(
+                segments: const [
+                  ButtonSegment(value: 1, label: Text('1')),
+                  ButtonSegment(value: 2, label: Text('2')),
+                  ButtonSegment(value: 3, label: Text('3')),
+                  ButtonSegment(value: 4, label: Text('4')),
+                  ButtonSegment(value: 5, label: Text('5')),
+                ],
+                selected: {_recommendationCount},
+                onSelectionChanged: (selection) {
+                  setState(() {
+                    _recommendationCount = selection.first;
+                  });
+                },
               ),
               const SizedBox(height: 16),
               FilledButton.icon(
@@ -733,9 +812,12 @@ class _AgentPageState extends State<AgentPage> {
             style: TextStyle(color: Theme.of(context).colorScheme.error),
           ),
         ],
-        if (_recommendation != null) ...[
+        if (_recommendations.isNotEmpty) ...[
           const SizedBox(height: 24),
-          MealRecommendationCard(recommendation: _recommendation!),
+          for (final recommendation in _recommendations) ...[
+            MealRecommendationCard(recommendation: recommendation),
+            const SizedBox(height: 16),
+          ],
           const SizedBox(height: 16),
           TextFormField(
             key: const Key('agentFeedbackField'),
@@ -893,16 +975,31 @@ class FoodItem {
   const FoodItem({
     required this.name,
     required this.amount,
-    required this.measurement,
+    required this.foodType,
     this.description,
     this.imageBytes,
   });
 
   final String name;
   final String amount;
-  final String measurement;
+  final FoodType foodType;
   final String? description;
   final Uint8List? imageBytes;
+}
+
+enum FoodType {
+  produce('Produce', Icons.eco),
+  protein('Protein', Icons.egg_alt),
+  dairy('Dairy', Icons.icecream),
+  grain('Grain', Icons.grain),
+  snack('Snack', Icons.cookie),
+  drink('Drink', Icons.local_drink),
+  other('Other', Icons.restaurant);
+
+  const FoodType(this.label, this.icon);
+
+  final String label;
+  final IconData icon;
 }
 
 enum CookingExperience {
@@ -919,7 +1016,8 @@ enum MealType {
   breakfast('Breakfast'),
   lunch('Lunch'),
   dinner('Dinner'),
-  snack('Snack');
+  snack('Snack'),
+  drink('Drink');
 
   const MealType(this.label);
 
@@ -931,9 +1029,12 @@ class AgentRequest {
     required this.useFridgeItems,
     required this.hasBudget,
     required this.budget,
+    required this.hasTimeShortage,
+    required this.timeAvailable,
     required this.foodPreferences,
     required this.mealType,
     required this.cookingExperience,
+    required this.recommendationCount,
     required this.fridgeItems,
     required this.feedbackHistory,
   });
@@ -941,20 +1042,30 @@ class AgentRequest {
   final bool useFridgeItems;
   final bool hasBudget;
   final String? budget;
+  final bool hasTimeShortage;
+  final String? timeAvailable;
   final String foodPreferences;
   final MealType mealType;
   final CookingExperience cookingExperience;
+  final int recommendationCount;
   final List<FoodItem> fridgeItems;
   final List<String> feedbackHistory;
 
-  AgentRequest copyWith({List<String>? feedbackHistory}) {
+  AgentRequest copyWith({
+    List<String>? feedbackHistory,
+    bool? hasTimeShortage,
+    String? timeAvailable,
+  }) {
     return AgentRequest(
       useFridgeItems: useFridgeItems,
       hasBudget: hasBudget,
       budget: budget,
+      hasTimeShortage: hasTimeShortage ?? this.hasTimeShortage,
+      timeAvailable: timeAvailable ?? this.timeAvailable,
       foodPreferences: foodPreferences,
       mealType: mealType,
       cookingExperience: cookingExperience,
+      recommendationCount: recommendationCount,
       fridgeItems: fridgeItems,
       feedbackHistory: feedbackHistory ?? this.feedbackHistory,
     );
@@ -965,7 +1076,7 @@ class GeminiMealService {
   static const _apiKey = String.fromEnvironment('GEMINI_API_KEY');
   static const _model = 'gemini-3-flash-preview';
 
-  static Future<MealRecommendation> generate(AgentRequest request) async {
+  static Future<List<MealRecommendation>> generate(AgentRequest request) async {
     if (_apiKey.isEmpty) {
       throw Exception('Missing GEMINI_API_KEY');
     }
@@ -1006,9 +1117,17 @@ class GeminiMealService {
     final text = (parts.first as Map<String, dynamic>)['text'] as String;
     final jsonText = _stripJsonFence(text);
 
-    return MealRecommendation.fromJson(
-      jsonDecode(jsonText) as Map<String, dynamic>,
-    );
+    final decodedJson = jsonDecode(jsonText);
+    if (decodedJson is List<dynamic>) {
+      return decodedJson
+          .map(
+            (item) => MealRecommendation.fromJson(item as Map<String, dynamic>),
+          )
+          .take(request.recommendationCount)
+          .toList();
+    }
+
+    return [MealRecommendation.fromJson(decodedJson as Map<String, dynamic>)];
   }
 
   static String _buildPrompt(AgentRequest request) {
@@ -1019,7 +1138,7 @@ class GeminiMealService {
                 final description = item.description == null
                     ? ''
                     : ', description: ${item.description}';
-                return '- ${item.name}: ${item.amount} ${item.measurement}$description';
+                return '- ${item.name}: ${item.amount}, type: ${item.foodType.label}$description';
               })
               .join('\n');
     final feedback = request.feedbackHistory.isEmpty
@@ -1029,7 +1148,7 @@ class GeminiMealService {
     return '''
 You are a healthy budget meal assistant for a diabetes and budgeting app.
 
-Recommend exactly one affordable, healthy homemade dish. It should be much healthier than fast food and similar to a normal healthy homemade meal: include protein, vegetables or fruit, fiber-rich carbs when possible, reasonable portions, and avoid mostly fried, sugary, or ultra-processed meals.
+Recommend exactly ${request.recommendationCount} affordable, healthy homemade dishes. Each dish should be much healthier than fast food and similar to a normal healthy homemade meal: include protein, vegetables or fruit, fiber-rich carbs when possible, reasonable portions, and avoid mostly fried, sugary, or ultra-processed meals.
 
 The user selected this meal type:
 ${request.mealType.label}
@@ -1045,23 +1164,29 @@ ${request.cookingExperience.label}
 Budget:
 ${request.hasBudget ? '\$${request.budget}' : 'No budget selected, but still keep it affordable.'}
 
+Time availability:
+${request.hasTimeShortage ? '${request.timeAvailable}. If needed, prefer quick, simple meals that can be made in this time.' : 'No time shortage specified. Any reasonable cooking time is fine.'}
+
 Use fridge items:
 ${request.useFridgeItems ? 'Yes, use fridge items when helpful.' : 'No, recommend buying everything fresh.'}
 
 Fridge items:
+Use the amount exactly as the user wrote it when they include a measurement. If the amount is only a number, use the default unit of the item. For example, "2 cups" stays 2 cups, but "12" for eggs means 12 eggs.
 $fridgeItems
 
 Feedback from dishes the user rejected:
 $feedback
 
-Return only valid JSON with this exact shape:
-{
-  "dishName": "string",
-  "imagePrompt": "short realistic food photo prompt for this dish",
-  "reason": "string",
-  "ingredients": ["string"],
-  "instructions": ["string"]
-}
+Return only valid JSON as an array with exactly ${request.recommendationCount} objects. Each object must use this exact shape:
+[
+  {
+    "dishName": "string",
+    "imagePrompt": "short realistic food photo prompt for this dish",
+    "reason": "string",
+    "ingredients": ["string"],
+    "instructions": ["string"]
+  }
+]
 ''';
   }
 
