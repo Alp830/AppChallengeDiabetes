@@ -103,7 +103,6 @@ class MainPage extends StatefulWidget {
 class _MainPageState extends State<MainPage> {
   final PageController _pageController = PageController(initialPage: 1);
   final List<FoodItem> _foodItems = [];
-  final List<FridgePhoto> _fridgePhotos = [];
   int _selectedIndex = 1;
 
   static const List<_AppPage> _pages = [
@@ -143,12 +142,10 @@ class _MainPageState extends State<MainPage> {
         children: [
           FridgePage(
             foodItems: _foodItems,
-            fridgePhotos: _fridgePhotos,
             onAddFood: _addFoodItem,
+            onAddFoods: _addFoodItems,
             onEditFood: _editFoodItem,
             onRemoveFood: _removeFoodItem,
-            onAddPhoto: _addFridgePhoto,
-            onRemovePhoto: _removeFridgePhoto,
           ),
           const BlankPage(),
           AgentPage(foodItems: _foodItems),
@@ -183,6 +180,12 @@ class _MainPageState extends State<MainPage> {
     });
   }
 
+  void _addFoodItems(List<FoodItem> foodItems) {
+    setState(() {
+      _foodItems.addAll(foodItems);
+    });
+  }
+
   void _editFoodItem(int index, FoodItem foodItem) {
     setState(() {
       _foodItems[index] = foodItem;
@@ -192,18 +195,6 @@ class _MainPageState extends State<MainPage> {
   void _removeFoodItem(int index) {
     setState(() {
       _foodItems.removeAt(index);
-    });
-  }
-
-  void _addFridgePhoto(FridgePhoto fridgePhoto) {
-    setState(() {
-      _fridgePhotos.insert(0, fridgePhoto);
-    });
-  }
-
-  void _removeFridgePhoto(int index) {
-    setState(() {
-      _fridgePhotos.removeAt(index);
     });
   }
 }
@@ -221,46 +212,28 @@ class FridgePage extends StatelessWidget {
   const FridgePage({
     super.key,
     required this.foodItems,
-    required this.fridgePhotos,
     required this.onAddFood,
+    required this.onAddFoods,
     required this.onEditFood,
     required this.onRemoveFood,
-    required this.onAddPhoto,
-    required this.onRemovePhoto,
   });
 
   final List<FoodItem> foodItems;
-  final List<FridgePhoto> fridgePhotos;
   final ValueChanged<FoodItem> onAddFood;
+  final ValueChanged<List<FoodItem>> onAddFoods;
   final void Function(int index, FoodItem foodItem) onEditFood;
   final ValueChanged<int> onRemoveFood;
-  final ValueChanged<FridgePhoto> onAddPhoto;
-  final ValueChanged<int> onRemovePhoto;
 
   @override
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        if (foodItems.isEmpty && fridgePhotos.isEmpty)
+        if (foodItems.isEmpty)
           const Center(child: Text('No food added yet.'))
         else
           ListView(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
             children: [
-              if (fridgePhotos.isNotEmpty) ...[
-                Text(
-                  'Camera Captures',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 8),
-                for (var index = 0; index < fridgePhotos.length; index++) ...[
-                  FridgePhotoTile(
-                    fridgePhoto: fridgePhotos[index],
-                    onRemove: () => onRemovePhoto(index),
-                  ),
-                  const SizedBox(height: 12),
-                ],
-              ],
               if (foodItems.isNotEmpty) ...[
                 Text(
                   'Food Items',
@@ -306,22 +279,45 @@ class FridgePage extends StatelessWidget {
 
   Future<void> _takeFridgePhoto(BuildContext context) async {
     final messenger = ScaffoldMessenger.of(context);
-    final fridgePhoto = await showModalBottomSheet<FridgePhoto>(
+    final imageBytes = await showModalBottomSheet<Uint8List>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
       builder: (context) => const FridgeCameraSheet(),
     );
 
-    if (fridgePhoto == null) {
+    if (imageBytes == null) {
       return;
     }
 
-    onAddPhoto(fridgePhoto);
-
     messenger.showSnackBar(
-      const SnackBar(content: Text('Fridge photo saved.')),
+      const SnackBar(content: Text('Scanning fridge photo...')),
     );
+
+    try {
+      final detectedFoods = await FridgePhotoFoodAgent.detectFoods(imageBytes);
+      if (detectedFoods.isEmpty) {
+        messenger.showSnackBar(
+          const SnackBar(content: Text('No food items were found.')),
+        );
+        return;
+      }
+
+      onAddFoods(detectedFoods);
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            detectedFoods.length == 1
+                ? 'Added 1 food item to your fridge.'
+                : 'Added ${detectedFoods.length} food items to your fridge.',
+          ),
+        ),
+      );
+    } catch (error) {
+      messenger.showSnackBar(
+        SnackBar(content: Text('Could not scan fridge photo: $error')),
+      );
+    }
   }
 
   Future<void> _showAddFoodSheet(BuildContext context) async {
@@ -427,9 +423,7 @@ class _FridgeCameraSheetState extends State<FridgeCameraSheet> {
         return;
       }
 
-      Navigator.of(
-        context,
-      ).pop(FridgePhoto(imageBytes: imageBytes, capturedAt: DateTime.now()));
+      Navigator.of(context).pop(imageBytes);
     } catch (error) {
       if (!mounted) {
         return;
@@ -472,7 +466,7 @@ class _FridgeCameraSheetState extends State<FridgeCameraSheet> {
             FilledButton.icon(
               onPressed: _isTakingPicture ? null : _capturePhoto,
               icon: const Icon(Icons.camera_alt),
-              label: Text(_isTakingPicture ? 'Saving...' : 'Take Picture'),
+              label: Text(_isTakingPicture ? 'Scanning...' : 'Take Picture'),
             ),
           ],
         ),
@@ -769,57 +763,6 @@ class FoodItemTile extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-class FridgePhotoTile extends StatelessWidget {
-  const FridgePhotoTile({
-    super.key,
-    required this.fridgePhoto,
-    required this.onRemove,
-  });
-
-  final FridgePhoto fridgePhoto;
-  final VoidCallback onRemove;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Image.memory(
-            fridgePhoto.imageBytes,
-            height: 180,
-            fit: BoxFit.cover,
-            gaplessPlayback: true,
-          ),
-          ListTile(
-            leading: const Icon(Icons.camera_alt),
-            title: const Text('Saved fridge photo'),
-            subtitle: Text(_formatCapturedAt(fridgePhoto.capturedAt)),
-            trailing: IconButton(
-              onPressed: onRemove,
-              tooltip: 'Remove fridge photo',
-              icon: const Icon(Icons.delete),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _formatCapturedAt(DateTime capturedAt) {
-    final hour = capturedAt.hour == 0
-        ? 12
-        : capturedAt.hour > 12
-        ? capturedAt.hour - 12
-        : capturedAt.hour;
-    final minute = capturedAt.minute.toString().padLeft(2, '0');
-    final period = capturedAt.hour >= 12 ? 'PM' : 'AM';
-
-    return 'Captured ${capturedAt.month}/${capturedAt.day}/${capturedAt.year} at $hour:$minute $period';
   }
 }
 
@@ -1354,13 +1297,6 @@ class FoodItem {
   final Uint8List? imageBytes;
 }
 
-class FridgePhoto {
-  const FridgePhoto({required this.imageBytes, required this.capturedAt});
-
-  final Uint8List imageBytes;
-  final DateTime capturedAt;
-}
-
 enum FoodType {
   produce('Produce', Icons.eco),
   protein('Protein', Icons.egg_alt),
@@ -1443,6 +1379,141 @@ class AgentRequest {
       fridgeItems: fridgeItems,
       feedbackHistory: feedbackHistory ?? this.feedbackHistory,
     );
+  }
+}
+
+class FridgePhotoFoodAgent {
+  static String get _apiKey => AppEnvironment.geminiApiKey;
+  static const _model = 'gemini-3-flash-preview';
+
+  static Future<List<FoodItem>> detectFoods(Uint8List imageBytes) async {
+    if (_apiKey.isEmpty) {
+      throw Exception('Missing GEMINI_API_KEY');
+    }
+
+    final response = await http.post(
+      Uri.parse(
+        'https://generativelanguage.googleapis.com/v1beta/models/$_model:generateContent',
+      ),
+      headers: {'Content-Type': 'application/json', 'x-goog-api-key': _apiKey},
+      body: jsonEncode({
+        'contents': [
+          {
+            'parts': [
+              {'text': _buildPrompt()},
+              {
+                'inlineData': {
+                  'mimeType': 'image/jpeg',
+                  'data': base64Encode(imageBytes),
+                },
+              },
+            ],
+          },
+        ],
+        'generationConfig': {
+          'temperature': 0.2,
+          'responseMimeType': 'application/json',
+        },
+      }),
+    );
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Food scan failed: ${response.statusCode}');
+    }
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    final candidates = data['candidates'] as List<dynamic>? ?? [];
+    if (candidates.isEmpty) {
+      throw Exception('Food scan returned no candidates');
+    }
+
+    final candidate = candidates.first as Map<String, dynamic>;
+    final content = candidate['content'] as Map<String, dynamic>;
+    final parts = content['parts'] as List<dynamic>? ?? [];
+    final textPart = parts.cast<Map<String, dynamic>>().firstWhere(
+      (part) => part['text'] is String,
+      orElse: () => const <String, dynamic>{},
+    );
+    final text = textPart['text'] as String?;
+    if (text == null || text.trim().isEmpty) {
+      throw Exception('Food scan returned no text');
+    }
+
+    final decodedJson = jsonDecode(_stripJsonFence(text));
+    final foodJson = decodedJson is List<dynamic>
+        ? decodedJson
+        : (decodedJson as Map<String, dynamic>)['foods'] as List<dynamic>? ??
+              const [];
+
+    return foodJson
+        .whereType<Map<String, dynamic>>()
+        .map(_foodItemFromJson)
+        .where((foodItem) => foodItem.name.isNotEmpty)
+        .toList();
+  }
+
+  static FoodItem _foodItemFromJson(Map<String, dynamic> json) {
+    final name = (json['name'] ?? '').toString().trim();
+    final amount = (json['amount'] ?? '').toString().trim();
+    final type = (json['foodType'] ?? '').toString().trim();
+
+    return FoodItem(
+      name: name,
+      amount: amount.isEmpty ? '1 $name' : amount,
+      foodType: _foodTypeFromLabel(type),
+      description: (json['description'] ?? '').toString().trim().isEmpty
+          ? null
+          : (json['description'] ?? '').toString().trim(),
+    );
+  }
+
+  static FoodType _foodTypeFromLabel(String label) {
+    final normalizedLabel = label.toLowerCase();
+    return FoodType.values.firstWhere(
+      (foodType) => foodType.label.toLowerCase() == normalizedLabel,
+      orElse: () => FoodType.other,
+    );
+  }
+
+  static String _buildPrompt() {
+    final foodTypes = FoodType.values.map((foodType) => foodType.label).join(
+      ', ',
+    );
+
+    return '''
+You are a fridge inventory assistant. Look at the image and identify the visible food items.
+
+Add only foods you can identify from the image. Do not include unknown, possible, maybe, or uncertain items.
+
+Use count-based amounts as the primary measurement style. Examples:
+- 3 bananas
+- 2 apples
+- 1 milk carton
+- 1 bag of spinach
+- 6 eggs
+
+Use one of these foodType values:
+$foodTypes
+
+Return only valid JSON as an array. Each object must use this exact shape:
+[
+  {
+    "name": "Bananas",
+    "amount": "3 bananas",
+    "foodType": "Produce",
+    "description": "optional short detail, or empty string"
+  }
+]
+''';
+  }
+
+  static String _stripJsonFence(String text) {
+    return text
+        .trim()
+        .replaceFirst(RegExp(r'^```json\s*'), '')
+        .replaceFirst(RegExp(r'^```\s*'), '')
+        .replaceFirst(RegExp(r'\s*```$'), '')
+        .trim();
   }
 }
 
