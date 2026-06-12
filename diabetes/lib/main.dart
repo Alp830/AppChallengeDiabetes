@@ -2,13 +2,21 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:camera/camera.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 
+import 'firebase_options.dart';
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   await AppEnvironment.load();
 
   runApp(const MyApp());
@@ -88,7 +96,216 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
       ),
-      home: const MainPage(),
+      home: const AuthGate(),
+    );
+  }
+}
+
+class AuthGate extends StatelessWidget {
+  const AuthGate({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        if (snapshot.hasData) {
+          return const MainPage();
+        }
+
+        return const AuthPage();
+      },
+    );
+  }
+}
+
+class AuthPage extends StatefulWidget {
+  const AuthPage({super.key});
+
+  @override
+  State<AuthPage> createState() => _AuthPageState();
+}
+
+class _AuthPageState extends State<AuthPage> {
+  final _formKey = GlobalKey<FormState>();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+
+  bool _isLoading = false;
+  bool _isSignUp = false;
+  String? _authError;
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _authError = null;
+    });
+
+    try {
+      final email = _emailController.text.trim();
+      final password = _passwordController.text;
+      UserCredential credential;
+
+      if (_isSignUp) {
+        credential = await FirebaseAuth.instance
+            .createUserWithEmailAndPassword(email: email, password: password);
+        await _createUserProfile(credential.user!, email);
+      } else {
+        credential = await FirebaseAuth.instance.signInWithEmailAndPassword(
+          email: email,
+          password: password,
+        );
+        await _touchUserProfile(credential.user!, email);
+      }
+    } on FirebaseAuthException catch (error) {
+      setState(() {
+        _authError = error.message ?? 'Authentication failed.';
+      });
+    } catch (error) {
+      setState(() {
+        _authError = 'Authentication failed: $error';
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _createUserProfile(User user, String email) {
+    return FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+      'email': email,
+      'createdAt': FieldValue.serverTimestamp(),
+      'lastSignInAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+  }
+
+  Future<void> _touchUserProfile(User user, String email) {
+    return FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+      'email': email,
+      'lastSignInAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      _isSignUp ? 'Create Account' : 'Sign In',
+                      style: Theme.of(context).textTheme.headlineMedium,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 24),
+                    TextFormField(
+                      controller: _emailController,
+                      keyboardType: TextInputType.emailAddress,
+                      autofillHints: const [AutofillHints.email],
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                        labelText: 'Email',
+                      ),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Enter your email';
+                        }
+
+                        if (!value.contains('@')) {
+                          return 'Enter a valid email';
+                        }
+
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _passwordController,
+                      obscureText: true,
+                      autofillHints: const [AutofillHints.password],
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                        labelText: 'Password',
+                      ),
+                      validator: (value) {
+                        if (value == null || value.length < 6) {
+                          return 'Use at least 6 characters';
+                        }
+
+                        return null;
+                      },
+                    ),
+                    if (_authError != null) ...[
+                      const SizedBox(height: 12),
+                      Text(
+                        _authError!,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 16),
+                    FilledButton(
+                      onPressed: _isLoading ? null : _submit,
+                      child: Text(
+                        _isLoading
+                            ? 'Please wait...'
+                            : _isSignUp
+                            ? 'Sign Up'
+                            : 'Log In',
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: _isLoading
+                          ? null
+                          : () {
+                              setState(() {
+                                _isSignUp = !_isSignUp;
+                                _authError = null;
+                              });
+                            },
+                      child: Text(
+                        _isSignUp
+                            ? 'Already have an account? Log in'
+                            : 'Need an account? Sign up',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -101,8 +318,6 @@ class MainPage extends StatefulWidget {
 }
 
 class _MainPageState extends State<MainPage> {
-  final PageController _pageController = PageController(initialPage: 1);
-  final List<FoodItem> _foodItems = [];
   int _selectedIndex = 1;
 
   static const List<_AppPage> _pages = [
@@ -111,45 +326,75 @@ class _MainPageState extends State<MainPage> {
     _AppPage(title: 'Agent', icon: Icons.smart_toy),
   ];
 
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
-  }
-
   void _goToPage(int index) {
-    _pageController.animateToPage(
-      index,
-      duration: const Duration(milliseconds: 250),
-      curve: Curves.easeOut,
-    );
+    setState(() {
+      _selectedIndex = index;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      return const AuthPage();
+    }
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: Text(_pages[_selectedIndex].title),
-      ),
-      body: PageView(
-        controller: _pageController,
-        onPageChanged: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
-        },
-        children: [
-          FridgePage(
-            foodItems: _foodItems,
-            onAddFood: _addFoodItem,
-            onAddFoods: _addFoodItems,
-            onEditFood: _editFoodItem,
-            onRemoveFood: _removeFoodItem,
+        actions: [
+          IconButton(
+            onPressed: () => FirebaseAuth.instance.signOut(),
+            tooltip: 'Log out',
+            icon: const Icon(Icons.logout),
           ),
-          const BlankPage(),
-          AgentPage(foodItems: _foodItems),
         ],
+      ),
+      body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+        stream: _fridgeItemsCollection(user.uid)
+            .orderBy('createdAt', descending: false)
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return Center(
+              child: Text(
+                'Could not load fridge items: ${snapshot.error}',
+                textAlign: TextAlign.center,
+              ),
+            );
+          }
+
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          final fridgeItems = snapshot.data?.docs
+                  .map(StoredFoodItem.fromDocument)
+                  .toList() ??
+              const <StoredFoodItem>[];
+          final foodItems = fridgeItems
+              .map((storedFoodItem) => storedFoodItem.foodItem)
+              .toList();
+
+          return IndexedStack(
+            index: _selectedIndex,
+            children: [
+              FridgePage(
+                foodItems: foodItems,
+                onAddFood: (foodItem) => _addFoodItem(user.uid, foodItem),
+                onAddFoods: (foodItems) => _addFoodItems(user.uid, foodItems),
+                onEditFood: (index, foodItem) =>
+                    _editFoodItem(user.uid, fridgeItems[index].id, foodItem),
+                onRemoveFood: (index) =>
+                    _removeFoodItem(user.uid, fridgeItems[index].id),
+              ),
+              const BlankPage(),
+              AgentPage(foodItems: foodItems),
+            ],
+          );
+        },
       ),
       bottomNavigationBar: SafeArea(
         child: Padding(
@@ -174,28 +419,42 @@ class _MainPageState extends State<MainPage> {
     );
   }
 
-  void _addFoodItem(FoodItem foodItem) {
-    setState(() {
-      _foodItems.add(foodItem);
-    });
+  CollectionReference<Map<String, dynamic>> _fridgeItemsCollection(
+    String uid,
+  ) {
+    return FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .collection('fridgeItems');
   }
 
-  void _addFoodItems(List<FoodItem> foodItems) {
-    setState(() {
-      _foodItems.addAll(foodItems);
-    });
+  Future<void> _addFoodItem(String uid, FoodItem foodItem) {
+    return _fridgeItemsCollection(uid).add(foodItem.toFirestore());
   }
 
-  void _editFoodItem(int index, FoodItem foodItem) {
-    setState(() {
-      _foodItems[index] = foodItem;
-    });
+  Future<void> _addFoodItems(String uid, List<FoodItem> foodItems) async {
+    final batch = FirebaseFirestore.instance.batch();
+    final collection = _fridgeItemsCollection(uid);
+
+    for (final foodItem in foodItems) {
+      batch.set(collection.doc(), foodItem.toFirestore());
+    }
+
+    await batch.commit();
   }
 
-  void _removeFoodItem(int index) {
-    setState(() {
-      _foodItems.removeAt(index);
-    });
+  Future<void> _editFoodItem(
+    String uid,
+    String id,
+    FoodItem foodItem,
+  ) {
+    return _fridgeItemsCollection(
+      uid,
+    ).doc(id).update(foodItem.toFirestore(includeCreatedAt: false));
+  }
+
+  Future<void> _removeFoodItem(String uid, String id) {
+    return _fridgeItemsCollection(uid).doc(id).delete();
   }
 }
 
@@ -219,10 +478,10 @@ class FridgePage extends StatelessWidget {
   });
 
   final List<FoodItem> foodItems;
-  final ValueChanged<FoodItem> onAddFood;
-  final ValueChanged<List<FoodItem>> onAddFoods;
-  final void Function(int index, FoodItem foodItem) onEditFood;
-  final ValueChanged<int> onRemoveFood;
+  final Future<void> Function(FoodItem foodItem) onAddFood;
+  final Future<void> Function(List<FoodItem> foodItems) onAddFoods;
+  final Future<void> Function(int index, FoodItem foodItem) onEditFood;
+  final Future<void> Function(int index) onRemoveFood;
 
   @override
   Widget build(BuildContext context) {
@@ -303,7 +562,7 @@ class FridgePage extends StatelessWidget {
         return;
       }
 
-      onAddFoods(detectedFoods);
+      await onAddFoods(detectedFoods);
       messenger.showSnackBar(
         SnackBar(
           content: Text(
@@ -329,7 +588,7 @@ class FridgePage extends StatelessWidget {
     );
 
     if (foodItem != null) {
-      onAddFood(foodItem);
+      await onAddFood(foodItem);
     }
   }
 
@@ -342,7 +601,7 @@ class FridgePage extends StatelessWidget {
     );
 
     if (foodItem != null) {
-      onEditFood(index, foodItem);
+      await onEditFood(index, foodItem);
     }
   }
 }
@@ -1295,6 +1554,44 @@ class FoodItem {
   final FoodType foodType;
   final String? description;
   final Uint8List? imageBytes;
+
+  Map<String, dynamic> toFirestore({bool includeCreatedAt = true}) {
+    return {
+      'name': name,
+      'amount': amount,
+      'foodType': foodType.label,
+      'description': description,
+      if (includeCreatedAt) 'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    };
+  }
+
+  factory FoodItem.fromFirestore(Map<String, dynamic> data) {
+    return FoodItem(
+      name: (data['name'] ?? '').toString(),
+      amount: (data['amount'] ?? '').toString(),
+      foodType: FoodType.fromLabel((data['foodType'] ?? '').toString()),
+      description: (data['description'] ?? '').toString().trim().isEmpty
+          ? null
+          : (data['description'] ?? '').toString(),
+    );
+  }
+}
+
+class StoredFoodItem {
+  const StoredFoodItem({required this.id, required this.foodItem});
+
+  final String id;
+  final FoodItem foodItem;
+
+  factory StoredFoodItem.fromDocument(
+    QueryDocumentSnapshot<Map<String, dynamic>> document,
+  ) {
+    return StoredFoodItem(
+      id: document.id,
+      foodItem: FoodItem.fromFirestore(document.data()),
+    );
+  }
 }
 
 enum FoodType {
@@ -1310,6 +1607,14 @@ enum FoodType {
 
   final String label;
   final IconData icon;
+
+  static FoodType fromLabel(String label) {
+    final normalizedLabel = label.toLowerCase();
+    return FoodType.values.firstWhere(
+      (foodType) => foodType.label.toLowerCase() == normalizedLabel,
+      orElse: () => FoodType.other,
+    );
+  }
 }
 
 enum CookingExperience {
@@ -1460,18 +1765,10 @@ class FridgePhotoFoodAgent {
     return FoodItem(
       name: name,
       amount: amount.isEmpty ? '1 $name' : amount,
-      foodType: _foodTypeFromLabel(type),
+      foodType: FoodType.fromLabel(type),
       description: (json['description'] ?? '').toString().trim().isEmpty
           ? null
           : (json['description'] ?? '').toString().trim(),
-    );
-  }
-
-  static FoodType _foodTypeFromLabel(String label) {
-    final normalizedLabel = label.toLowerCase();
-    return FoodType.values.firstWhere(
-      (foodType) => foodType.label.toLowerCase() == normalizedLabel,
-      orElse: () => FoodType.other,
     );
   }
 
