@@ -14,9 +14,7 @@ import 'firebase_options.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await AppEnvironment.load();
 
   runApp(const MyApp());
@@ -94,7 +92,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Diabetes App',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
       ),
       home: const AuthGate(),
     );
@@ -115,11 +113,12 @@ class AuthGate extends StatelessWidget {
           );
         }
 
-        if (snapshot.hasData) {
-          return const MainPage();
+        final user = snapshot.data;
+        if (user == null) {
+          return const NonLoggedInPage();
         }
 
-        return const AuthPage();
+        return MainPage(user: user);
       },
     );
   }
@@ -164,8 +163,10 @@ class _AuthPageState extends State<AuthPage> {
       UserCredential credential;
 
       if (_isSignUp) {
-        credential = await FirebaseAuth.instance
-            .createUserWithEmailAndPassword(email: email, password: password);
+        credential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+          email: email,
+          password: password,
+        );
         await _createUserProfile(credential.user!, email);
       } else {
         credential = await FirebaseAuth.instance.signInWithEmailAndPassword(
@@ -173,6 +174,10 @@ class _AuthPageState extends State<AuthPage> {
           password: password,
         );
         await _touchUserProfile(credential.user!, email);
+      }
+
+      if (mounted) {
+        Navigator.of(context).maybePop();
       }
     } on FirebaseAuthException catch (error) {
       setState(() {
@@ -310,8 +315,69 @@ class _AuthPageState extends State<AuthPage> {
   }
 }
 
+class NonLoggedInPage extends StatelessWidget {
+  const NonLoggedInPage({super.key});
+
+  void _showLoginPage(BuildContext context) {
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (context) => const AuthPage()));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        title: const Text('Welcome'),
+        actions: [
+          TextButton.icon(
+            onPressed: () => _showLoginPage(context),
+            icon: const Icon(Icons.login),
+            label: const Text('Log in'),
+          ),
+        ],
+      ),
+      body: SingleChildScrollView(
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: Column(
+            children: [
+              Text(
+                'About the makers',
+                style: Theme.of(context).textTheme.headlineMedium,
+              ),
+              Image(
+                image: const AssetImage('assets/Placeholder.png'),
+                width: MediaQuery.sizeOf(context).width,
+                height: MediaQuery.sizeOf(context).height * 0.4,
+                fit: BoxFit.contain,
+              ),
+              Text(
+                'Filler filler filler Filler filler filler Filler filler filler',
+              ),
+              const SizedBox(height: 32),
+              Image(
+                image: const AssetImage('assets/Placeholder.png'),
+                width: MediaQuery.sizeOf(context).width,
+                height: MediaQuery.sizeOf(context).height * 0.4,
+                fit: BoxFit.contain,
+              ),
+              Text(
+                'Filler filler filler Filler filler filler Filler filler filler',
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class MainPage extends StatefulWidget {
-  const MainPage({super.key});
+  const MainPage({super.key, required this.user});
+
+  final User user;
 
   @override
   State<MainPage> createState() => _MainPageState();
@@ -334,11 +400,7 @@ class _MainPageState extends State<MainPage> {
 
   @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
-
-    if (user == null) {
-      return const AuthPage();
-    }
+    final user = widget.user;
 
     return Scaffold(
       appBar: AppBar(
@@ -352,50 +414,7 @@ class _MainPageState extends State<MainPage> {
           ),
         ],
       ),
-      body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-        stream: _fridgeItemsCollection(user.uid)
-            .orderBy('createdAt', descending: false)
-            .snapshots(),
-        builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return Center(
-              child: Text(
-                'Could not load fridge items: ${snapshot.error}',
-                textAlign: TextAlign.center,
-              ),
-            );
-          }
-
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          final fridgeItems = snapshot.data?.docs
-                  .map(StoredFoodItem.fromDocument)
-                  .toList() ??
-              const <StoredFoodItem>[];
-          final foodItems = fridgeItems
-              .map((storedFoodItem) => storedFoodItem.foodItem)
-              .toList();
-
-          return IndexedStack(
-            index: _selectedIndex,
-            children: [
-              FridgePage(
-                foodItems: foodItems,
-                onAddFood: (foodItem) => _addFoodItem(user.uid, foodItem),
-                onAddFoods: (foodItems) => _addFoodItems(user.uid, foodItems),
-                onEditFood: (index, foodItem) =>
-                    _editFoodItem(user.uid, fridgeItems[index].id, foodItem),
-                onRemoveFood: (index) =>
-                    _removeFoodItem(user.uid, fridgeItems[index].id),
-              ),
-              const BlankPage(),
-              AgentPage(foodItems: foodItems),
-            ],
-          );
-        },
-      ),
+      body: _loggedInPage(user),
       bottomNavigationBar: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 16),
@@ -419,9 +438,53 @@ class _MainPageState extends State<MainPage> {
     );
   }
 
-  CollectionReference<Map<String, dynamic>> _fridgeItemsCollection(
-    String uid,
-  ) {
+  Widget _loggedInPage(User user) {
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: _fridgeItemsCollection(
+        user.uid,
+      ).orderBy('createdAt', descending: false).snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return Center(
+            child: Text(
+              'Could not load fridge items: ${snapshot.error}',
+              textAlign: TextAlign.center,
+            ),
+          );
+        }
+
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final fridgeItems =
+            snapshot.data?.docs.map(StoredFoodItem.fromDocument).toList() ??
+            const <StoredFoodItem>[];
+        final foodItems = fridgeItems
+            .map((storedFoodItem) => storedFoodItem.foodItem)
+            .toList();
+
+        return IndexedStack(
+          index: _selectedIndex,
+          children: [
+            FridgePage(
+              foodItems: foodItems,
+              onAddFood: (foodItem) => _addFoodItem(user.uid, foodItem),
+              onAddFoods: (foodItems) => _addFoodItems(user.uid, foodItems),
+              onEditFood: (index, foodItem) =>
+                  _editFoodItem(user.uid, fridgeItems[index].id, foodItem),
+              onRemoveFood: (index) =>
+                  _removeFoodItem(user.uid, fridgeItems[index].id),
+            ),
+            const BlankPage(),
+            AgentPage(foodItems: foodItems),
+          ],
+        );
+      },
+    );
+  }
+
+  CollectionReference<Map<String, dynamic>> _fridgeItemsCollection(String uid) {
     return FirebaseFirestore.instance
         .collection('users')
         .doc(uid)
@@ -443,11 +506,7 @@ class _MainPageState extends State<MainPage> {
     await batch.commit();
   }
 
-  Future<void> _editFoodItem(
-    String uid,
-    String id,
-    FoodItem foodItem,
-  ) {
+  Future<void> _editFoodItem(String uid, String id, FoodItem foodItem) {
     return _fridgeItemsCollection(
       uid,
     ).doc(id).update(foodItem.toFirestore(includeCreatedAt: false));
@@ -1773,9 +1832,9 @@ class FridgePhotoFoodAgent {
   }
 
   static String _buildPrompt() {
-    final foodTypes = FoodType.values.map((foodType) => foodType.label).join(
-      ', ',
-    );
+    final foodTypes = FoodType.values
+        .map((foodType) => foodType.label)
+        .join(', ');
 
     return '''
 You are a fridge inventory assistant. Look at the image and identify the visible food items.
