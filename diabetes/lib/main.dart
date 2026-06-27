@@ -343,10 +343,24 @@ class NonLoggedInPage extends StatelessWidget {
           alignment: Alignment.topCenter,
           child: Column(
             children: [
-              Text(
-                'About the makers',
-                style: Theme.of(context).textTheme.headlineMedium,
+              ShaderMask(
+                blendMode: BlendMode.srcIn,
+                shaderCallback: (bounds) => const LinearGradient(
+                  colors: [Color.fromARGB(255, 25, 118, 210), Color.fromARGB(255, 144, 202, 249), Colors.white],                  
+                  begin: Alignment.topLeft,
+                  end: Alignment.topRight,
+                ).createShader(
+                  Rect.fromLTWH(0, 0, bounds.width, bounds.height)
+                ),
+                  child: const Text(
+                  'Smarter eating starts here',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 32
+                  )
+                  ),
               ),
+
               Image(
                 image: const AssetImage('assets/Placeholder.png'),
                 width: MediaQuery.sizeOf(context).width,
