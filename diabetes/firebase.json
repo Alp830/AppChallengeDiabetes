@@ -1,1 +1,42 @@
-{"flutter":{"platforms":{"macos":{"default":{"projectId":"appchallengediabetes","appId":"1:614011040112:ios:065d5e239d92e6a774dfb5","uploadDebugSymbols":false,"fileOutput":"macos/Runner/GoogleService-Info.plist"}},"dart":{"lib/firebase_options.dart":{"projectId":"appchallengediabetes","configurations":{"android":"1:614011040112:android:28d2be3fb7feadde74dfb5","ios":"1:614011040112:ios:065d5e239d92e6a774dfb5","web":"1:614011040112:web:0acf32cfd791a59474dfb5"}}},"android":{"default":{"projectId":"appchallengediabetes","appId":"1:614011040112:android:28d2be3fb7feadde74dfb5","fileOutput":"android/app/google-services.json"}},"ios":{"default":{"projectId":"appchallengediabetes","appId":"1:614011040112:ios:065d5e239d92e6a774dfb5","uploadDebugSymbols":false,"fileOutput":"ios/Runner/GoogleService-Info.plist"}}}}}
+{
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "flutter": {
+    "platforms": {
+      "macos": {
+        "default": {
+          "projectId": "appchallengediabetes",
+          "appId": "1:614011040112:ios:065d5e239d92e6a774dfb5",
+          "uploadDebugSymbols": false,
+          "fileOutput": "macos/Runner/GoogleService-Info.plist"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "appchallengediabetes",
+          "configurations": {
+            "android": "1:614011040112:android:28d2be3fb7feadde74dfb5",
+            "ios": "1:614011040112:ios:065d5e239d92e6a774dfb5",
+            "web": "1:614011040112:web:0acf32cfd791a59474dfb5"
+          }
+        }
+      },
+      "android": {
+        "default": {
+          "projectId": "appchallengediabetes",
+          "appId": "1:614011040112:android:28d2be3fb7feadde74dfb5",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "ios": {
+        "default": {
+          "projectId": "appchallengediabetes",
+          "appId": "1:614011040112:ios:065d5e239d92e6a774dfb5",
+          "uploadDebugSymbols": false,
+          "fileOutput": "ios/Runner/GoogleService-Info.plist"
+        }
+      }
+    }
+  }
+}

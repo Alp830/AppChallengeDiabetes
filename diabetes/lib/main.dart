@@ -1,15 +1,19 @@
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:camera/camera.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 
+import 'exercise/data/exercise_repository.dart';
+import 'exercise/models/workout_session.dart';
+import 'exercise/screens/exercise_page.dart';
+import 'exercise/screens/today_dashboard.dart';
 import 'firebase_options.dart';
 
 Future<void> main() async {
@@ -84,7 +88,9 @@ class AppEnvironment {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  const MyApp({super.key, this.home});
+
+  final Widget? home;
 
   @override
   Widget build(BuildContext context) {
@@ -94,7 +100,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
       ),
-      home: const AuthGate(),
+      home: home ?? const AuthGate(),
     );
   }
 }
@@ -105,7 +111,7 @@ class AuthGate extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<User?>(
-      stream: FirebaseAuth.instance.authStateChanges(),
+      stream: FirebaseAuth.instance.userChanges(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
@@ -118,8 +124,141 @@ class AuthGate extends StatelessWidget {
           return const NonLoggedInPage();
         }
 
+        if (!user.emailVerified) {
+          return EmailVerificationPage(user: user);
+        }
+
         return MainPage(user: user);
       },
+    );
+  }
+}
+
+class EmailVerificationPage extends StatefulWidget {
+  const EmailVerificationPage({super.key, required this.user});
+
+  final User user;
+
+  @override
+  State<EmailVerificationPage> createState() => _EmailVerificationPageState();
+}
+
+class _EmailVerificationPageState extends State<EmailVerificationPage> {
+  bool _isChecking = false;
+  bool _isSending = false;
+  String? _message;
+
+  Future<void> _checkVerification() async {
+    setState(() {
+      _isChecking = true;
+      _message = null;
+    });
+
+    try {
+      await widget.user.reload();
+      final refreshedUser = FirebaseAuth.instance.currentUser;
+
+      if (refreshedUser?.emailVerified != true && mounted) {
+        setState(() {
+          _message =
+              'Your email is not verified yet. Open the link in the email and try again.';
+        });
+      }
+    } on FirebaseAuthException catch (error) {
+      if (mounted) {
+        setState(() {
+          _message = error.message ?? 'Could not check your email status.';
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isChecking = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _resendVerification() async {
+    setState(() {
+      _isSending = true;
+      _message = null;
+    });
+
+    try {
+      await widget.user.sendEmailVerification();
+      if (mounted) {
+        setState(() {
+          _message = 'A new verification email was sent.';
+        });
+      }
+    } on FirebaseAuthException catch (error) {
+      if (mounted) {
+        setState(() {
+          _message = error.message ?? 'Could not send a verification email.';
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSending = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isBusy = _isChecking || _isSending;
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Verify your email')),
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 420),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Icon(Icons.mark_email_unread_outlined, size: 64),
+                const SizedBox(height: 20),
+                Text(
+                  'Check your inbox',
+                  style: Theme.of(context).textTheme.headlineSmall,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'We sent a verification link to ${widget.user.email ?? 'your email address'}. Open it before continuing.',
+                  textAlign: TextAlign.center,
+                ),
+                if (_message != null) ...[
+                  const SizedBox(height: 16),
+                  Text(_message!, textAlign: TextAlign.center),
+                ],
+                const SizedBox(height: 24),
+                FilledButton(
+                  onPressed: isBusy ? null : _checkVerification,
+                  child: Text(
+                    _isChecking ? 'Checking...' : 'I verified my email',
+                  ),
+                ),
+                TextButton(
+                  onPressed: isBusy ? null : _resendVerification,
+                  child: Text(_isSending ? 'Sending...' : 'Resend email'),
+                ),
+                TextButton(
+                  onPressed: isBusy
+                      ? null
+                      : () => FirebaseAuth.instance.signOut(),
+                  child: const Text('Use a different account'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -168,6 +307,7 @@ class _AuthPageState extends State<AuthPage> {
           password: password,
         );
         await _createUserProfile(credential.user!, email);
+        await credential.user!.sendEmailVerification();
       } else {
         credential = await FirebaseAuth.instance.signInWithEmailAndPassword(
           email: email,
@@ -187,6 +327,65 @@ class _AuthPageState extends State<AuthPage> {
       setState(() {
         _authError = 'Authentication failed: $error';
       });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _signInWithGoogle() async {
+    setState(() {
+      _isLoading = true;
+      _authError = null;
+    });
+
+    try {
+      final provider = GoogleAuthProvider();
+      final credential = kIsWeb
+          ? await FirebaseAuth.instance.signInWithPopup(provider)
+          : await FirebaseAuth.instance.signInWithProvider(provider);
+      final user = credential.user;
+
+      if (user == null) {
+        throw FirebaseAuthException(
+          code: 'missing-user',
+          message: 'Google did not return a user account.',
+        );
+      }
+
+      if (credential.additionalUserInfo?.isNewUser ?? false) {
+        await user.delete();
+        await FirebaseAuth.instance.signOut();
+
+        if (mounted) {
+          setState(() {
+            _authError =
+                'No account was found. Sign up with email and password first.';
+          });
+        }
+        return;
+      }
+
+      await _touchUserProfile(user, user.email ?? '');
+
+      if (mounted) {
+        Navigator.of(context).maybePop();
+      }
+    } on FirebaseAuthException catch (error) {
+      if (mounted) {
+        setState(() {
+          _authError = error.message ?? 'Google sign-in failed.';
+        });
+      }
+    } catch (error) {
+      if (mounted) {
+        setState(() {
+          _authError = 'Google sign-in failed: $error';
+        });
+      }
     } finally {
       if (mounted) {
         setState(() {
@@ -289,6 +488,26 @@ class _AuthPageState extends State<AuthPage> {
                             : 'Log In',
                       ),
                     ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        const Expanded(child: Divider()),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          child: Text(
+                            'or',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ),
+                        const Expanded(child: Divider()),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      onPressed: _isLoading ? null : _signInWithGoogle,
+                      icon: const Icon(Icons.account_circle_outlined),
+                      label: const Text('Log in with Google'),
+                    ),
                     TextButton(
                       onPressed: _isLoading
                           ? null
@@ -345,20 +564,22 @@ class NonLoggedInPage extends StatelessWidget {
             children: [
               ShaderMask(
                 blendMode: BlendMode.srcIn,
-                shaderCallback: (bounds) => const LinearGradient(
-                  colors: [Color.fromARGB(255, 25, 118, 210), Color.fromARGB(255, 144, 202, 249), Colors.white],                  
-                  begin: Alignment.topLeft,
-                  end: Alignment.topRight,
-                ).createShader(
-                  Rect.fromLTWH(0, 0, bounds.width, bounds.height)
-                ),
-                  child: const Text(
+                shaderCallback: (bounds) =>
+                    const LinearGradient(
+                      colors: [
+                        Color.fromARGB(255, 25, 118, 210),
+                        Color.fromARGB(255, 144, 202, 249),
+                        Colors.white,
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.topRight,
+                    ).createShader(
+                      Rect.fromLTWH(0, 0, bounds.width, bounds.height),
+                    ),
+                child: const Text(
                   'Smarter eating starts here',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 32
-                  )
-                  ),
+                  style: TextStyle(color: Colors.white, fontSize: 32),
+                ),
               ),
 
               Image(
@@ -403,6 +624,7 @@ class _MainPageState extends State<MainPage> {
   static const List<_AppPage> _pages = [
     _AppPage(title: 'Fridge', icon: Icons.kitchen),
     _AppPage(title: 'Home', icon: Icons.home),
+    _AppPage(title: 'Exercise', icon: Icons.directions_run),
     _AppPage(title: 'Agent', icon: Icons.smart_toy),
   ];
 
@@ -428,7 +650,7 @@ class _MainPageState extends State<MainPage> {
           ),
         ],
       ),
-      body: _loggedInPage(user),
+      body: _selectedPage(user),
       bottomNavigationBar: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 16),
@@ -452,7 +674,20 @@ class _MainPageState extends State<MainPage> {
     );
   }
 
-  Widget _loggedInPage(User user) {
+  Widget _selectedPage(User user) {
+    if (_selectedIndex == 1) {
+      final displayName = user.displayName?.trim();
+      final emailName = user.email?.split('@').first.trim();
+      return TodayDashboard(
+        userId: user.uid,
+        userName: displayName?.isNotEmpty == true ? displayName : emailName,
+        onOpenExercise: () => _goToPage(2),
+      );
+    }
+    if (_selectedIndex == 2) {
+      return ExercisePage(userId: user.uid);
+    }
+
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
       stream: _fridgeItemsCollection(
         user.uid,
@@ -478,21 +713,30 @@ class _MainPageState extends State<MainPage> {
             .map((storedFoodItem) => storedFoodItem.foodItem)
             .toList();
 
-        return IndexedStack(
-          index: _selectedIndex,
-          children: [
-            FridgePage(
-              foodItems: foodItems,
-              onAddFood: (foodItem) => _addFoodItem(user.uid, foodItem),
-              onAddFoods: (foodItems) => _addFoodItems(user.uid, foodItems),
-              onEditFood: (index, foodItem) =>
-                  _editFoodItem(user.uid, fridgeItems[index].id, foodItem),
-              onRemoveFood: (index) =>
-                  _removeFoodItem(user.uid, fridgeItems[index].id),
+        if (_selectedIndex == 0) {
+          return FridgePage(
+            foodItems: foodItems,
+            onAddFood: (foodItem) => _addFoodItem(user.uid, foodItem),
+            onAddFoods: (foodItems) => _addFoodItems(user.uid, foodItems),
+            onEditFood: (index, foodItem) =>
+                _editFoodItem(user.uid, fridgeItems[index].id, foodItem),
+            onRemoveFood: (index) =>
+                _removeFoodItem(user.uid, fridgeItems[index].id),
+          );
+        }
+
+        return AgentPage(
+          foodItems: foodItems,
+          onStartPostMealWalk: () => Navigator.of(context).push<bool>(
+            MaterialPageRoute(
+              builder: (context) => WorkoutSetupPage(
+                userId: user.uid,
+                repository: ExerciseRepository(),
+                initialActivity: WorkoutActivityType.walking,
+                source: WorkoutSource.postMealWalk,
+              ),
             ),
-            const BlankPage(),
-            AgentPage(foodItems: foodItems),
-          ],
+          ),
         );
       },
     );
@@ -528,15 +772,6 @@ class _MainPageState extends State<MainPage> {
 
   Future<void> _removeFoodItem(String uid, String id) {
     return _fridgeItemsCollection(uid).doc(id).delete();
-  }
-}
-
-class BlankPage extends StatelessWidget {
-  const BlankPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const SizedBox.expand();
   }
 }
 
@@ -997,7 +1232,7 @@ class _AddFoodSheetState extends State<AddFoodSheet> {
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<FoodType>(
-                value: _foodType,
+                initialValue: _foodType,
                 decoration: const InputDecoration(
                   border: OutlineInputBorder(),
                   labelText: 'Food type',
@@ -1127,9 +1362,14 @@ class FoodImage extends StatelessWidget {
 }
 
 class AgentPage extends StatefulWidget {
-  const AgentPage({super.key, required this.foodItems});
+  const AgentPage({
+    super.key,
+    required this.foodItems,
+    this.onStartPostMealWalk,
+  });
 
   final List<FoodItem> foodItems;
+  final VoidCallback? onStartPostMealWalk;
 
   @override
   State<AgentPage> createState() => _AgentPageState();
@@ -1461,7 +1701,10 @@ class _AgentPageState extends State<AgentPage> {
         if (_recommendations.isNotEmpty) ...[
           const SizedBox(height: 24),
           for (final recommendation in _recommendations) ...[
-            MealRecommendationCard(recommendation: recommendation),
+            MealRecommendationCard(
+              recommendation: recommendation,
+              onStartPostMealWalk: widget.onStartPostMealWalk,
+            ),
             const SizedBox(height: 16),
           ],
           const SizedBox(height: 16),
@@ -1489,9 +1732,14 @@ class _AgentPageState extends State<AgentPage> {
 }
 
 class MealRecommendationCard extends StatelessWidget {
-  const MealRecommendationCard({super.key, required this.recommendation});
+  const MealRecommendationCard({
+    super.key,
+    required this.recommendation,
+    this.onStartPostMealWalk,
+  });
 
   final MealRecommendation recommendation;
+  final VoidCallback? onStartPostMealWalk;
 
   @override
   Widget build(BuildContext context) {
@@ -1554,6 +1802,14 @@ class MealRecommendationCard extends StatelessWidget {
                   index++
                 )
                   Text('${index + 1}. ${recommendation.instructions[index]}'),
+                if (onStartPostMealWalk != null) ...[
+                  const SizedBox(height: 20),
+                  OutlinedButton.icon(
+                    onPressed: onStartPostMealWalk,
+                    icon: const Icon(Icons.directions_walk),
+                    label: const Text('Start a 10-minute post-meal walk'),
+                  ),
+                ],
               ],
             ),
           ),
