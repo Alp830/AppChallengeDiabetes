@@ -8,6 +8,7 @@ import '../models/workout_routine.dart';
 import '../models/workout_session.dart';
 import '../services/exercise_safety_service.dart';
 import '../services/workout_insight_service.dart';
+import 'movement_lab_page.dart';
 
 class ExercisePage extends StatefulWidget {
   const ExercisePage({super.key, required this.userId, this.repository});
@@ -92,6 +93,16 @@ class _ExercisePageState extends State<ExercisePage> {
               onPressed: _startWorkout,
               icon: const Icon(Icons.play_arrow),
               label: const Text('Start a workout'),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: () => Navigator.of(context).push<void>(
+                MaterialPageRoute(
+                  builder: (context) => MovementLabPage(userId: widget.userId),
+                ),
+              ),
+              icon: const Icon(Icons.query_stats),
+              label: const Text('Open Movement Lab'),
             ),
             const SizedBox(height: 24),
             Text('Quick start', style: Theme.of(context).textTheme.titleLarge),
@@ -261,6 +272,8 @@ class _WorkoutSetupPageState extends State<WorkoutSetupPage> {
   bool _hasFastCarbs = false;
   bool _completedFootCheck = false;
   bool _hasConcerningSymptoms = false;
+  bool _isPlanned = true;
+  bool _consumedCarbohydrates = false;
   String _glucoseUnit = 'mg/dL';
 
   @override
@@ -339,6 +352,10 @@ class _WorkoutSetupPageState extends State<WorkoutSetupPage> {
           ? WorkoutSource.guidedRoutine
           : widget.source,
       routineId: widget.routine?.id,
+      templateId: widget.routine?.id,
+      isPlanned: _isPlanned,
+      mealRelation: _mealRelation(_optionalInt(_mealMinutesController.text)),
+      consumedCarbohydrates: _consumedCarbohydrates,
     );
     final result = await Navigator.of(context).push<ActiveWorkoutResult>(
       MaterialPageRoute(
@@ -494,6 +511,19 @@ class _WorkoutSetupPageState extends State<WorkoutSetupPage> {
                   : (selection) {
                       setState(() => _intensity = selection.first);
                     },
+            ),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('This activity was planned'),
+              subtitle: const Text('Turn off for errands, chores, or unexpected activity.'),
+              value: _isPlanned,
+              onChanged: (value) => setState(() => _isPlanned = value),
+            ),
+            CheckboxListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('I consumed carbohydrates for this activity'),
+              value: _consumedCarbohydrates,
+              onChanged: (value) => setState(() => _consumedCarbohydrates = value ?? false),
             ),
             const SizedBox(height: 28),
             Text(
@@ -874,6 +904,10 @@ class _WorkoutReviewPageState extends State<WorkoutReviewPage> {
         postWorkout: review,
         source: widget.draft.source,
         routineId: widget.draft.routineId,
+        templateId: widget.draft.templateId,
+        isPlanned: widget.draft.isPlanned,
+        mealRelation: widget.draft.mealRelation,
+        consumedCarbohydrates: widget.draft.consumedCarbohydrates,
       );
       await widget.repository.saveCompletedSession(widget.userId, session);
       if (mounted) {
@@ -1008,7 +1042,11 @@ class WorkoutHistoryPage extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             itemCount: snapshot.data!.length,
             itemBuilder: (context, index) {
-              return WorkoutSessionTile(session: snapshot.data![index]);
+              final session = snapshot.data![index];
+              return WorkoutSessionTile(
+                session: session,
+                onDelete: () => repository.deleteSession(userId, session.id),
+              );
             },
           );
         },
@@ -1018,9 +1056,10 @@ class WorkoutHistoryPage extends StatelessWidget {
 }
 
 class WorkoutSessionTile extends StatelessWidget {
-  const WorkoutSessionTile({super.key, required this.session});
+  const WorkoutSessionTile({super.key, required this.session, this.onDelete});
 
   final WorkoutSession session;
+  final VoidCallback? onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -1035,7 +1074,16 @@ class WorkoutSessionTile extends StatelessWidget {
           '${glucoseBefore != null && glucoseAfter != null ? '\nGlucose: ${_formatNumber(glucoseBefore)} → ${_formatNumber(glucoseAfter)} ${session.preWorkout.glucoseUnit}' : ''}',
         ),
         isThreeLine: glucoseBefore != null && glucoseAfter != null,
-        trailing: Text(session.intensity.label),
+        trailing: onDelete == null
+            ? Text(session.intensity.label)
+            : PopupMenuButton<String>(
+                onSelected: (value) {
+                  if (value == 'delete') onDelete!();
+                },
+                itemBuilder: (context) => const [
+                  PopupMenuItem(value: 'delete', child: Text('Delete workout')),
+                ],
+              ),
       ),
     );
   }
@@ -1422,6 +1470,11 @@ extension WorkoutActivityTypeUi on WorkoutActivityType {
     WorkoutActivityType.chairExercise => 'Chair exercise',
     WorkoutActivityType.yoga => 'Yoga',
     WorkoutActivityType.stretching => 'Stretching',
+    WorkoutActivityType.sports => 'Sports',
+    WorkoutActivityType.householdWork => 'Household work',
+    WorkoutActivityType.errands => 'Errands',
+    WorkoutActivityType.activeWork => 'Active work',
+    WorkoutActivityType.movementBreak => 'Movement break',
     WorkoutActivityType.custom => 'Custom activity',
   };
 
@@ -1434,6 +1487,11 @@ extension WorkoutActivityTypeUi on WorkoutActivityType {
     WorkoutActivityType.chairExercise => Icons.accessible_forward,
     WorkoutActivityType.yoga => Icons.self_improvement,
     WorkoutActivityType.stretching => Icons.accessibility_new,
+    WorkoutActivityType.sports => Icons.sports,
+    WorkoutActivityType.householdWork => Icons.home_repair_service,
+    WorkoutActivityType.errands => Icons.shopping_bag,
+    WorkoutActivityType.activeWork => Icons.work,
+    WorkoutActivityType.movementBreak => Icons.airline_seat_recline_normal,
     WorkoutActivityType.custom => Icons.sports,
   };
 }
@@ -1449,6 +1507,13 @@ extension WorkoutIntensityUi on WorkoutIntensity {
 DateTime _startOfWeek(DateTime date) {
   final day = DateTime(date.year, date.month, date.day);
   return day.subtract(Duration(days: day.weekday - DateTime.monday));
+}
+
+String? _mealRelation(int? minutesSinceMeal) {
+  if (minutesSinceMeal == null) return null;
+  if (minutesSinceMeal <= 30) return '0–30 minutes after meal';
+  if (minutesSinceMeal <= 60) return '30–60 minutes after meal';
+  return 'More than 60 minutes after meal';
 }
 
 String? _validateOptionalPositiveNumber(String? value) {

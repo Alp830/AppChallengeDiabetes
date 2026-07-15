@@ -9,6 +9,11 @@ enum WorkoutActivityType {
   chairExercise,
   yoga,
   stretching,
+  sports,
+  householdWork,
+  errands,
+  activeWork,
+  movementBreak,
   custom,
 }
 
@@ -123,6 +128,11 @@ class WorkoutSession {
     required this.postWorkout,
     required this.source,
     this.routineId,
+    this.templateId,
+    this.isPlanned = true,
+    this.mealRelation,
+    this.consumedCarbohydrates = false,
+    this.analysisVersion = 1,
   });
 
   final String id;
@@ -137,6 +147,11 @@ class WorkoutSession {
   final PostWorkoutReview postWorkout;
   final WorkoutSource source;
   final String? routineId;
+  final String? templateId;
+  final bool isPlanned;
+  final String? mealRelation;
+  final bool consumedCarbohydrates;
+  final int analysisVersion;
 
   Map<String, dynamic> toFirestore() => {
     'activityType': activityType.name,
@@ -151,6 +166,11 @@ class WorkoutSession {
     'postWorkout': postWorkout.toFirestore(),
     'source': source.name,
     if (routineId != null) 'routineId': routineId,
+    if (templateId != null) 'templateId': templateId,
+    'isPlanned': isPlanned,
+    if (mealRelation != null) 'mealRelation': mealRelation,
+    'consumedCarbohydrates': consumedCarbohydrates,
+    'analysisVersion': analysisVersion,
     'createdAt': FieldValue.serverTimestamp(),
     'updatedAt': FieldValue.serverTimestamp(),
   };
@@ -161,16 +181,20 @@ class WorkoutSession {
 
     return WorkoutSession(
       id: id,
-      activityType: WorkoutActivityType.values.byName(
-        data['activityType'] as String? ?? WorkoutActivityType.custom.name,
+      activityType: _enumByName(
+        WorkoutActivityType.values,
+        data['activityType'],
+        WorkoutActivityType.custom,
       ),
       activityName: data['activityName'] as String? ?? 'Workout',
       plannedDurationMinutes:
           (data['plannedDurationMinutes'] as num?)?.toInt() ?? 0,
       actualDurationSeconds:
           (data['actualDurationSeconds'] as num?)?.toInt() ?? 0,
-      intensity: WorkoutIntensity.values.byName(
-        data['intensity'] as String? ?? WorkoutIntensity.moderate.name,
+      intensity: _enumByName(
+        WorkoutIntensity.values,
+        data['intensity'],
+        WorkoutIntensity.moderate,
       ),
       startedAt: startedAt ?? DateTime.now(),
       completedAt: completedAt ?? startedAt ?? DateTime.now(),
@@ -180,10 +204,17 @@ class WorkoutSession {
       postWorkout: PostWorkoutReview.fromFirestore(
         Map<String, dynamic>.from(data['postWorkout'] as Map? ?? const {}),
       ),
-      source: WorkoutSource.values.byName(
-        data['source'] as String? ?? WorkoutSource.manual.name,
+      source: _enumByName(
+        WorkoutSource.values,
+        data['source'],
+        WorkoutSource.manual,
       ),
       routineId: data['routineId'] as String?,
+      templateId: data['templateId'] as String?,
+      isPlanned: data['isPlanned'] as bool? ?? true,
+      mealRelation: data['mealRelation'] as String?,
+      consumedCarbohydrates: data['consumedCarbohydrates'] as bool? ?? false,
+      analysisVersion: (data['analysisVersion'] as num?)?.toInt() ?? 1,
     );
   }
 }
@@ -197,6 +228,10 @@ class WorkoutDraft {
     required this.preWorkout,
     this.source = WorkoutSource.manual,
     this.routineId,
+    this.templateId,
+    this.isPlanned = true,
+    this.mealRelation,
+    this.consumedCarbohydrates = false,
   });
 
   final WorkoutActivityType activityType;
@@ -206,4 +241,15 @@ class WorkoutDraft {
   final PreWorkoutCheck preWorkout;
   final WorkoutSource source;
   final String? routineId;
+  final String? templateId;
+  final bool isPlanned;
+  final String? mealRelation;
+  final bool consumedCarbohydrates;
+}
+
+T _enumByName<T extends Enum>(List<T> values, Object? name, T fallback) {
+  for (final value in values) {
+    if (value.name == name) return value;
+  }
+  return fallback;
 }

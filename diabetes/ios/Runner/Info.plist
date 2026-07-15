@@ -28,6 +28,8 @@
 	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>This app uses the camera so you can save photos of food in your fridge.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Select meal photos to add context to your meal history.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

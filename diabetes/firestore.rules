@@ -32,6 +32,30 @@ service cloud.firestore {
       match /dailyTodos/{dayId} {
         allow read, create, update, delete: if isOwner(userId);
       }
+
+      match /glucoseDays/{dayId} {
+        allow read, create, update, delete: if isOwner(userId);
+      }
+
+      match /glucoseImports/{importId} {
+        allow read, create, update, delete: if isOwner(userId);
+      }
+
+      match /glucoseSettings/{settingsId} {
+        allow read, create, update, delete: if isOwner(userId);
+      }
+
+      match /mealEvents/{mealId} {
+        allow read, create, update, delete: if isOwner(userId);
+      }
+
+      match /mealTemplates/{templateId} {
+        allow read, create, update, delete: if isOwner(userId);
+      }
+
+      match /mealGroups/{groupId} {
+        allow read, create, update, delete: if isOwner(userId);
+      }
     }
   }
 }

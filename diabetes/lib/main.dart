@@ -10,11 +10,14 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 
+import 'cgm/screens/glucose_settings_page.dart';
 import 'exercise/data/exercise_repository.dart';
 import 'exercise/models/workout_session.dart';
 import 'exercise/screens/exercise_page.dart';
 import 'exercise/screens/today_dashboard.dart';
 import 'firebase_options.dart';
+import 'meals/screens/meal_lab_page.dart';
+import 'meals/screens/meal_log_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -644,6 +647,15 @@ class _MainPageState extends State<MainPage> {
         title: Text(_pages[_selectedIndex].title),
         actions: [
           IconButton(
+            onPressed: () => Navigator.of(context).push<void>(
+              MaterialPageRoute(
+                builder: (context) => GlucoseSettingsPage(userId: user.uid),
+              ),
+            ),
+            tooltip: 'Glucose and data settings',
+            icon: const Icon(Icons.settings),
+          ),
+          IconButton(
             onPressed: () => FirebaseAuth.instance.signOut(),
             tooltip: 'Log out',
             icon: const Icon(Icons.logout),
@@ -682,6 +694,19 @@ class _MainPageState extends State<MainPage> {
         userId: user.uid,
         userName: displayName?.isNotEmpty == true ? displayName : emailName,
         onOpenExercise: () => _goToPage(2),
+        onLogMeal: () => Navigator.of(context).push<void>(
+          MaterialPageRoute(
+            builder: (context) => MealLogPage(
+              userId: user.uid,
+              geminiApiKey: AppEnvironment.geminiApiKey,
+            ),
+          ),
+        ),
+        onImportGlucose: () => Navigator.of(context).push<void>(
+          MaterialPageRoute(
+            builder: (context) => GlucoseSettingsPage(userId: user.uid),
+          ),
+        ),
       );
     }
     if (_selectedIndex == 2) {
@@ -727,6 +752,8 @@ class _MainPageState extends State<MainPage> {
 
         return AgentPage(
           foodItems: foodItems,
+          userId: user.uid,
+          geminiApiKey: AppEnvironment.geminiApiKey,
           onStartPostMealWalk: () => Navigator.of(context).push<bool>(
             MaterialPageRoute(
               builder: (context) => WorkoutSetupPage(
@@ -1366,10 +1393,14 @@ class AgentPage extends StatefulWidget {
     super.key,
     required this.foodItems,
     this.onStartPostMealWalk,
+    this.userId,
+    this.geminiApiKey = '',
   });
 
   final List<FoodItem> foodItems;
   final VoidCallback? onStartPostMealWalk;
+  final String? userId;
+  final String geminiApiKey;
 
   @override
   State<AgentPage> createState() => _AgentPageState();
@@ -1478,6 +1509,55 @@ class _AgentPageState extends State<AgentPage> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        if (widget.userId != null) ...[
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text('Meals', style: Theme.of(context).textTheme.titleLarge),
+                  const SizedBox(height: 8),
+                  const Text('Log what you ate and compare repeated meal experiences with imported glucose data.'),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: FilledButton.icon(
+                          onPressed: () => Navigator.of(context).push<void>(
+                            MaterialPageRoute(
+                              builder: (context) => MealLogPage(
+                                userId: widget.userId!,
+                                geminiApiKey: widget.geminiApiKey,
+                              ),
+                            ),
+                          ),
+                          icon: const Icon(Icons.add),
+                          label: const Text('Log Meal'),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () => Navigator.of(context).push<void>(
+                            MaterialPageRoute(
+                              builder: (context) => MealLabPage(userId: widget.userId!),
+                            ),
+                          ),
+                          icon: const Icon(Icons.insights),
+                          label: const Text('Meal Lab'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text('Meal recommendations', style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: 8),
+        ],
         Form(
           key: _formKey,
           child: Column(
@@ -1704,6 +1784,17 @@ class _AgentPageState extends State<AgentPage> {
             MealRecommendationCard(
               recommendation: recommendation,
               onStartPostMealWalk: widget.onStartPostMealWalk,
+              onLogMeal: widget.userId == null
+                  ? null
+                  : () => Navigator.of(context).push<void>(
+                      MaterialPageRoute(
+                        builder: (context) => MealLogPage(
+                          userId: widget.userId!,
+                          geminiApiKey: widget.geminiApiKey,
+                          initialName: recommendation.dishName,
+                        ),
+                      ),
+                    ),
             ),
             const SizedBox(height: 16),
           ],
@@ -1736,10 +1827,12 @@ class MealRecommendationCard extends StatelessWidget {
     super.key,
     required this.recommendation,
     this.onStartPostMealWalk,
+    this.onLogMeal,
   });
 
   final MealRecommendation recommendation;
   final VoidCallback? onStartPostMealWalk;
+  final VoidCallback? onLogMeal;
 
   @override
   Widget build(BuildContext context) {
@@ -1808,6 +1901,14 @@ class MealRecommendationCard extends StatelessWidget {
                     onPressed: onStartPostMealWalk,
                     icon: const Icon(Icons.directions_walk),
                     label: const Text('Start a 10-minute post-meal walk'),
+                  ),
+                ],
+                if (onLogMeal != null) ...[
+                  const SizedBox(height: 8),
+                  FilledButton.icon(
+                    onPressed: onLogMeal,
+                    icon: const Icon(Icons.restaurant),
+                    label: const Text('Log this meal'),
                   ),
                 ],
               ],

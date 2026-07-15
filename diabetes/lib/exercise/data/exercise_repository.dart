@@ -64,6 +64,10 @@ class ExerciseRepository {
     return document.id;
   }
 
+  Future<void> deleteSession(String userId, String sessionId) {
+    return _sessions(userId).doc(sessionId).delete();
+  }
+
   Stream<ExerciseProfile> watchProfile(String userId) {
     return _firestore
         .collection('users')

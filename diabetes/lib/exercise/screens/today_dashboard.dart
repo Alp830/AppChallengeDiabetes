@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../cgm/screens/glucose_context_card.dart';
 import '../data/exercise_repository.dart';
 import '../data/today_todo_repository.dart';
 import '../models/workout_session.dart';
@@ -20,6 +21,8 @@ class TodayDashboard extends StatefulWidget {
     this.todoRepository,
     this.todoStateStream,
     this.onSaveTodos,
+    this.onLogMeal,
+    this.onImportGlucose,
   });
 
   final String userId;
@@ -32,6 +35,8 @@ class TodayDashboard extends StatefulWidget {
   final TodayTodoRepository? todoRepository;
   final Stream<TodayTodoState>? todoStateStream;
   final Future<void> Function(List<TodayTodo> items)? onSaveTodos;
+  final VoidCallback? onLogMeal;
+  final VoidCallback? onImportGlucose;
 
   @override
   State<TodayDashboard> createState() => _TodayDashboardState();
@@ -123,6 +128,14 @@ class _TodayDashboardState extends State<TodayDashboard> {
                   todos: todos,
                   onSaveTodos: _saveTodos,
                   onOpenExercise: widget.onOpenExercise,
+                  glucoseContext: widget.onLogMeal == null || widget.onImportGlucose == null
+                      ? null
+                      : GlucoseContextCard(
+                          userId: widget.userId,
+                          onLogMeal: widget.onLogMeal!,
+                          onOpenExercise: widget.onOpenExercise,
+                          onImport: widget.onImportGlucose!,
+                        ),
                 );
               },
             );
@@ -142,6 +155,7 @@ class _TodayDashboardContent extends StatelessWidget {
     required this.todos,
     required this.onSaveTodos,
     required this.onOpenExercise,
+    required this.glucoseContext,
   });
 
   final DateTime now;
@@ -151,6 +165,7 @@ class _TodayDashboardContent extends StatelessWidget {
   final List<TodayTodo> todos;
   final Future<void> Function(List<TodayTodo> items) onSaveTodos;
   final VoidCallback onOpenExercise;
+  final Widget? glucoseContext;
 
   @override
   Widget build(BuildContext context) {
@@ -190,6 +205,10 @@ class _TodayDashboardContent extends StatelessWidget {
           progress: progress,
           onOpenExercise: onOpenExercise,
         ),
+        if (glucoseContext != null) ...[
+          const SizedBox(height: 16),
+          glucoseContext!,
+        ],
         const SizedBox(height: 24),
         Text('Up next', style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: 10),
