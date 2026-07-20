@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 
 import '../models/meal_models.dart';
+import '../models/meal_balance_models.dart';
 
 class MealRepository {
   MealRepository({FirebaseFirestore? firestore, FirebaseStorage? storage})
@@ -49,9 +50,8 @@ class MealRepository {
             .toList(),
       );
 
-  Future<void> saveTemplate(String userId, MealEvent meal) => _user(userId)
-      .collection('mealTemplates')
-      .add({
+  Future<void> saveTemplate(String userId, MealEvent meal) =>
+      _user(userId).collection('mealTemplates').add({
         'name': meal.name,
         'mealType': meal.mealType,
         'portion': meal.portion.name,
@@ -64,6 +64,8 @@ class MealRepository {
         'hasFat': meal.hasFat,
         'hasFiber': meal.hasFiber,
         'favorite': true,
+        if (meal.balanceInput != null && !meal.balanceInput!.isEmpty)
+          'mealBalance': meal.balanceInput!.toFirestore(),
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
@@ -78,10 +80,9 @@ class MealRepository {
     String sourceGroupId,
     String destinationGroupId,
   ) async {
-    final meals = await _user(userId)
-        .collection('mealEvents')
-        .where('groupId', isEqualTo: sourceGroupId)
-        .get();
+    final meals = await _user(
+      userId,
+    ).collection('mealEvents').where('groupId', isEqualTo: sourceGroupId).get();
     final batch = _firestore.batch();
     for (final meal in meals.docs) {
       batch.update(meal.reference, {
@@ -93,11 +94,17 @@ class MealRepository {
     await batch.commit();
   }
 
-  Future<String> saveMeal(String userId, MealEvent meal, {Uint8List? photo}) async {
+  Future<String> saveMeal(
+    String userId,
+    MealEvent meal, {
+    Uint8List? photo,
+  }) async {
     final reference = _user(userId).collection('mealEvents').doc();
     String? photoUrl;
     if (photo != null) {
-      final storageReference = _storage.ref('users/$userId/mealPhotos/${reference.id}.jpg');
+      final storageReference = _storage.ref(
+        'users/$userId/mealPhotos/${reference.id}.jpg',
+      );
       await storageReference.putData(
         photo,
         SettableMetadata(contentType: 'image/jpeg'),
@@ -123,6 +130,7 @@ class MealRepository {
         nearbyMovement: meal.nearbyMovement,
         notes: meal.notes,
         photoUrl: photoUrl,
+        balanceInput: meal.balanceInput,
       ).toFirestore(),
     );
     return reference.id;
@@ -155,7 +163,8 @@ class MealRepository {
     });
     if (confirmed && meal.exists) {
       final data = meal.data()!;
-      final example = '${data['name'] ?? 'Meal'}: '
+      final example =
+          '${data['name'] ?? 'Meal'}: '
           '${(data['components'] as List? ?? const []).whereType<String>().join(', ')}';
       await _user(userId).collection('mealGroups').doc(groupId).set({
         'correctionExamples': FieldValue.arrayUnion([example]),
@@ -170,6 +179,17 @@ class MealRepository {
         'groupConfidence': FieldValue.delete(),
         'groupConfirmed': false,
       });
+
+  Future<void> updateMealBalance(
+    String userId,
+    String mealId,
+    MealBalanceInput? input,
+  ) => _user(userId).collection('mealEvents').doc(mealId).update({
+    'mealBalance': input == null || input.isEmpty
+        ? FieldValue.delete()
+        : input.toFirestore(),
+    'updatedAt': FieldValue.serverTimestamp(),
+  });
 
   Future<void> deleteMeal(String userId, MealEvent meal) async {
     await _user(userId).collection('mealEvents').doc(meal.id).delete();

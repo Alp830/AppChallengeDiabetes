@@ -21,7 +21,9 @@ class MealLabPage extends StatefulWidget {
 }
 
 class _MealLabPageState extends State<MealLabPage> {
-  final _meals = MealRepository();
+  late final MealRepository? _meals = widget.diabetesEnabled
+      ? MealRepository()
+      : null;
   late final GlucoseRepository? _glucose = widget.diabetesEnabled
       ? GlucoseRepository()
       : null;
@@ -62,6 +64,11 @@ class _MealLabPageState extends State<MealLabPage> {
 
   @override
   Widget build(BuildContext context) {
+    final meals = _meals;
+    if (meals == null) {
+      return const SizedBox.shrink(key: Key('diabetesFeatureDisabled'));
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Meal Lab'),
@@ -74,7 +81,7 @@ class _MealLabPageState extends State<MealLabPage> {
         ],
       ),
       body: StreamBuilder<List<MealEvent>>(
-        stream: _meals.watchMeals(widget.userId),
+        stream: meals.watchMeals(widget.userId),
         builder: (context, mealSnapshot) {
           if (mealSnapshot.hasError) {
             return const Center(child: Text('Could not load meals.'));
@@ -83,7 +90,7 @@ class _MealLabPageState extends State<MealLabPage> {
             return const Center(child: CircularProgressIndicator());
           }
           return StreamBuilder<List<MealGroup>>(
-            stream: _meals.watchGroups(widget.userId),
+            stream: meals.watchGroups(widget.userId),
             builder: (context, groupSnapshot) {
               if (!groupSnapshot.hasData) {
                 return const Center(child: CircularProgressIndicator());
@@ -96,11 +103,11 @@ class _MealLabPageState extends State<MealLabPage> {
                     fingerprints: const [],
                   ),
                   hasGlucose: false,
-                  onDelete: (meal) => _meals.deleteMeal(widget.userId, meal),
+                  onDelete: (meal) => meals.deleteMeal(widget.userId, meal),
                   onUngroup: (meal) =>
-                      _meals.unassignGroup(widget.userId, meal.id),
+                      meals.unassignGroup(widget.userId, meal.id),
                   onSaveTemplate: (meal) =>
-                      _meals.saveTemplate(widget.userId, meal),
+                      meals.saveTemplate(widget.userId, meal),
                   onChangeGroup: (meal) =>
                       _chooseGroup(meal, groupSnapshot.data!),
                 );
@@ -127,11 +134,11 @@ class _MealLabPageState extends State<MealLabPage> {
                             data: dataSnapshot.data!,
                             hasGlucose: glucoseSnapshot.data ?? false,
                             onDelete: (meal) =>
-                                _meals.deleteMeal(widget.userId, meal),
+                                meals.deleteMeal(widget.userId, meal),
                             onUngroup: (meal) =>
-                                _meals.unassignGroup(widget.userId, meal.id),
+                                meals.unassignGroup(widget.userId, meal.id),
                             onSaveTemplate: (meal) =>
-                                _meals.saveTemplate(widget.userId, meal),
+                                meals.saveTemplate(widget.userId, meal),
                             onChangeGroup: (meal) =>
                                 _chooseGroup(meal, groupSnapshot.data!),
                           ),
@@ -161,7 +168,7 @@ class _MealLabPageState extends State<MealLabPage> {
       ),
     );
     if (group != null) {
-      await _meals.assignGroup(
+      await _meals!.assignGroup(
         widget.userId,
         meal.id,
         group.id,
@@ -172,7 +179,7 @@ class _MealLabPageState extends State<MealLabPage> {
   }
 
   Future<void> _manageGroups() async {
-    final groups = await _meals.watchGroups(widget.userId).first;
+    final groups = await _meals!.watchGroups(widget.userId).first;
     if (!mounted) return;
     await showModalBottomSheet<void>(
       context: context,
@@ -243,7 +250,7 @@ class _MealLabPageState extends State<MealLabPage> {
       ),
     );
     if (confirmed == true && name.isNotEmpty) {
-      await _meals.renameGroup(widget.userId, group.id, name);
+      await _meals!.renameGroup(widget.userId, group.id, name);
     }
   }
 
@@ -262,7 +269,7 @@ class _MealLabPageState extends State<MealLabPage> {
       ),
     );
     if (destination != null) {
-      await _meals.mergeGroups(widget.userId, source.id, destination.id);
+      await _meals!.mergeGroups(widget.userId, source.id, destination.id);
     }
   }
 }

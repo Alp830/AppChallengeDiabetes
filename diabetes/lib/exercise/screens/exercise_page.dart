@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../app_features.dart';
+import '../../navigation/app_feature_navigation.dart';
 import '../data/exercise_repository.dart';
 import '../models/exercise_profile.dart';
 import '../models/workout_routine.dart';
@@ -109,10 +110,12 @@ class _ExercisePageState extends State<ExercisePage> {
             const SizedBox(height: 8),
             if (widget.diabetesEnabled)
               OutlinedButton.icon(
-                onPressed: () => Navigator.of(context).push<void>(
-                  MaterialPageRoute(
-                    builder: (context) =>
-                        MovementLabPage(userId: widget.userId),
+                onPressed: () => AppFeatureNavigation.pushDiabetesPage<void>(
+                  context,
+                  diabetesEnabled: widget.diabetesEnabled,
+                  builder: (context) => MovementLabPage(
+                    userId: widget.userId,
+                    diabetesEnabled: widget.diabetesEnabled,
                   ),
                 ),
                 icon: const Icon(Icons.query_stats),

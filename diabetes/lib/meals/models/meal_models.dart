@@ -1,8 +1,19 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import 'meal_balance_models.dart';
+
 enum MealPortion { smaller, usual, larger }
-enum MealOrder { together, vegetablesFirst, proteinFirst, carbohydratesFirst, custom }
+
+enum MealOrder {
+  together,
+  vegetablesFirst,
+  proteinFirst,
+  carbohydratesFirst,
+  custom,
+}
+
 enum MealPreparation { fresh, leftover, reheated }
+
 enum CarbBand { unknown, low, medium, high }
 
 class MealEvent {
@@ -27,6 +38,7 @@ class MealEvent {
     this.groupId,
     this.groupConfidence,
     this.groupConfirmed = false,
+    this.balanceInput,
   });
 
   final String id;
@@ -49,12 +61,14 @@ class MealEvent {
   final String? groupId;
   final double? groupConfidence;
   final bool groupConfirmed;
+  final MealBalanceInput? balanceInput;
 
   MealEvent copyWith({
     String? id,
     String? groupId,
     double? groupConfidence,
     bool? groupConfirmed,
+    MealBalanceInput? balanceInput,
   }) => MealEvent(
     id: id ?? this.id,
     name: name,
@@ -76,10 +90,11 @@ class MealEvent {
     groupId: groupId ?? this.groupId,
     groupConfidence: groupConfidence ?? this.groupConfidence,
     groupConfirmed: groupConfirmed ?? this.groupConfirmed,
+    balanceInput: balanceInput ?? this.balanceInput,
   );
 
   Map<String, dynamic> toFirestore() => {
-    'schemaVersion': 1,
+    'schemaVersion': 2,
     'name': name,
     'timestamp': Timestamp.fromDate(timestamp),
     'mealType': mealType,
@@ -99,17 +114,26 @@ class MealEvent {
     if (groupId != null) 'groupId': groupId,
     if (groupConfidence != null) 'groupConfidence': groupConfidence,
     'groupConfirmed': groupConfirmed,
+    if (balanceInput != null && !balanceInput!.isEmpty)
+      'mealBalance': balanceInput!.toFirestore(),
     'updatedAt': FieldValue.serverTimestamp(),
   };
 
-  factory MealEvent.fromFirestore(String id, Map<String, dynamic> data) => MealEvent(
+  factory MealEvent.fromFirestore(
+    String id,
+    Map<String, dynamic> data,
+  ) => MealEvent(
     id: id,
     name: data['name'] as String? ?? 'Meal',
     timestamp: (data['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now(),
     mealType: data['mealType'] as String? ?? 'Meal',
     portion: _enumValue(MealPortion.values, data['portion'], MealPortion.usual),
     carbBand: _enumValue(CarbBand.values, data['carbBand'], CarbBand.unknown),
-    mealOrder: _enumValue(MealOrder.values, data['mealOrder'], MealOrder.together),
+    mealOrder: _enumValue(
+      MealOrder.values,
+      data['mealOrder'],
+      MealOrder.together,
+    ),
     preparation: _enumValue(
       MealPreparation.values,
       data['preparation'],
@@ -120,13 +144,20 @@ class MealEvent {
     hasProtein: data['hasProtein'] as bool? ?? false,
     hasFat: data['hasFat'] as bool? ?? false,
     hasFiber: data['hasFiber'] as bool? ?? false,
-    components: (data['components'] as List? ?? const []).whereType<String>().toList(),
+    components: (data['components'] as List? ?? const [])
+        .whereType<String>()
+        .toList(),
     nearbyMovement: data['nearbyMovement'] as String?,
     notes: data['notes'] as String?,
     photoUrl: data['photoUrl'] as String?,
     groupId: data['groupId'] as String?,
     groupConfidence: (data['groupConfidence'] as num?)?.toDouble(),
     groupConfirmed: data['groupConfirmed'] as bool? ?? false,
+    balanceInput: data['mealBalance'] is Map
+        ? MealBalanceInput.fromFirestore(
+            Map<String, dynamic>.from(data['mealBalance'] as Map),
+          )
+        : null,
   );
 }
 
@@ -168,6 +199,7 @@ class MealTemplate {
     this.hasFat = false,
     this.hasFiber = false,
     this.favorite = false,
+    this.balanceInput,
   });
   final String id;
   final String name;
@@ -182,23 +214,41 @@ class MealTemplate {
   final bool hasFat;
   final bool hasFiber;
   final bool favorite;
+  final MealBalanceInput? balanceInput;
 
-  factory MealTemplate.fromFirestore(String id, Map<String, dynamic> data) =>
-      MealTemplate(
-        id: id,
-        name: data['name'] as String? ?? 'Meal',
-        mealType: data['mealType'] as String? ?? 'Meal',
-        portion: _enumValue(MealPortion.values, data['portion'], MealPortion.usual),
-        carbBand: _enumValue(CarbBand.values, data['carbBand'], CarbBand.unknown),
-        mealOrder: _enumValue(MealOrder.values, data['mealOrder'], MealOrder.together),
-        preparation: _enumValue(MealPreparation.values, data['preparation'], MealPreparation.fresh),
-        restaurant: data['restaurant'] as String?,
-        components: (data['components'] as List? ?? const []).whereType<String>().toList(),
-        hasProtein: data['hasProtein'] as bool? ?? false,
-        hasFat: data['hasFat'] as bool? ?? false,
-        hasFiber: data['hasFiber'] as bool? ?? false,
-        favorite: data['favorite'] as bool? ?? false,
-      );
+  factory MealTemplate.fromFirestore(
+    String id,
+    Map<String, dynamic> data,
+  ) => MealTemplate(
+    id: id,
+    name: data['name'] as String? ?? 'Meal',
+    mealType: data['mealType'] as String? ?? 'Meal',
+    portion: _enumValue(MealPortion.values, data['portion'], MealPortion.usual),
+    carbBand: _enumValue(CarbBand.values, data['carbBand'], CarbBand.unknown),
+    mealOrder: _enumValue(
+      MealOrder.values,
+      data['mealOrder'],
+      MealOrder.together,
+    ),
+    preparation: _enumValue(
+      MealPreparation.values,
+      data['preparation'],
+      MealPreparation.fresh,
+    ),
+    restaurant: data['restaurant'] as String?,
+    components: (data['components'] as List? ?? const [])
+        .whereType<String>()
+        .toList(),
+    hasProtein: data['hasProtein'] as bool? ?? false,
+    hasFat: data['hasFat'] as bool? ?? false,
+    hasFiber: data['hasFiber'] as bool? ?? false,
+    favorite: data['favorite'] as bool? ?? false,
+    balanceInput: data['mealBalance'] is Map
+        ? MealBalanceInput.fromFirestore(
+            Map<String, dynamic>.from(data['mealBalance'] as Map),
+          )
+        : null,
+  );
 }
 
 T _enumValue<T extends Enum>(List<T> values, Object? name, T fallback) {

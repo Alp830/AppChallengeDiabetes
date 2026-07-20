@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:camera/camera.dart';
@@ -20,10 +21,13 @@ import 'exercise/screens/today_dashboard.dart';
 import 'firebase_options.dart';
 import 'meals/data/meal_repository.dart';
 import 'meals/screens/meal_lab_page.dart';
+import 'meals/screens/meal_balance_page.dart';
 import 'meals/screens/meal_log_page.dart';
+import 'navigation/app_feature_navigation.dart';
 import 'sleep/data/sleep_repository.dart';
 import 'sleep/screens/sleep_page.dart';
 import 'sleep/services/evening_food_context_service.dart';
+import 'settings/data/app_preferences_repository.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -642,6 +646,7 @@ class _MainPageState extends State<MainPage> {
     _AppPage(title: 'Fridge', icon: Icons.kitchen),
     _AppPage(title: 'Exercise', icon: Icons.directions_run),
     _AppPage(title: 'Home', icon: Icons.home),
+    _AppPage(title: 'Balance', icon: Icons.donut_large),
     _AppPage(title: 'Agent', icon: Icons.smart_toy),
     _AppPage(title: 'Sleep', icon: Icons.bedtime),
   ];
@@ -672,9 +677,12 @@ class _MainPageState extends State<MainPage> {
         actions: [
           if (widget.diabetesEnabled)
             IconButton(
-              onPressed: () => Navigator.of(context).push<void>(
-                MaterialPageRoute(
-                  builder: (context) => GlucoseSettingsPage(userId: user.uid),
+              onPressed: () => AppFeatureNavigation.pushDiabetesPage<void>(
+                context,
+                diabetesEnabled: widget.diabetesEnabled,
+                builder: (context) => GlucoseSettingsPage(
+                  userId: user.uid,
+                  diabetesEnabled: widget.diabetesEnabled,
                 ),
               ),
               tooltip: 'Glucose and data settings',
@@ -715,20 +723,23 @@ class _MainPageState extends State<MainPage> {
       bottomNavigationBar: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 16),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              for (var index = 0; index < _pages.length; index++)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  child: CirclePageButton(
-                    icon: _pages[index].icon,
-                    label: _pages[index].title,
-                    isSelected: _selectedIndex == index,
-                    onTap: () => _goToPage(index),
-                  ),
-                ),
-            ],
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final compact = constraints.maxWidth < 430;
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  for (var index = 0; index < _pages.length; index++)
+                    CirclePageButton(
+                      icon: _pages[index].icon,
+                      label: _pages[index].title,
+                      isSelected: _selectedIndex == index,
+                      onTap: () => _goToPage(index),
+                      compact: compact,
+                    ),
+                ],
+              );
+            },
           ),
         ),
       ),
@@ -752,13 +763,18 @@ class _MainPageState extends State<MainPage> {
             ),
           ),
         ),
-        onImportGlucose: () => Navigator.of(context).push<void>(
-          MaterialPageRoute(
-            builder: (context) => GlucoseSettingsPage(userId: user.uid),
-          ),
-        ),
+        onImportGlucose: widget.diabetesEnabled
+            ? () => AppFeatureNavigation.pushDiabetesPage<void>(
+                context,
+                diabetesEnabled: widget.diabetesEnabled,
+                builder: (context) => GlucoseSettingsPage(
+                  userId: user.uid,
+                  diabetesEnabled: widget.diabetesEnabled,
+                ),
+              )
+            : null,
         diabetesEnabled: widget.diabetesEnabled,
-        onOpenSleep: () => _goToPage(4),
+        onOpenSleep: () => _goToPage(5),
       );
     }
     if (_selectedIndex == 1) {
@@ -767,7 +783,10 @@ class _MainPageState extends State<MainPage> {
         diabetesEnabled: widget.diabetesEnabled,
       );
     }
-    if (_selectedIndex == 4) {
+    if (_selectedIndex == 3) {
+      return MealBalancePage(userId: user.uid);
+    }
+    if (_selectedIndex == 5) {
       return SleepPage(
         userId: user.uid,
         diabetesEnabled: widget.diabetesEnabled,
@@ -1462,6 +1481,7 @@ class AgentPage extends StatefulWidget {
     this.glucoseRepository,
     this.mealRepository,
     this.diabetesEnabled = AppFeatures.diabetesEnabled,
+    this.preferencesRepository,
   });
 
   final List<FoodItem> foodItems;
@@ -1475,6 +1495,7 @@ class AgentPage extends StatefulWidget {
   final GlucoseRepository? glucoseRepository;
   final MealRepository? mealRepository;
   final bool diabetesEnabled;
+  final AppPreferencesStore? preferencesRepository;
 
   @override
   State<AgentPage> createState() => _AgentPageState();
@@ -1490,6 +1511,7 @@ class _AgentPageState extends State<AgentPage> {
   bool _useFridgeItems = true;
   bool _hasBudget = false;
   bool _hasTimeShortage = false;
+  bool _useMealBalance = false;
   int _recommendationCount = 1;
   MealType _mealType = MealType.breakfast;
   CookingExperience _cookingExperience = CookingExperience.beginner;
@@ -1498,6 +1520,8 @@ class _AgentPageState extends State<AgentPage> {
   final List<String> _feedbackHistory = [];
   bool _isLoadingRecommendation = false;
   String? _recommendationError;
+  AppPreferencesStore? _preferencesRepository;
+  StreamSubscription<bool>? _balancePreferenceSubscription;
 
   static const _eveningContextService = EveningFoodContextService();
 
@@ -1509,6 +1533,17 @@ class _AgentPageState extends State<AgentPage> {
   void initState() {
     super.initState();
     final userId = widget.userId;
+    if (userId != null) {
+      _preferencesRepository =
+          widget.preferencesRepository ?? AppPreferencesRepository();
+      _balancePreferenceSubscription = _preferencesRepository!
+          .watchMealBalanceAgentEnabled(userId)
+          .listen((enabled) {
+            if (mounted && enabled != _useMealBalance) {
+              setState(() => _useMealBalance = enabled);
+            }
+          });
+    }
     if (widget.diabetesEnabled && userId != null) {
       _loadOvernightSummary(userId);
     }
@@ -1537,7 +1572,23 @@ class _AgentPageState extends State<AgentPage> {
     _timeController.dispose();
     _preferencesController.dispose();
     _feedbackController.dispose();
+    _balancePreferenceSubscription?.cancel();
     super.dispose();
+  }
+
+  Future<void> _setUseMealBalance(bool value) async {
+    setState(() => _useMealBalance = value);
+    final userId = widget.userId;
+    final repository = _preferencesRepository;
+    if (userId == null || repository == null) return;
+    try {
+      await repository.saveMealBalanceAgentEnabled(userId, value);
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not save that Agent preference.')),
+      );
+    }
   }
 
   Future<void> _generateRecommendation() async {
@@ -1559,6 +1610,7 @@ class _AgentPageState extends State<AgentPage> {
       feedbackHistory: List.of(_feedbackHistory),
       overnightSummary: widget.diabetesEnabled ? _overnightSummary : null,
       diabetesEnabled: widget.diabetesEnabled,
+      useMealBalance: _useMealBalance,
     );
 
     await _loadRecommendation(request);
@@ -1671,21 +1723,24 @@ class _AgentPageState extends State<AgentPage> {
                           label: const Text('Log Meal'),
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: () => Navigator.of(context).push<void>(
-                            MaterialPageRoute(
-                              builder: (context) => MealLabPage(
-                                userId: widget.userId!,
-                                diabetesEnabled: widget.diabetesEnabled,
-                              ),
-                            ),
+                      if (widget.diabetesEnabled) ...[
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () =>
+                                AppFeatureNavigation.pushDiabetesPage<void>(
+                                  context,
+                                  diabetesEnabled: widget.diabetesEnabled,
+                                  builder: (context) => MealLabPage(
+                                    userId: widget.userId!,
+                                    diabetesEnabled: widget.diabetesEnabled,
+                                  ),
+                                ),
+                            icon: const Icon(Icons.insights),
+                            label: const Text('Meal Lab'),
                           ),
-                          icon: const Icon(Icons.insights),
-                          label: const Text('Meal Lab'),
                         ),
-                      ),
+                      ],
                     ],
                   ),
                 ],
@@ -1720,6 +1775,16 @@ class _AgentPageState extends State<AgentPage> {
                     _useFridgeItems = value;
                   });
                 },
+              ),
+              CheckboxListTile(
+                key: const Key('agentMealBalanceCheckbox'),
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Build recommendations around meal balance'),
+                subtitle: const Text(
+                  'Aim for produce, protein, quality carbs, fiber, and an unsweetened drink.',
+                ),
+                value: _useMealBalance,
+                onChanged: (value) => _setUseMealBalance(value ?? false),
               ),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
@@ -2173,12 +2238,14 @@ class CirclePageButton extends StatelessWidget {
     required this.label,
     required this.isSelected,
     required this.onTap,
+    this.compact = false,
   });
 
   final IconData icon;
   final String label;
   final bool isSelected;
   final VoidCallback onTap;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -2210,8 +2277,8 @@ class CirclePageButton extends StatelessWidget {
           child: AnimatedContainer(
             duration: animationDuration,
             curve: Curves.easeOutCubic,
-            width: 56,
-            height: 56,
+            width: compact ? 48 : 56,
+            height: compact ? 48 : 56,
             decoration: BoxDecoration(
               color: backgroundColor,
               shape: BoxShape.circle,
@@ -2359,6 +2426,7 @@ class AgentRequest {
     required this.feedbackHistory,
     this.overnightSummary,
     this.diabetesEnabled = AppFeatures.diabetesEnabled,
+    this.useMealBalance = false,
   });
 
   final bool useFridgeItems;
@@ -2377,6 +2445,7 @@ class AgentRequest {
   /// agent can softly tailor evening meals. Null when there is no signal.
   final OvernightPhenotypeSummary? overnightSummary;
   final bool diabetesEnabled;
+  final bool useMealBalance;
 
   /// Meals eaten close to sleep, where overnight glucose is most sensitive.
   /// Drives the evening ranking (F1) and time-of-day awareness (F3).
@@ -2403,6 +2472,7 @@ class AgentRequest {
       feedbackHistory: feedbackHistory ?? this.feedbackHistory,
       overnightSummary: overnightSummary,
       diabetesEnabled: diabetesEnabled,
+      useMealBalance: useMealBalance,
     );
   }
 }
@@ -2600,6 +2670,10 @@ class GeminiMealService {
     return Future.wait(recommendations.map(_withGeneratedImage));
   }
 
+  @visibleForTesting
+  static String buildPromptForTesting(AgentRequest request) =>
+      _buildPrompt(request);
+
   static Future<MealRecommendation> _withGeneratedImage(
     MealRecommendation recommendation,
   ) async {
@@ -2679,6 +2753,18 @@ class GeminiMealService {
         ? 'None.'
         : request.feedbackHistory.map((item) => '- $item').join('\n');
 
+    final balanceGuidance = request.useMealBalance
+        ? '''
+
+The user chose meal-balance guidance. Honor their requested food, preferences, allergies, budget, time, and available ingredients first. When practical, build each recommendation around these flexible wellness anchors:
+- About 20-30 g protein.
+- About 7-8 g fiber.
+- About 1.5 cups of produce or half the plate as produce, emphasizing vegetables while still counting fruit.
+- About 250-500 mL water or another unsweetened drink with or near the meal.
+- A plate or mixed-dish equivalent near 50% produce, 25% protein, and 25% quality carbohydrate.
+Briefly explain the balance in the reason. Do not reject a requested food or make medical claims if every target cannot be met.'''
+        : '';
+
     // F1 + F3 · evening ranking and time-of-day awareness. Only for meals eaten
     // close to sleep; never refuses the request, just orders and annotates.
     final eveningGuidance = request.diabetesEnabled && request.isEveningMeal
@@ -2736,7 +2822,7 @@ Use the amount exactly as the user wrote it when they include a measurement. If 
 $fridgeItems
 
 Feedback from the user about earlier suggestions:
-$feedback$eveningGuidance$overnightContext
+$feedback$balanceGuidance$eveningGuidance$overnightContext
 
 Return only valid JSON as an array with exactly ${request.recommendationCount} objects. Each object must use this exact shape:
 [

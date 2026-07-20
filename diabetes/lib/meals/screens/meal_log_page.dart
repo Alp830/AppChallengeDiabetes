@@ -8,7 +8,9 @@ import '../../cgm/data/glucose_repository.dart';
 import '../../cgm/models/glucose_models.dart';
 import '../data/meal_repository.dart';
 import '../models/meal_models.dart';
+import '../models/meal_balance_models.dart';
 import '../services/meal_grouping_service.dart';
+import 'meal_balance_input_form.dart';
 
 class MealLogPage extends StatefulWidget {
   const MealLogPage({
@@ -50,6 +52,8 @@ class _MealLogPageState extends State<MealLogPage> {
   bool _fat = false;
   bool _fiber = false;
   bool _saving = false;
+  MealBalanceInput _balanceInput = const MealBalanceInput();
+  int _balanceFormRevision = 0;
 
   @override
   void dispose() {
@@ -124,6 +128,7 @@ class _MealLogPageState extends State<MealLogPage> {
         .toList(),
     nearbyMovement: _emptyToNull(_movement.text),
     notes: _emptyToNull(_notes.text),
+    balanceInput: _balanceInput.isEmpty ? null : _balanceInput,
   );
 
   void _applyTemplate(MealTemplate template) {
@@ -139,6 +144,8 @@ class _MealLogPageState extends State<MealLogPage> {
       _protein = template.hasProtein;
       _fat = template.hasFat;
       _fiber = template.hasFiber;
+      _balanceInput = template.balanceInput ?? const MealBalanceInput();
+      _balanceFormRevision++;
     });
   }
 
@@ -382,6 +389,23 @@ class _MealLogPageState extends State<MealLogPage> {
               value: _fiber,
               onChanged: (value) => setState(() => _fiber = value ?? false),
               title: const Text('Contains fiber'),
+            ),
+            Card(
+              margin: const EdgeInsets.symmetric(vertical: 8),
+              child: ExpansionTile(
+                key: const Key('mealBalanceDetailsTile'),
+                leading: const Icon(Icons.donut_large),
+                title: const Text('Meal balance details'),
+                subtitle: const Text('Optional scoring details'),
+                childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                children: [
+                  MealBalanceInputForm(
+                    key: ValueKey(_balanceFormRevision),
+                    initialValue: _balanceInput,
+                    onChanged: (value) => _balanceInput = value,
+                  ),
+                ],
+              ),
             ),
             TextFormField(
               controller: _components,

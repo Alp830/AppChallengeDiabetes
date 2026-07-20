@@ -1,45 +1,96 @@
 import 'package:flutter/material.dart';
 
+import '../../app_features.dart';
 import '../../cgm/data/glucose_repository.dart';
 import '../data/exercise_repository.dart';
 import '../models/workout_session.dart';
 import '../services/movement_analysis_service.dart';
 
-class MovementLabPage extends StatelessWidget {
-  MovementLabPage({super.key, required this.userId});
+class MovementLabPage extends StatefulWidget {
+  const MovementLabPage({
+    super.key,
+    required this.userId,
+    this.diabetesEnabled = AppFeatures.diabetesEnabled,
+    this.exerciseRepositoryFactory,
+    this.glucoseRepositoryFactory,
+  });
+
   final String userId;
-  final ExerciseRepository _exercise = ExerciseRepository();
-  final GlucoseRepository _glucose = GlucoseRepository();
+  final bool diabetesEnabled;
+  final ExerciseRepository Function()? exerciseRepositoryFactory;
+  final GlucoseRepository Function()? glucoseRepositoryFactory;
+
+  @override
+  State<MovementLabPage> createState() => _MovementLabPageState();
+}
+
+class _MovementLabPageState extends State<MovementLabPage> {
+  late final ExerciseRepository? _exercise;
+  late final GlucoseRepository? _glucose;
+
+  @override
+  void initState() {
+    super.initState();
+    _exercise = widget.diabetesEnabled
+        ? (widget.exerciseRepositoryFactory?.call() ?? ExerciseRepository())
+        : null;
+    _glucose = widget.diabetesEnabled
+        ? (widget.glucoseRepositoryFactory?.call() ?? GlucoseRepository())
+        : null;
+  }
 
   Future<List<WorkoutResponse>> _analyze(List<WorkoutSession> sessions) async {
     if (sessions.isEmpty) return const [];
-    final oldest = sessions.map((item) => item.startedAt).reduce((a, b) => a.isBefore(b) ? a : b);
-    final newest = sessions.map((item) => item.completedAt).reduce((a, b) => a.isAfter(b) ? a : b);
-    final readings = await _glucose.getRange(
-      userId,
+    final glucose = _glucose;
+    if (glucose == null) return const [];
+    final oldest = sessions
+        .map((item) => item.startedAt)
+        .reduce((a, b) => a.isBefore(b) ? a : b);
+    final newest = sessions
+        .map((item) => item.completedAt)
+        .reduce((a, b) => a.isAfter(b) ? a : b);
+    final readings = await glucose.getRange(
+      widget.userId,
       oldest.subtract(const Duration(minutes: 15)),
       newest.add(const Duration(days: 1, hours: 6)),
     );
     return sessions
-        .map((session) => const MovementAnalysisService().response(session, readings))
+        .map(
+          (session) =>
+              const MovementAnalysisService().response(session, readings),
+        )
         .toList();
   }
 
   @override
   Widget build(BuildContext context) {
+    final exercise = _exercise;
+    final glucose = _glucose;
+    if (exercise == null || glucose == null) {
+      return const SizedBox.shrink(key: Key('diabetesFeatureDisabled'));
+    }
+
     return Scaffold(
       appBar: AppBar(title: const Text('Movement Lab')),
       body: StreamBuilder<List<WorkoutSession>>(
-        stream: _exercise.watchRecentSessions(userId, limit: 100),
+        stream: exercise.watchRecentSessions(widget.userId, limit: 100),
         builder: (context, snapshot) {
-          if (snapshot.hasError) return const Center(child: Text('Could not load movement history.'));
-          if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+          if (snapshot.hasError) {
+            return const Center(
+              child: Text('Could not load movement history.'),
+            );
+          }
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
           return FutureBuilder<List<WorkoutResponse>>(
             future: _analyze(snapshot.data!),
             builder: (context, responseSnapshot) {
-              if (!responseSnapshot.hasData) return const Center(child: CircularProgressIndicator());
+              if (!responseSnapshot.hasData) {
+                return const Center(child: CircularProgressIndicator());
+              }
               return StreamBuilder<bool>(
-                stream: _glucose.watchHasGlucoseData(userId),
+                stream: glucose.watchHasGlucoseData(widget.userId),
                 builder: (context, glucoseSnapshot) => _MovementLabView(
                   responses: responseSnapshot.data!,
                   hasGlucose: glucoseSnapshot.data ?? false,
@@ -65,7 +116,9 @@ class _MovementLabView extends StatelessWidget {
   Widget build(BuildContext context) {
     final grouped = <WorkoutActivityType, List<WorkoutResponse>>{};
     for (final response in responses) {
-      grouped.putIfAbsent(response.session.activityType, () => []).add(response);
+      grouped
+          .putIfAbsent(response.session.activityType, () => [])
+          .add(response);
     }
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -86,15 +139,23 @@ class _MovementLabView extends StatelessWidget {
             ),
           )
         else ...[
-          Text('Exercise Type Profiles', style: Theme.of(context).textTheme.titleLarge),
+          Text(
+            'Exercise Type Profiles',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
           const SizedBox(height: 8),
           if (responses.isEmpty)
-            const Text('Complete workouts and import glucose data to build profiles.')
+            const Text(
+              'Complete workouts and import glucose data to build profiles.',
+            )
           else
             for (final entry in grouped.entries)
               _MovementProfile(type: entry.key, responses: entry.value),
           const SizedBox(height: 20),
-          Text('Movement comparisons', style: Theme.of(context).textTheme.titleLarge),
+          Text(
+            'Movement comparisons',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
           const SizedBox(height: 8),
           for (final feature in const [
             'Movement Timing Comparison',
@@ -132,25 +193,46 @@ class _MovementProfile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final covered = responses.where((item) => item.hasCoverage).toList();
-    final changes = covered.map((item) => item.duringChange).whereType<double>().toList();
-    final after = covered.map((item) => item.twoHourChange).whereType<double>().toList();
-    final averageDuring = changes.isEmpty ? null : changes.reduce((a, b) => a + b) / changes.length;
-    final averageAfter = after.isEmpty ? null : after.reduce((a, b) => a + b) / after.length;
+    final changes = covered
+        .map((item) => item.duringChange)
+        .whereType<double>()
+        .toList();
+    final after = covered
+        .map((item) => item.twoHourChange)
+        .whereType<double>()
+        .toList();
+    final averageDuring = changes.isEmpty
+        ? null
+        : changes.reduce((a, b) => a + b) / changes.length;
+    final averageAfter = after.isEmpty
+        ? null
+        : after.reduce((a, b) => a + b) / after.length;
     final planned = responses.where((item) => item.session.isPlanned).length;
     return Card(
       child: ExpansionTile(
         title: Text(_activityName(type)),
-        subtitle: Text('${const MovementAnalysisService().evidenceLevel(covered.length)} • ${covered.length} supported events'),
+        subtitle: Text(
+          '${const MovementAnalysisService().evidenceLevel(covered.length)} • ${covered.length} supported events',
+        ),
         childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         children: [
           if (averageDuring == null)
             const Text('More imported glucose coverage is needed.')
           else ...[
-            Text('During similar workouts, ending glucose was associated with an average change of ${averageDuring.round()} mg/dL.'),
-            if (averageAfter != null) Text('Two hours afterward, the recorded average change was ${averageAfter.round()} mg/dL.'),
-            Text('$planned planned and ${responses.length - planned} unplanned recorded activities.'),
+            Text(
+              'During similar workouts, ending glucose was associated with an average change of ${averageDuring.round()} mg/dL.',
+            ),
+            if (averageAfter != null)
+              Text(
+                'Two hours afterward, the recorded average change was ${averageAfter.round()} mg/dL.',
+              ),
+            Text(
+              '$planned planned and ${responses.length - planned} unplanned recorded activities.',
+            ),
             const SizedBox(height: 8),
-            const Text('Why am I seeing this? Baseline uses readings from the 15 minutes before each workout. This is an observation, not a prediction.'),
+            const Text(
+              'Why am I seeing this? Baseline uses readings from the 15 minutes before each workout. This is an observation, not a prediction.',
+            ),
           ],
         ],
       ),
@@ -159,7 +241,10 @@ class _MovementProfile extends StatelessWidget {
 }
 
 String _activityName(WorkoutActivityType type) {
-  final spaced = type.name.replaceAllMapped(RegExp(r'([A-Z])'), (match) => ' ${match.group(1)!.toLowerCase()}');
+  final spaced = type.name.replaceAllMapped(
+    RegExp(r'([A-Z])'),
+    (match) => ' ${match.group(1)!.toLowerCase()}',
+  );
   return '${spaced[0].toUpperCase()}${spaced.substring(1)}';
 }
 
