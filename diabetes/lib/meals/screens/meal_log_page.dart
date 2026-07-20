@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../app_features.dart';
 import '../../cgm/data/glucose_repository.dart';
 import '../../cgm/models/glucose_models.dart';
 import '../data/meal_repository.dart';
@@ -15,10 +16,12 @@ class MealLogPage extends StatefulWidget {
     required this.userId,
     required this.geminiApiKey,
     this.initialName,
+    this.diabetesEnabled = AppFeatures.diabetesEnabled,
   });
   final String userId;
   final String geminiApiKey;
   final String? initialName;
+  final bool diabetesEnabled;
 
   @override
   State<MealLogPage> createState() => _MealLogPageState();
@@ -33,7 +36,9 @@ class _MealLogPageState extends State<MealLogPage> {
   final _movement = TextEditingController();
   final _notes = TextEditingController();
   final _repository = MealRepository();
-  final _glucoseRepository = GlucoseRepository();
+  late final GlucoseRepository? _glucoseRepository = widget.diabetesEnabled
+      ? GlucoseRepository()
+      : null;
   Uint8List? _photo;
   DateTime _timestamp = DateTime.now();
   String _mealType = 'Meal';
@@ -48,7 +53,14 @@ class _MealLogPageState extends State<MealLogPage> {
 
   @override
   void dispose() {
-    for (final controller in [_name, _restaurant, _carbs, _components, _movement, _notes]) {
+    for (final controller in [
+      _name,
+      _restaurant,
+      _carbs,
+      _components,
+      _movement,
+      _notes,
+    ]) {
       controller.dispose();
     }
     super.dispose();
@@ -74,9 +86,20 @@ class _MealLogPageState extends State<MealLogPage> {
       lastDate: DateTime.now().add(const Duration(days: 1)),
     );
     if (date == null || !mounted) return;
-    final time = await showTimePicker(context: context, initialTime: TimeOfDay.fromDateTime(_timestamp));
+    final time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(_timestamp),
+    );
     if (time != null) {
-      setState(() => _timestamp = DateTime(date.year, date.month, date.day, time.hour, time.minute));
+      setState(
+        () => _timestamp = DateTime(
+          date.year,
+          date.month,
+          date.day,
+          time.hour,
+          time.minute,
+        ),
+      );
     }
   }
 
@@ -125,9 +148,13 @@ class _MealLogPageState extends State<MealLogPage> {
     try {
       final meal = _event();
       final id = await _repository.saveMeal(widget.userId, meal, photo: _photo);
-      final settings = await _glucoseRepository.watchSettings(widget.userId).first;
-      if (settings.aiMealGroupingConsent) {
-        await _groupMeal(meal.copyWith(id: id), settings);
+      if (widget.diabetesEnabled) {
+        final settings = await _glucoseRepository!
+            .watchSettings(widget.userId)
+            .first;
+        if (settings.aiMealGroupingConsent) {
+          await _groupMeal(meal.copyWith(id: id), settings);
+        }
       }
       if (mounted) Navigator.of(context).pop(true);
     } catch (_) {
@@ -144,11 +171,13 @@ class _MealLogPageState extends State<MealLogPage> {
   Future<void> _groupMeal(MealEvent meal, GlucoseSettings settings) async {
     try {
       final groups = await _repository.watchGroups(widget.userId).first;
-      final proposal = await GeminiMealGroupingService(apiKey: widget.geminiApiKey)
-          .propose(meal, groups, photo: _photo);
+      final proposal = await GeminiMealGroupingService(
+        apiKey: widget.geminiApiKey,
+      ).propose(meal, groups, photo: _photo);
       var accepted = proposal.confidence >= .85;
       if (!accepted && mounted) {
-        accepted = await showDialog<bool>(
+        accepted =
+            await showDialog<bool>(
               context: context,
               builder: (context) => AlertDialog(
                 title: const Text('Group this meal?'),
@@ -171,7 +200,8 @@ class _MealLogPageState extends State<MealLogPage> {
             false;
       }
       if (!accepted) return;
-      final groupId = proposal.groupId ??
+      final groupId =
+          proposal.groupId ??
           await _repository.createGroup(
             widget.userId,
             proposal.canonicalName,
@@ -185,7 +215,8 @@ class _MealLogPageState extends State<MealLogPage> {
         confirmed: proposal.confidence < .85,
       );
       if (mounted && proposal.confidence >= .85) {
-        final undo = await showDialog<bool>(
+        final undo =
+            await showDialog<bool>(
               context: context,
               builder: (context) => AlertDialog(
                 title: Text('Grouped as ${proposal.canonicalName}'),
@@ -229,7 +260,10 @@ class _MealLogPageState extends State<MealLogPage> {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Quick log', style: Theme.of(context).textTheme.titleMedium),
+                    Text(
+                      'Quick log',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
                     const SizedBox(height: 8),
                     Wrap(
                       spacing: 8,
@@ -250,7 +284,9 @@ class _MealLogPageState extends State<MealLogPage> {
             OutlinedButton.icon(
               onPressed: _pickPhoto,
               icon: const Icon(Icons.add_a_photo),
-              label: Text(_photo == null ? 'Add meal photo' : 'Change meal photo'),
+              label: Text(
+                _photo == null ? 'Add meal photo' : 'Change meal photo',
+              ),
             ),
             if (_photo != null) ...[
               const SizedBox(height: 8),
@@ -259,11 +295,22 @@ class _MealLogPageState extends State<MealLogPage> {
             const SizedBox(height: 16),
             TextFormField(
               controller: _name,
-              decoration: const InputDecoration(labelText: 'Meal or dish name', border: OutlineInputBorder()),
-              validator: (value) => value == null || value.trim().isEmpty ? 'Enter a meal name' : null,
+              decoration: const InputDecoration(
+                labelText: 'Meal or dish name',
+                border: OutlineInputBorder(),
+              ),
+              validator: (value) => value == null || value.trim().isEmpty
+                  ? 'Enter a meal name'
+                  : null,
             ),
             const SizedBox(height: 12),
-            TextFormField(controller: _restaurant, decoration: const InputDecoration(labelText: 'Restaurant (optional)', border: OutlineInputBorder())),
+            TextFormField(
+              controller: _restaurant,
+              decoration: const InputDecoration(
+                labelText: 'Restaurant (optional)',
+                border: OutlineInputBorder(),
+              ),
+            ),
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.schedule),
@@ -274,42 +321,111 @@ class _MealLogPageState extends State<MealLogPage> {
             DropdownButtonFormField<String>(
               initialValue: _mealType,
               decoration: const InputDecoration(labelText: 'Meal type'),
-              items: const ['Meal', 'Breakfast', 'Lunch', 'Dinner', 'Snack', 'Drink']
-                  .map((value) => DropdownMenuItem(value: value, child: Text(value)))
-                  .toList(),
+              items:
+                  const [
+                        'Meal',
+                        'Breakfast',
+                        'Lunch',
+                        'Dinner',
+                        'Snack',
+                        'Drink',
+                      ]
+                      .map(
+                        (value) =>
+                            DropdownMenuItem(value: value, child: Text(value)),
+                      )
+                      .toList(),
               onChanged: (value) => setState(() => _mealType = value ?? 'Meal'),
             ),
             DropdownButtonFormField<MealPortion>(
               initialValue: _portion,
               decoration: const InputDecoration(labelText: 'Portion'),
-              items: MealPortion.values.map((value) => DropdownMenuItem(value: value, child: Text(value.name))).toList(),
-              onChanged: (value) => setState(() => _portion = value ?? MealPortion.usual),
+              items: MealPortion.values
+                  .map(
+                    (value) =>
+                        DropdownMenuItem(value: value, child: Text(value.name)),
+                  )
+                  .toList(),
+              onChanged: (value) =>
+                  setState(() => _portion = value ?? MealPortion.usual),
             ),
-            TextFormField(controller: _carbs, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Carbohydrate grams (optional)')),
+            TextFormField(
+              controller: _carbs,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: 'Carbohydrate grams (optional)',
+              ),
+            ),
             DropdownButtonFormField<CarbBand>(
               initialValue: _carbBand,
               decoration: const InputDecoration(labelText: 'Carbohydrate band'),
-              items: CarbBand.values.map((value) => DropdownMenuItem(value: value, child: Text(value.name))).toList(),
-              onChanged: (value) => setState(() => _carbBand = value ?? CarbBand.unknown),
+              items: CarbBand.values
+                  .map(
+                    (value) =>
+                        DropdownMenuItem(value: value, child: Text(value.name)),
+                  )
+                  .toList(),
+              onChanged: (value) =>
+                  setState(() => _carbBand = value ?? CarbBand.unknown),
             ),
-            CheckboxListTile(value: _protein, onChanged: (value) => setState(() => _protein = value ?? false), title: const Text('Contains protein')),
-            CheckboxListTile(value: _fat, onChanged: (value) => setState(() => _fat = value ?? false), title: const Text('Contains substantial fat')),
-            CheckboxListTile(value: _fiber, onChanged: (value) => setState(() => _fiber = value ?? false), title: const Text('Contains fiber')),
-            TextFormField(controller: _components, decoration: const InputDecoration(labelText: 'Ingredients, sides, accompaniments', hintText: 'fruit, nuts, milk')),
+            CheckboxListTile(
+              value: _protein,
+              onChanged: (value) => setState(() => _protein = value ?? false),
+              title: const Text('Contains protein'),
+            ),
+            CheckboxListTile(
+              value: _fat,
+              onChanged: (value) => setState(() => _fat = value ?? false),
+              title: const Text('Contains substantial fat'),
+            ),
+            CheckboxListTile(
+              value: _fiber,
+              onChanged: (value) => setState(() => _fiber = value ?? false),
+              title: const Text('Contains fiber'),
+            ),
+            TextFormField(
+              controller: _components,
+              decoration: const InputDecoration(
+                labelText: 'Ingredients, sides, accompaniments',
+                hintText: 'fruit, nuts, milk',
+              ),
+            ),
             DropdownButtonFormField<MealOrder>(
               initialValue: _order,
               decoration: const InputDecoration(labelText: 'Meal order'),
-              items: MealOrder.values.map((value) => DropdownMenuItem(value: value, child: Text(value.name))).toList(),
-              onChanged: (value) => setState(() => _order = value ?? MealOrder.together),
+              items: MealOrder.values
+                  .map(
+                    (value) =>
+                        DropdownMenuItem(value: value, child: Text(value.name)),
+                  )
+                  .toList(),
+              onChanged: (value) =>
+                  setState(() => _order = value ?? MealOrder.together),
             ),
             DropdownButtonFormField<MealPreparation>(
               initialValue: _preparation,
               decoration: const InputDecoration(labelText: 'Preparation'),
-              items: MealPreparation.values.map((value) => DropdownMenuItem(value: value, child: Text(value.name))).toList(),
-              onChanged: (value) => setState(() => _preparation = value ?? MealPreparation.fresh),
+              items: MealPreparation.values
+                  .map(
+                    (value) =>
+                        DropdownMenuItem(value: value, child: Text(value.name)),
+                  )
+                  .toList(),
+              onChanged: (value) =>
+                  setState(() => _preparation = value ?? MealPreparation.fresh),
             ),
-            TextFormField(controller: _movement, decoration: const InputDecoration(labelText: 'Nearby movement (optional)')),
-            TextFormField(controller: _notes, minLines: 2, maxLines: 4, decoration: const InputDecoration(labelText: 'Notes (optional)')),
+            TextFormField(
+              controller: _movement,
+              decoration: const InputDecoration(
+                labelText: 'Nearby movement (optional)',
+              ),
+            ),
+            TextFormField(
+              controller: _notes,
+              minLines: 2,
+              maxLines: 4,
+              decoration: const InputDecoration(labelText: 'Notes (optional)'),
+            ),
             const SizedBox(height: 20),
             FilledButton.icon(
               onPressed: _saving ? null : _save,
@@ -323,4 +439,5 @@ class _MealLogPageState extends State<MealLogPage> {
   }
 }
 
-String? _emptyToNull(String value) => value.trim().isEmpty ? null : value.trim();
+String? _emptyToNull(String value) =>
+    value.trim().isEmpty ? null : value.trim();

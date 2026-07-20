@@ -9,12 +9,7 @@ void main() {
 
   testWidgets('shows the empty activity state for today', (tester) async {
     await tester.pumpWidget(
-      _app(
-        now: now,
-        today: const [],
-        recent: const [],
-        onOpenExercise: () {},
-      ),
+      _app(now: now, today: const [], recent: const [], onOpenExercise: () {}),
     );
     await tester.pumpAndSettle();
 
@@ -37,6 +32,42 @@ void main() {
     );
   });
 
+  testWidgets('disabled diabetes mode never subscribes to glucose data', (
+    tester,
+  ) async {
+    var glucoseListened = false;
+    final glucoseStream = Stream<bool>.multi((controller) {
+      glucoseListened = true;
+      controller.add(true);
+    });
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: TodayDashboard(
+            userId: 'user-1',
+            onOpenExercise: () {},
+            onLogMeal: () {},
+            onImportGlucose: () {},
+            diabetesEnabled: false,
+            now: now,
+            hasGlucoseStream: glucoseStream,
+            todaySessionsStream: Stream.value(const []),
+            recentSessionsStream: Stream.value(const []),
+            todoStateStream: Stream.value(
+              const TodayTodoState(isInitialized: true, items: []),
+            ),
+            onSaveTodos: (_) async {},
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(glucoseListened, isFalse);
+    expect(find.byKey(const Key('glucoseContextCard')), findsNothing);
+  });
+
   testWidgets('totals today and displays only the newest three workouts', (
     tester,
   ) async {
@@ -48,12 +79,7 @@ void main() {
     ];
 
     await tester.pumpWidget(
-      _app(
-        now: now,
-        today: sessions,
-        recent: sessions,
-        onOpenExercise: () {},
-      ),
+      _app(now: now, today: sessions, recent: sessions, onOpenExercise: () {}),
     );
     await tester.pumpAndSettle();
 
@@ -146,14 +172,20 @@ void main() {
     );
     await tester.tap(find.byKey(const Key('addTodoButton')));
     await tester.pumpAndSettle();
-    await tester.enterText(find.byKey(const Key('todoNameField')), 'Drink water');
+    await tester.enterText(
+      find.byKey(const Key('todoNameField')),
+      'Drink water',
+    );
     await tester.tap(find.text('Add'));
     await tester.pumpAndSettle();
     expect(find.text('Drink water'), findsOneWidget);
 
     await tester.tap(find.text('Drink water'));
     await tester.pumpAndSettle();
-    await tester.enterText(find.byKey(const Key('todoNameField')), 'Fill bottle');
+    await tester.enterText(
+      find.byKey(const Key('todoNameField')),
+      'Fill bottle',
+    );
     await tester.tap(find.text('Save'));
     await tester.pumpAndSettle();
     expect(find.text('Fill bottle'), findsOneWidget);
@@ -193,8 +225,9 @@ void main() {
       scrollable: find.byType(Scrollable).first,
     );
 
-    tester.widget<ReorderableListView>(find.byKey(const Key('todayTodoList')))
-      .onReorderItem!(0, 2);
+    tester
+        .widget<ReorderableListView>(find.byKey(const Key('todayTodoList')))
+        .onReorderItem!(0, 2);
     await tester.pump();
 
     expect(savedLists.last.map((item) => item.id), ['b', 'c', 'a']);

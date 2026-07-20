@@ -12,7 +12,7 @@ class SafetyResult {
 class ExerciseSafetyService {
   const ExerciseSafetyService();
 
-  SafetyResult evaluate(PreWorkoutCheck check) {
+  SafetyResult evaluate(PreWorkoutCheck check, {bool diabetesEnabled = true}) {
     if (check.hasConcerningSymptoms) {
       return const SafetyResult(
         severity: SafetySeverity.stop,
@@ -27,17 +27,19 @@ class ExerciseSafetyService {
     if (!check.hasWater) {
       messages.add('Bring water and stay hydrated during your workout.');
     }
-    if (check.usesHypoglycemiaRiskMedication && !check.hasFastCarbs) {
+    if (diabetesEnabled &&
+        check.usesHypoglycemiaRiskMedication &&
+        !check.hasFastCarbs) {
       messages.add(
         'Bring your usual fast-acting carbohydrate before starting.',
       );
     }
-    if (!check.completedFootCheck) {
+    if (diabetesEnabled && !check.completedFootCheck) {
       messages.add(
         'Check your footwear and feet before weight-bearing exercise.',
       );
     }
-    if (check.glucoseValue == null) {
+    if (diabetesEnabled && check.glucoseValue == null) {
       messages.add(
         'No glucose reading was entered. Follow the monitoring plan given by your care team.',
       );

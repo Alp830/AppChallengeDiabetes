@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../app_features.dart';
 import '../data/exercise_repository.dart';
 import '../models/exercise_profile.dart';
 import '../models/workout_routine.dart';
@@ -11,10 +12,16 @@ import '../services/workout_insight_service.dart';
 import 'movement_lab_page.dart';
 
 class ExercisePage extends StatefulWidget {
-  const ExercisePage({super.key, required this.userId, this.repository});
+  const ExercisePage({
+    super.key,
+    required this.userId,
+    this.repository,
+    this.diabetesEnabled = AppFeatures.diabetesEnabled,
+  });
 
   final String userId;
   final ExerciseRepository? repository;
+  final bool diabetesEnabled;
 
   @override
   State<ExercisePage> createState() => _ExercisePageState();
@@ -42,6 +49,7 @@ class _ExercisePageState extends State<ExercisePage> {
           initialActivity: initialActivity,
           routine: routine,
           source: source,
+          diabetesEnabled: widget.diabetesEnabled,
         ),
       ),
     );
@@ -76,7 +84,10 @@ class _ExercisePageState extends State<ExercisePage> {
               (session) => session.activityType == WorkoutActivityType.strength,
             )
             .length;
-        final insights = const WorkoutInsightService().buildInsights(sessions);
+        final insights = const WorkoutInsightService().buildInsights(
+          sessions,
+          diabetesEnabled: widget.diabetesEnabled,
+        );
 
         return ListView(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
@@ -86,6 +97,7 @@ class _ExercisePageState extends State<ExercisePage> {
               repository: _repository,
               activeMinutes: weeklyMinutes,
               strengthSessions: strengthSessions,
+              diabetesEnabled: widget.diabetesEnabled,
             ),
             const SizedBox(height: 20),
             FilledButton.icon(
@@ -95,15 +107,17 @@ class _ExercisePageState extends State<ExercisePage> {
               label: const Text('Start a workout'),
             ),
             const SizedBox(height: 8),
-            OutlinedButton.icon(
-              onPressed: () => Navigator.of(context).push<void>(
-                MaterialPageRoute(
-                  builder: (context) => MovementLabPage(userId: widget.userId),
+            if (widget.diabetesEnabled)
+              OutlinedButton.icon(
+                onPressed: () => Navigator.of(context).push<void>(
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        MovementLabPage(userId: widget.userId),
+                  ),
                 ),
+                icon: const Icon(Icons.query_stats),
+                label: const Text('Open Movement Lab'),
               ),
-              icon: const Icon(Icons.query_stats),
-              label: const Text('Open Movement Lab'),
-            ),
             const SizedBox(height: 24),
             Text('Quick start', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 12),
@@ -198,6 +212,7 @@ class _ExercisePageState extends State<ExercisePage> {
                         builder: (context) => WorkoutHistoryPage(
                           userId: widget.userId,
                           repository: _repository,
+                          diabetesEnabled: widget.diabetesEnabled,
                         ),
                       ),
                     ),
@@ -229,7 +244,10 @@ class _ExercisePageState extends State<ExercisePage> {
               )
             else
               for (final session in sessions.take(3))
-                WorkoutSessionTile(session: session),
+                WorkoutSessionTile(
+                  session: session,
+                  diabetesEnabled: widget.diabetesEnabled,
+                ),
           ],
         );
       },
@@ -245,6 +263,7 @@ class WorkoutSetupPage extends StatefulWidget {
     this.initialActivity,
     this.routine,
     this.source = WorkoutSource.manual,
+    this.diabetesEnabled = AppFeatures.diabetesEnabled,
   });
 
   final String userId;
@@ -252,6 +271,7 @@ class WorkoutSetupPage extends StatefulWidget {
   final WorkoutActivityType? initialActivity;
   final WorkoutRoutine? routine;
   final WorkoutSource source;
+  final bool diabetesEnabled;
 
   @override
   State<WorkoutSetupPage> createState() => _WorkoutSetupPageState();
@@ -290,7 +310,7 @@ class _WorkoutSetupPageState extends State<WorkoutSetupPage> {
       _durationMinutes = 10;
       _intensity = WorkoutIntensity.light;
     }
-    _loadProfile();
+    if (widget.diabetesEnabled) _loadProfile();
   }
 
   Future<void> _loadProfile() async {
@@ -319,17 +339,23 @@ class _WorkoutSetupPageState extends State<WorkoutSetupPage> {
     }
 
     final check = PreWorkoutCheck(
-      glucoseValue: _optionalDouble(_glucoseController.text),
+      glucoseValue: widget.diabetesEnabled
+          ? _optionalDouble(_glucoseController.text)
+          : null,
       glucoseUnit: _glucoseUnit,
       minutesSinceMeal: _optionalInt(_mealMinutesController.text),
-      usesHypoglycemiaRiskMedication: _usesRiskMedication,
+      usesHypoglycemiaRiskMedication:
+          widget.diabetesEnabled && _usesRiskMedication,
       hasWater: _hasWater,
-      hasFastCarbs: _hasFastCarbs,
-      completedFootCheck: _completedFootCheck,
+      hasFastCarbs: widget.diabetesEnabled && _hasFastCarbs,
+      completedFootCheck: !widget.diabetesEnabled || _completedFootCheck,
       hasConcerningSymptoms: _hasConcerningSymptoms,
       notes: _notesController.text.trim(),
     );
-    final safety = const ExerciseSafetyService().evaluate(check);
+    final safety = const ExerciseSafetyService().evaluate(
+      check,
+      diabetesEnabled: widget.diabetesEnabled,
+    );
     final shouldStart = await _showSafetyDialog(safety);
     if (!shouldStart || !mounted) {
       return;
@@ -374,6 +400,7 @@ class _WorkoutSetupPageState extends State<WorkoutSetupPage> {
           repository: widget.repository,
           draft: draft,
           result: result,
+          diabetesEnabled: widget.diabetesEnabled,
         ),
       ),
     );
@@ -404,10 +431,11 @@ class _WorkoutSetupPageState extends State<WorkoutSetupPage> {
                 child: Text('• $message'),
               ),
             const SizedBox(height: 4),
-            const Text(
-              'This checklist does not replace instructions from your diabetes care team.',
-              style: TextStyle(fontStyle: FontStyle.italic),
-            ),
+            if (widget.diabetesEnabled)
+              const Text(
+                'This checklist does not replace instructions from your diabetes care team.',
+                style: TextStyle(fontStyle: FontStyle.italic),
+              ),
           ],
         ),
         actions: [
@@ -515,7 +543,9 @@ class _WorkoutSetupPageState extends State<WorkoutSetupPage> {
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               title: const Text('This activity was planned'),
-              subtitle: const Text('Turn off for errands, chores, or unexpected activity.'),
+              subtitle: const Text(
+                'Turn off for errands, chores, or unexpected activity.',
+              ),
               value: _isPlanned,
               onChanged: (value) => setState(() => _isPlanned = value),
             ),
@@ -523,7 +553,8 @@ class _WorkoutSetupPageState extends State<WorkoutSetupPage> {
               contentPadding: EdgeInsets.zero,
               title: const Text('I consumed carbohydrates for this activity'),
               value: _consumedCarbohydrates,
-              onChanged: (value) => setState(() => _consumedCarbohydrates = value ?? false),
+              onChanged: (value) =>
+                  setState(() => _consumedCarbohydrates = value ?? false),
             ),
             const SizedBox(height: 28),
             Text(
@@ -531,22 +562,24 @@ class _WorkoutSetupPageState extends State<WorkoutSetupPage> {
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 4),
-            const Text(
-              'Glucose is optional. Use the targets and exercise plan provided by your care team.',
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _glucoseController,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
+            if (widget.diabetesEnabled) ...[
+              const Text(
+                'Glucose is optional. Use the targets and exercise plan provided by your care team.',
               ),
-              decoration: InputDecoration(
-                border: const OutlineInputBorder(),
-                labelText: 'Current glucose (optional)',
-                suffixText: _glucoseUnit,
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _glucoseController,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                decoration: InputDecoration(
+                  border: const OutlineInputBorder(),
+                  labelText: 'Current glucose (optional)',
+                  suffixText: _glucoseUnit,
+                ),
+                validator: _validateOptionalPositiveNumber,
               ),
-              validator: _validateOptionalPositiveNumber,
-            ),
+            ],
             const SizedBox(height: 12),
             TextFormField(
               controller: _mealMinutesController,
@@ -558,17 +591,18 @@ class _WorkoutSetupPageState extends State<WorkoutSetupPage> {
               validator: _validateOptionalPositiveNumber,
             ),
             const SizedBox(height: 8),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: const Text(
-                'I use insulin or medication that can cause lows',
+            if (widget.diabetesEnabled)
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text(
+                  'I use insulin or medication that can cause lows',
+                ),
+                subtitle: const Text('Ask your care team if you are unsure.'),
+                value: _usesRiskMedication,
+                onChanged: (value) {
+                  setState(() => _usesRiskMedication = value);
+                },
               ),
-              subtitle: const Text('Ask your care team if you are unsure.'),
-              value: _usesRiskMedication,
-              onChanged: (value) {
-                setState(() => _usesRiskMedication = value);
-              },
-            ),
             CheckboxListTile(
               contentPadding: EdgeInsets.zero,
               title: const Text('I have water available'),
@@ -577,22 +611,24 @@ class _WorkoutSetupPageState extends State<WorkoutSetupPage> {
                 setState(() => _hasWater = value ?? false);
               },
             ),
-            CheckboxListTile(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('I have fast-acting carbohydrates available'),
-              value: _hasFastCarbs,
-              onChanged: (value) {
-                setState(() => _hasFastCarbs = value ?? false);
-              },
-            ),
-            CheckboxListTile(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('I checked my footwear and feet'),
-              value: _completedFootCheck,
-              onChanged: (value) {
-                setState(() => _completedFootCheck = value ?? false);
-              },
-            ),
+            if (widget.diabetesEnabled)
+              CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('I have fast-acting carbohydrates available'),
+                value: _hasFastCarbs,
+                onChanged: (value) {
+                  setState(() => _hasFastCarbs = value ?? false);
+                },
+              ),
+            if (widget.diabetesEnabled)
+              CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('I checked my footwear and feet'),
+                value: _completedFootCheck,
+                onChanged: (value) {
+                  setState(() => _completedFootCheck = value ?? false);
+                },
+              ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               title: const Text('I have concerning symptoms right now'),
@@ -847,12 +883,14 @@ class WorkoutReviewPage extends StatefulWidget {
     required this.repository,
     required this.draft,
     required this.result,
+    this.diabetesEnabled = AppFeatures.diabetesEnabled,
   });
 
   final String userId;
   final ExerciseRepository repository;
   final WorkoutDraft draft;
   final ActiveWorkoutResult result;
+  final bool diabetesEnabled;
 
   @override
   State<WorkoutReviewPage> createState() => _WorkoutReviewPageState();
@@ -883,12 +921,14 @@ class _WorkoutReviewPageState extends State<WorkoutReviewPage> {
     setState(() => _saving = true);
     try {
       final review = PostWorkoutReview(
-        glucoseValue: _optionalDouble(_glucoseController.text),
+        glucoseValue: widget.diabetesEnabled
+            ? _optionalDouble(_glucoseController.text)
+            : null,
         glucoseUnit: widget.draft.preWorkout.glucoseUnit,
         energyLevel: _energy.round(),
         mood: _mood.round(),
         perceivedDifficulty: _difficulty.round(),
-        experiencedLow: _experiencedLow,
+        experiencedLow: widget.diabetesEnabled && _experiencedLow,
         notes: _notesController.text.trim(),
       );
       final session = WorkoutSession(
@@ -947,18 +987,19 @@ class _WorkoutReviewPageState extends State<WorkoutReviewPage> {
                 ),
               ),
               const SizedBox(height: 16),
-              TextFormField(
-                controller: _glucoseController,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
+              if (widget.diabetesEnabled)
+                TextFormField(
+                  controller: _glucoseController,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  decoration: InputDecoration(
+                    border: const OutlineInputBorder(),
+                    labelText: 'Ending glucose (optional)',
+                    suffixText: widget.draft.preWorkout.glucoseUnit,
+                  ),
+                  validator: _validateOptionalPositiveNumber,
                 ),
-                decoration: InputDecoration(
-                  border: const OutlineInputBorder(),
-                  labelText: 'Ending glucose (optional)',
-                  suffixText: widget.draft.preWorkout.glucoseUnit,
-                ),
-                validator: _validateOptionalPositiveNumber,
-              ),
               const SizedBox(height: 20),
               _RatingSlider(
                 label: 'Energy',
@@ -981,14 +1022,15 @@ class _WorkoutReviewPageState extends State<WorkoutReviewPage> {
                 value: _difficulty,
                 onChanged: (value) => setState(() => _difficulty = value),
               ),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('I experienced low glucose symptoms'),
-                value: _experiencedLow,
-                onChanged: (value) {
-                  setState(() => _experiencedLow = value);
-                },
-              ),
+              if (widget.diabetesEnabled)
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('I experienced low glucose symptoms'),
+                  value: _experiencedLow,
+                  onChanged: (value) {
+                    setState(() => _experiencedLow = value);
+                  },
+                ),
               TextFormField(
                 controller: _notesController,
                 maxLength: 500,
@@ -1017,10 +1059,12 @@ class WorkoutHistoryPage extends StatelessWidget {
     super.key,
     required this.userId,
     required this.repository,
+    this.diabetesEnabled = AppFeatures.diabetesEnabled,
   });
 
   final String userId;
   final ExerciseRepository repository;
+  final bool diabetesEnabled;
 
   @override
   Widget build(BuildContext context) {
@@ -1045,6 +1089,7 @@ class WorkoutHistoryPage extends StatelessWidget {
               final session = snapshot.data![index];
               return WorkoutSessionTile(
                 session: session,
+                diabetesEnabled: diabetesEnabled,
                 onDelete: () => repository.deleteSession(userId, session.id),
               );
             },
@@ -1056,10 +1101,16 @@ class WorkoutHistoryPage extends StatelessWidget {
 }
 
 class WorkoutSessionTile extends StatelessWidget {
-  const WorkoutSessionTile({super.key, required this.session, this.onDelete});
+  const WorkoutSessionTile({
+    super.key,
+    required this.session,
+    this.onDelete,
+    this.diabetesEnabled = AppFeatures.diabetesEnabled,
+  });
 
   final WorkoutSession session;
   final VoidCallback? onDelete;
+  final bool diabetesEnabled;
 
   @override
   Widget build(BuildContext context) {
@@ -1071,9 +1122,10 @@ class WorkoutSessionTile extends StatelessWidget {
         title: Text(session.activityName),
         subtitle: Text(
           '${_formatDate(session.startedAt)} • ${_formatDuration(Duration(seconds: session.actualDurationSeconds))}'
-          '${glucoseBefore != null && glucoseAfter != null ? '\nGlucose: ${_formatNumber(glucoseBefore)} → ${_formatNumber(glucoseAfter)} ${session.preWorkout.glucoseUnit}' : ''}',
+          '${diabetesEnabled && glucoseBefore != null && glucoseAfter != null ? '\nGlucose: ${_formatNumber(glucoseBefore)} → ${_formatNumber(glucoseAfter)} ${session.preWorkout.glucoseUnit}' : ''}',
         ),
-        isThreeLine: glucoseBefore != null && glucoseAfter != null,
+        isThreeLine:
+            diabetesEnabled && glucoseBefore != null && glucoseAfter != null,
         trailing: onDelete == null
             ? Text(session.intensity.label)
             : PopupMenuButton<String>(
@@ -1095,12 +1147,14 @@ class _ProfileProgressCard extends StatelessWidget {
     required this.repository,
     required this.activeMinutes,
     required this.strengthSessions,
+    required this.diabetesEnabled,
   });
 
   final String userId;
   final ExerciseRepository repository;
   final int activeMinutes;
   final int strengthSessions;
+  final bool diabetesEnabled;
 
   Future<void> _editProfile(
     BuildContext context,
@@ -1155,23 +1209,28 @@ class _ProfileProgressCard extends StatelessWidget {
                           : null;
                     },
                   ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
-                    initialValue: glucoseUnit,
-                    decoration: const InputDecoration(
-                      labelText: 'Glucose unit',
-                      border: OutlineInputBorder(),
+                  if (diabetesEnabled) ...[
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      initialValue: glucoseUnit,
+                      decoration: const InputDecoration(
+                        labelText: 'Glucose unit',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: const [
+                        DropdownMenuItem(value: 'mg/dL', child: Text('mg/dL')),
+                        DropdownMenuItem(
+                          value: 'mmol/L',
+                          child: Text('mmol/L'),
+                        ),
+                      ],
+                      onChanged: (value) {
+                        if (value != null) {
+                          setDialogState(() => glucoseUnit = value);
+                        }
+                      },
                     ),
-                    items: const [
-                      DropdownMenuItem(value: 'mg/dL', child: Text('mg/dL')),
-                      DropdownMenuItem(value: 'mmol/L', child: Text('mmol/L')),
-                    ],
-                    onChanged: (value) {
-                      if (value != null) {
-                        setDialogState(() => glucoseUnit = value);
-                      }
-                    },
-                  ),
+                  ],
                 ],
               ),
             ),
@@ -1221,6 +1280,7 @@ class _ProfileProgressCard extends StatelessWidget {
           strengthSessions: strengthSessions,
           strengthGoal: profile.weeklyStrengthGoal,
           onSettings: () => _editProfile(context, profile),
+          diabetesEnabled: diabetesEnabled,
         );
       },
     );
@@ -1234,6 +1294,7 @@ class _WeeklyProgressCard extends StatelessWidget {
     required this.strengthSessions,
     required this.strengthGoal,
     required this.onSettings,
+    required this.diabetesEnabled,
   });
 
   final int activeMinutes;
@@ -1241,6 +1302,7 @@ class _WeeklyProgressCard extends StatelessWidget {
   final int strengthSessions;
   final int strengthGoal;
   final VoidCallback onSettings;
+  final bool diabetesEnabled;
 
   @override
   Widget build(BuildContext context) {
@@ -1276,8 +1338,10 @@ class _WeeklyProgressCard extends StatelessWidget {
             const SizedBox(height: 12),
             Text('$strengthSessions of $strengthGoal strength sessions'),
             const SizedBox(height: 4),
-            const Text(
-              'Build up gradually and use goals agreed on with your care team.',
+            Text(
+              diabetesEnabled
+                  ? 'Build up gradually and use goals agreed on with your care team.'
+                  : 'Build up gradually and choose goals that feel sustainable.',
             ),
           ],
         ),

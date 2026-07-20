@@ -133,6 +133,16 @@ class GlucoseRepository {
     });
   }
 
+  /// Whether the user has any imported glucose data at all (LibreView or demo).
+  /// [saveImport] always writes a `glucoseImports` doc and [deleteSource]
+  /// removes them, so the presence of one doc is an exact, cheap proxy. Glucose
+  /// surfaces use this to stay hidden until the user actually has data.
+  Stream<bool> watchHasGlucoseData(String userId) => _user(userId)
+      .collection('glucoseImports')
+      .limit(1)
+      .snapshots()
+      .map((snapshot) => snapshot.docs.isNotEmpty);
+
   Stream<QuerySnapshot<Map<String, dynamic>>> watchImports(String userId) =>
       _user(userId)
           .collection('glucoseImports')

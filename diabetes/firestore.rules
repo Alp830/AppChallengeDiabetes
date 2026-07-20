@@ -56,6 +56,14 @@ service cloud.firestore {
       match /mealGroups/{groupId} {
         allow read, create, update, delete: if isOwner(userId);
       }
+
+      match /sleepLogs/{logId} {
+        allow read, create, update, delete: if isOwner(userId);
+      }
+
+      match /sleepSettings/{settingsId} {
+        allow read, create, update, delete: if isOwner(userId);
+      }
     }
   }
 }

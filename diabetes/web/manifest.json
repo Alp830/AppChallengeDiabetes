@@ -1,6 +1,6 @@
 {
-    "name": "diabetes",
-    "short_name": "diabetes",
+    "name": "Wellness Companion",
+    "short_name": "Wellness",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

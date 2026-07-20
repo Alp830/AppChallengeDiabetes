@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../../app_features.dart';
+import '../../cgm/data/glucose_repository.dart';
 import '../../cgm/screens/glucose_context_card.dart';
+import '../../sleep/screens/sleep_summary_card.dart';
 import '../data/exercise_repository.dart';
 import '../data/today_todo_repository.dart';
 import '../models/workout_session.dart';
@@ -23,6 +26,9 @@ class TodayDashboard extends StatefulWidget {
     this.onSaveTodos,
     this.onLogMeal,
     this.onImportGlucose,
+    this.onOpenSleep,
+    this.hasGlucoseStream,
+    this.diabetesEnabled = AppFeatures.diabetesEnabled,
   });
 
   final String userId;
@@ -37,6 +43,12 @@ class TodayDashboard extends StatefulWidget {
   final Future<void> Function(List<TodayTodo> items)? onSaveTodos;
   final VoidCallback? onLogMeal;
   final VoidCallback? onImportGlucose;
+  final VoidCallback? onOpenSleep;
+
+  /// Injectable for tests. When null, the glucose gate falls back to a live
+  /// [GlucoseRepository] stream — but only when the glucose slot is enabled.
+  final Stream<bool>? hasGlucoseStream;
+  final bool diabetesEnabled;
 
   @override
   State<TodayDashboard> createState() => _TodayDashboardState();
@@ -49,10 +61,22 @@ class _TodayDashboardState extends State<TodayDashboard> {
   late final Stream<TodayTodoState> _todoState;
   late final Future<void> Function(List<TodayTodo> items) _saveTodos;
 
+  /// Null when the glucose slot is disabled (no meal/import callbacks — e.g. in
+  /// tests), so the glucose presence stream is never subscribed off Firestore.
+  late final Stream<bool>? _hasGlucose;
+
   @override
   void initState() {
     super.initState();
     _today = widget.now ?? DateTime.now();
+    final glucoseEnabled =
+        widget.diabetesEnabled &&
+        widget.onLogMeal != null &&
+        widget.onImportGlucose != null;
+    _hasGlucose = !glucoseEnabled
+        ? null
+        : widget.hasGlucoseStream ??
+              GlucoseRepository().watchHasGlucoseData(widget.userId);
     final needsRepository =
         widget.todaySessionsStream == null ||
         widget.recentSessionsStream == null;
@@ -120,22 +144,48 @@ class _TodayDashboardState extends State<TodayDashboard> {
                           name: 'Reach 30 active minutes',
                         ),
                       ];
-                return _TodayDashboardContent(
-                  now: _today,
-                  userName: widget.userName,
-                  todaySessions: todaySnapshot.data!,
-                  recentSessions: recentSnapshot.data!,
-                  todos: todos,
-                  onSaveTodos: _saveTodos,
-                  onOpenExercise: widget.onOpenExercise,
-                  glucoseContext: widget.onLogMeal == null || widget.onImportGlucose == null
-                      ? null
-                      : GlucoseContextCard(
-                          userId: widget.userId,
-                          onLogMeal: widget.onLogMeal!,
-                          onOpenExercise: widget.onOpenExercise,
-                          onImport: widget.onImportGlucose!,
-                        ),
+
+                _TodayDashboardContent buildContent(bool hasGlucose) {
+                  return _TodayDashboardContent(
+                    now: _today,
+                    userName: widget.userName,
+                    todaySessions: todaySnapshot.data!,
+                    recentSessions: recentSnapshot.data!,
+                    todos: todos,
+                    onSaveTodos: _saveTodos,
+                    onOpenExercise: widget.onOpenExercise,
+                    diabetesEnabled: widget.diabetesEnabled,
+                    // The Glucose context card only appears once the user has
+                    // imported glucose data (LibreView or demo).
+                    glucoseContext:
+                        !hasGlucose ||
+                            widget.onLogMeal == null ||
+                            widget.onImportGlucose == null
+                        ? null
+                        : GlucoseContextCard(
+                            userId: widget.userId,
+                            onLogMeal: widget.onLogMeal!,
+                            onOpenExercise: widget.onOpenExercise,
+                            onImport: widget.onImportGlucose!,
+                          ),
+                    sleepSummary: widget.onOpenSleep == null
+                        ? null
+                        : SleepSummaryCard(
+                            userId: widget.userId,
+                            onOpenSleep: widget.onOpenSleep!,
+                            diabetesEnabled: widget.diabetesEnabled,
+                          ),
+                  );
+                }
+
+                final glucoseStream = _hasGlucose;
+                if (glucoseStream == null) {
+                  return buildContent(false);
+                }
+                return StreamBuilder<bool>(
+                  stream: glucoseStream,
+                  builder: (context, glucoseSnapshot) =>
+                      buildContent(glucoseSnapshot.data ?? false),
                 );
               },
             );
@@ -156,6 +206,8 @@ class _TodayDashboardContent extends StatelessWidget {
     required this.onSaveTodos,
     required this.onOpenExercise,
     required this.glucoseContext,
+    required this.sleepSummary,
+    required this.diabetesEnabled,
   });
 
   final DateTime now;
@@ -166,6 +218,8 @@ class _TodayDashboardContent extends StatelessWidget {
   final Future<void> Function(List<TodayTodo> items) onSaveTodos;
   final VoidCallback onOpenExercise;
   final Widget? glucoseContext;
+  final Widget? sleepSummary;
+  final bool diabetesEnabled;
 
   @override
   Widget build(BuildContext context) {
@@ -179,7 +233,10 @@ class _TodayDashboardContent extends StatelessWidget {
       todayActivityGoalMinutes,
     );
     final progress = (minutes / todayActivityGoalMinutes).clamp(0.0, 1.0);
-    final insights = const WorkoutInsightService().buildInsights(recentSessions);
+    final insights = const WorkoutInsightService().buildInsights(
+      recentSessions,
+      diabetesEnabled: diabetesEnabled,
+    );
 
     return ListView(
       key: const Key('todayDashboard'),
@@ -190,7 +247,10 @@ class _TodayDashboardContent extends StatelessWidget {
           style: Theme.of(context).textTheme.headlineSmall,
         ),
         const SizedBox(height: 4),
-        Text(_formatFullDate(now), style: Theme.of(context).textTheme.bodyLarge),
+        Text(
+          _formatFullDate(now),
+          style: Theme.of(context).textTheme.bodyLarge,
+        ),
         const SizedBox(height: 20),
         _FocusCard(
           minutes: minutes,
@@ -208,6 +268,10 @@ class _TodayDashboardContent extends StatelessWidget {
         if (glucoseContext != null) ...[
           const SizedBox(height: 16),
           glucoseContext!,
+        ],
+        if (sleepSummary != null) ...[
+          const SizedBox(height: 16),
+          sleepSummary!,
         ],
         const SizedBox(height: 24),
         Text('Up next', style: Theme.of(context).textTheme.titleLarge),
@@ -230,7 +294,10 @@ class _TodayDashboardContent extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 24),
-        Text("Today's checklist", style: Theme.of(context).textTheme.titleLarge),
+        Text(
+          "Today's checklist",
+          style: Theme.of(context).textTheme.titleLarge,
+        ),
         const SizedBox(height: 10),
         _TodoCard(
           key: ValueKey(todos.map((item) => item.id).join('|')),
@@ -299,7 +366,9 @@ class _TodoCardState extends State<_TodoCard> {
       if (!mounted) return;
       setState(() => _items = previous);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not save your checklist. Try again.')),
+        const SnackBar(
+          content: Text('Could not save your checklist. Try again.'),
+        ),
       );
     }
   }
@@ -510,7 +579,10 @@ class _FocusCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("Today's focus", style: Theme.of(context).textTheme.titleLarge),
+            Text(
+              "Today's focus",
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
             const SizedBox(height: 8),
             Text(message),
             const SizedBox(height: 16),
@@ -575,7 +647,10 @@ class _ActivityCard extends StatelessWidget {
                   : '$remaining minutes remaining',
             ),
             const SizedBox(height: 20),
-            Text('Today’s workouts', style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              'Today’s workouts',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             const SizedBox(height: 8),
             if (displayedSessions.isEmpty)
               const Text('No workouts recorded today yet.')
@@ -583,7 +658,9 @@ class _ActivityCard extends StatelessWidget {
               for (final session in displayedSessions)
                 ListTile(
                   contentPadding: EdgeInsets.zero,
-                  leading: const CircleAvatar(child: Icon(Icons.fitness_center)),
+                  leading: const CircleAvatar(
+                    child: Icon(Icons.fitness_center),
+                  ),
                   title: Text(session.activityName),
                   subtitle: Text(
                     '${(session.actualDurationSeconds / 60).round()} min • ${_formatTime(session.startedAt)}',
@@ -609,7 +686,11 @@ class _DashboardError extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.cloud_off, size: 48, color: Theme.of(context).colorScheme.error),
+            Icon(
+              Icons.cloud_off,
+              size: 48,
+              color: Theme.of(context).colorScheme.error,
+            ),
             const SizedBox(height: 12),
             const Text(
               'Could not load today’s activity. Check your connection and try again.',
@@ -635,17 +716,35 @@ String _displayName(String? name) {
 
 String _formatFullDate(DateTime date) {
   const weekdays = [
-    'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday',
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday',
+    'Sunday',
   ];
   const months = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December',
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
   ];
   return '${weekdays[date.weekday - 1]}, ${months[date.month - 1]} ${date.day}';
 }
 
 String _formatTime(DateTime date) {
-  final hour = date.hour == 0 ? 12 : (date.hour > 12 ? date.hour - 12 : date.hour);
+  final hour = date.hour == 0
+      ? 12
+      : (date.hour > 12 ? date.hour - 12 : date.hour);
   final minute = date.minute.toString().padLeft(2, '0');
   return '$hour:$minute ${date.hour >= 12 ? 'PM' : 'AM'}';
 }

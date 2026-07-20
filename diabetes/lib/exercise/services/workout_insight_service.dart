@@ -10,7 +10,10 @@ class WorkoutInsight {
 class WorkoutInsightService {
   const WorkoutInsightService();
 
-  List<WorkoutInsight> buildInsights(List<WorkoutSession> sessions) {
+  List<WorkoutInsight> buildInsights(
+    List<WorkoutSession> sessions, {
+    bool diabetesEnabled = true,
+  }) {
     if (sessions.length < 3) {
       return const [];
     }
@@ -30,14 +33,17 @@ class WorkoutInsightService {
       ),
     );
 
-    final pairedGlucose = recent
-        .where(
-          (session) =>
-              session.preWorkout.glucoseValue != null &&
-              session.postWorkout.glucoseValue != null &&
-              session.preWorkout.glucoseUnit == session.postWorkout.glucoseUnit,
-        )
-        .toList();
+    final pairedGlucose = diabetesEnabled
+        ? recent
+              .where(
+                (session) =>
+                    session.preWorkout.glucoseValue != null &&
+                    session.postWorkout.glucoseValue != null &&
+                    session.preWorkout.glucoseUnit ==
+                        session.postWorkout.glucoseUnit,
+              )
+              .toList()
+        : const <WorkoutSession>[];
     if (pairedGlucose.length >= 3) {
       final averageChange =
           pairedGlucose.fold<double>(0, (sum, session) {
@@ -60,9 +66,9 @@ class WorkoutInsightService {
       );
     }
 
-    final lows = recent
-        .where((session) => session.postWorkout.experiencedLow)
-        .length;
+    final lows = diabetesEnabled
+        ? recent.where((session) => session.postWorkout.experiencedLow).length
+        : 0;
     if (lows > 0) {
       insights.add(
         WorkoutInsight(

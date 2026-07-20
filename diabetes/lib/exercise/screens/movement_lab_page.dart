@@ -38,7 +38,13 @@ class MovementLabPage extends StatelessWidget {
             future: _analyze(snapshot.data!),
             builder: (context, responseSnapshot) {
               if (!responseSnapshot.hasData) return const Center(child: CircularProgressIndicator());
-              return _MovementLabView(responses: responseSnapshot.data!);
+              return StreamBuilder<bool>(
+                stream: _glucose.watchHasGlucoseData(userId),
+                builder: (context, glucoseSnapshot) => _MovementLabView(
+                  responses: responseSnapshot.data!,
+                  hasGlucose: glucoseSnapshot.data ?? false,
+                ),
+              );
             },
           );
         },
@@ -48,8 +54,12 @@ class MovementLabPage extends StatelessWidget {
 }
 
 class _MovementLabView extends StatelessWidget {
-  const _MovementLabView({required this.responses});
+  const _MovementLabView({required this.responses, required this.hasGlucose});
   final List<WorkoutResponse> responses;
+
+  /// Movement Lab is entirely a glucose x exercise view, so its sections only
+  /// appear once the user has imported glucose data.
+  final bool hasGlucose;
 
   @override
   Widget build(BuildContext context) {
@@ -68,38 +78,47 @@ class _MovementLabView extends StatelessWidget {
             ),
           ),
         ),
-        Text('Exercise Type Profiles', style: Theme.of(context).textTheme.titleLarge),
-        const SizedBox(height: 8),
-        if (responses.isEmpty)
-          const Text('Complete workouts and import glucose data to build profiles.')
-        else
-          for (final entry in grouped.entries)
-            _MovementProfile(type: entry.key, responses: entry.value),
-        const SizedBox(height: 20),
-        Text('Movement comparisons', style: Theme.of(context).textTheme.titleLarge),
-        const SizedBox(height: 8),
-        for (final feature in const [
-          'Movement Timing Comparison',
-          'During-and-After View',
-          'Post-Meal Movement Comparison',
-          'Intensity Signature',
-          'Workout Repeatability',
-          'Movement Break History',
-          'Workout Memory',
-          'Planned Versus Unplanned Activity',
-          'Late/Overnight Pattern',
-        ])
-          Card(
-            child: ListTile(
-              title: Text(feature),
-              subtitle: Text(_movementSummary(feature, responses)),
-              trailing: Icon(
-                responses.where((item) => item.hasCoverage).length >= 3
-                    ? Icons.check_circle_outline
-                    : Icons.hourglass_empty,
+        if (!hasGlucose)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 8),
+            child: Text(
+              'Import your glucose data to see how your workouts affect your glucose.',
+            ),
+          )
+        else ...[
+          Text('Exercise Type Profiles', style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: 8),
+          if (responses.isEmpty)
+            const Text('Complete workouts and import glucose data to build profiles.')
+          else
+            for (final entry in grouped.entries)
+              _MovementProfile(type: entry.key, responses: entry.value),
+          const SizedBox(height: 20),
+          Text('Movement comparisons', style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: 8),
+          for (final feature in const [
+            'Movement Timing Comparison',
+            'During-and-After View',
+            'Post-Meal Movement Comparison',
+            'Intensity Signature',
+            'Workout Repeatability',
+            'Movement Break History',
+            'Workout Memory',
+            'Planned Versus Unplanned Activity',
+            'Late/Overnight Pattern',
+          ])
+            Card(
+              child: ListTile(
+                title: Text(feature),
+                subtitle: Text(_movementSummary(feature, responses)),
+                trailing: Icon(
+                  responses.where((item) => item.hasCoverage).length >= 3
+                      ? Icons.check_circle_outline
+                      : Icons.hourglass_empty,
+                ),
               ),
             ),
-          ),
+        ],
       ],
     );
   }

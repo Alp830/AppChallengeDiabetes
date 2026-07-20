@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../app_features.dart';
 import '../../cgm/data/glucose_repository.dart';
 import '../../cgm/models/glucose_models.dart';
 import '../data/meal_repository.dart';
@@ -7,8 +8,13 @@ import '../models/meal_models.dart';
 import '../services/meal_analysis_service.dart';
 
 class MealLabPage extends StatefulWidget {
-  const MealLabPage({super.key, required this.userId});
+  const MealLabPage({
+    super.key,
+    required this.userId,
+    this.diabetesEnabled = AppFeatures.diabetesEnabled,
+  });
   final String userId;
+  final bool diabetesEnabled;
 
   @override
   State<MealLabPage> createState() => _MealLabPageState();
@@ -16,19 +22,23 @@ class MealLabPage extends StatefulWidget {
 
 class _MealLabPageState extends State<MealLabPage> {
   final _meals = MealRepository();
-  final _glucose = GlucoseRepository();
+  late final GlucoseRepository? _glucose = widget.diabetesEnabled
+      ? GlucoseRepository()
+      : null;
 
   Future<_MealLabData> _analyze(
     List<MealEvent> meals,
     List<MealGroup> groups,
     GlucoseSettings settings,
   ) async {
-    if (meals.isEmpty) return _MealLabData(meals: meals, groups: groups, fingerprints: const []);
+    if (meals.isEmpty) {
+      return _MealLabData(meals: meals, groups: groups, fingerprints: const []);
+    }
     final ordered = List<MealEvent>.of(meals)
       ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
     final start = ordered.first.timestamp.subtract(const Duration(minutes: 15));
     final end = ordered.last.timestamp.add(const Duration(hours: 4));
-    final readings = await _glucose.getRange(widget.userId, start, end);
+    final readings = await _glucose!.getRange(widget.userId, start, end);
     const service = MealAnalysisService();
     final fingerprints = <MealFingerprint>[];
     for (var index = 0; index < ordered.length; index++) {
@@ -36,12 +46,18 @@ class _MealLabPageState extends State<MealLabPage> {
         service.fingerprint(
           ordered[index],
           readings,
-          nextMealAt: index + 1 < ordered.length ? ordered[index + 1].timestamp : null,
+          nextMealAt: index + 1 < ordered.length
+              ? ordered[index + 1].timestamp
+              : null,
           settings: settings,
         ),
       );
     }
-    return _MealLabData(meals: ordered.reversed.toList(), groups: groups, fingerprints: fingerprints);
+    return _MealLabData(
+      meals: ordered.reversed.toList(),
+      groups: groups,
+      fingerprints: fingerprints,
+    );
   }
 
   @override
@@ -60,31 +76,68 @@ class _MealLabPageState extends State<MealLabPage> {
       body: StreamBuilder<List<MealEvent>>(
         stream: _meals.watchMeals(widget.userId),
         builder: (context, mealSnapshot) {
-          if (mealSnapshot.hasError) return const Center(child: Text('Could not load meals.'));
-          if (!mealSnapshot.hasData) return const Center(child: CircularProgressIndicator());
+          if (mealSnapshot.hasError) {
+            return const Center(child: Text('Could not load meals.'));
+          }
+          if (!mealSnapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
           return StreamBuilder<List<MealGroup>>(
             stream: _meals.watchGroups(widget.userId),
             builder: (context, groupSnapshot) {
-              if (!groupSnapshot.hasData) return const Center(child: CircularProgressIndicator());
-              return StreamBuilder<GlucoseSettings>(
-                stream: _glucose.watchSettings(widget.userId),
-                builder: (context, settingsSnapshot) => FutureBuilder<_MealLabData>(
-                  future: _analyze(
-                    mealSnapshot.data!,
-                    groupSnapshot.data!,
-                    settingsSnapshot.data ?? const GlucoseSettings(),
+              if (!groupSnapshot.hasData) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (!widget.diabetesEnabled) {
+                return _MealLabView(
+                  data: _MealLabData(
+                    meals: mealSnapshot.data!,
+                    groups: groupSnapshot.data!,
+                    fingerprints: const [],
                   ),
-                  builder: (context, dataSnapshot) {
-                    if (!dataSnapshot.hasData) return const Center(child: CircularProgressIndicator());
-                    return _MealLabView(
-                      data: dataSnapshot.data!,
-                      onDelete: (meal) => _meals.deleteMeal(widget.userId, meal),
-                      onUngroup: (meal) => _meals.unassignGroup(widget.userId, meal.id),
-                      onSaveTemplate: (meal) => _meals.saveTemplate(widget.userId, meal),
-                      onChangeGroup: (meal) => _chooseGroup(meal, groupSnapshot.data!),
-                    );
-                  },
-                ),
+                  hasGlucose: false,
+                  onDelete: (meal) => _meals.deleteMeal(widget.userId, meal),
+                  onUngroup: (meal) =>
+                      _meals.unassignGroup(widget.userId, meal.id),
+                  onSaveTemplate: (meal) =>
+                      _meals.saveTemplate(widget.userId, meal),
+                  onChangeGroup: (meal) =>
+                      _chooseGroup(meal, groupSnapshot.data!),
+                );
+              }
+              final glucose = _glucose!;
+              return StreamBuilder<GlucoseSettings>(
+                stream: glucose.watchSettings(widget.userId),
+                builder: (context, settingsSnapshot) =>
+                    FutureBuilder<_MealLabData>(
+                      future: _analyze(
+                        mealSnapshot.data!,
+                        groupSnapshot.data!,
+                        settingsSnapshot.data ?? const GlucoseSettings(),
+                      ),
+                      builder: (context, dataSnapshot) {
+                        if (!dataSnapshot.hasData) {
+                          return const Center(
+                            child: CircularProgressIndicator(),
+                          );
+                        }
+                        return StreamBuilder<bool>(
+                          stream: glucose.watchHasGlucoseData(widget.userId),
+                          builder: (context, glucoseSnapshot) => _MealLabView(
+                            data: dataSnapshot.data!,
+                            hasGlucose: glucoseSnapshot.data ?? false,
+                            onDelete: (meal) =>
+                                _meals.deleteMeal(widget.userId, meal),
+                            onUngroup: (meal) =>
+                                _meals.unassignGroup(widget.userId, meal.id),
+                            onSaveTemplate: (meal) =>
+                                _meals.saveTemplate(widget.userId, meal),
+                            onChangeGroup: (meal) =>
+                                _chooseGroup(meal, groupSnapshot.data!),
+                          ),
+                        );
+                      },
+                    ),
               );
             },
           );
@@ -128,7 +181,10 @@ class _MealLabPageState extends State<MealLabPage> {
         shrinkWrap: true,
         padding: const EdgeInsets.all(16),
         children: [
-          Text('Manage meal groups', style: Theme.of(context).textTheme.titleLarge),
+          Text(
+            'Manage meal groups',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
           const SizedBox(height: 8),
           if (groups.isEmpty) const Text('No AI meal groups yet.'),
           for (final group in groups)
@@ -175,8 +231,14 @@ class _MealLabPageState extends State<MealLabPage> {
           onChanged: (value) => name = value.trim(),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.of(context).pop(true), child: const Text('Save')),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Save'),
+          ),
         ],
       ),
     );
@@ -208,12 +270,17 @@ class _MealLabPageState extends State<MealLabPage> {
 class _MealLabView extends StatelessWidget {
   const _MealLabView({
     required this.data,
+    required this.hasGlucose,
     required this.onDelete,
     required this.onUngroup,
     required this.onSaveTemplate,
     required this.onChangeGroup,
   });
   final _MealLabData data;
+
+  /// Whether the user has imported glucose data. Gates the CGM fingerprint and
+  /// comparison sections; the meal library always shows.
+  final bool hasGlucose;
   final Future<void> Function(MealEvent meal) onDelete;
   final Future<void> Function(MealEvent meal) onUngroup;
   final Future<void> Function(MealEvent meal) onSaveTemplate;
@@ -222,9 +289,13 @@ class _MealLabView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final groupsById = {for (final group in data.groups) group.id: group};
-    final fingerprintsByMeal = {for (final item in data.fingerprints) item.meal.id: item};
+    final fingerprintsByMeal = {
+      for (final item in data.fingerprints) item.meal.id: item,
+    };
     final grouped = <String, List<MealFingerprint>>{};
-    for (final fingerprint in data.fingerprints.where((item) => item.meal.groupId != null)) {
+    for (final fingerprint in data.fingerprints.where(
+      (item) => item.meal.groupId != null,
+    )) {
       grouped.putIfAbsent(fingerprint.meal.groupId!, () => []).add(fingerprint);
     }
     return ListView(
@@ -248,11 +319,17 @@ class _MealLabView extends StatelessWidget {
               child: ListTile(
                 leading: meal.photoUrl == null
                     ? const CircleAvatar(child: Icon(Icons.restaurant))
-                    : CircleAvatar(backgroundImage: NetworkImage(meal.photoUrl!)),
+                    : CircleAvatar(
+                        backgroundImage: NetworkImage(meal.photoUrl!),
+                      ),
                 title: Text(meal.name),
                 subtitle: Text(
                   '${groupsById[meal.groupId]?.name ?? 'Ungrouped'} • ${meal.portion.name}'
-                  '${fingerprintsByMeal[meal.id]?.hasCoverage == true ? ' • CGM fingerprint ready' : ' • incomplete CGM coverage'}',
+                  '${!hasGlucose
+                      ? ''
+                      : fingerprintsByMeal[meal.id]?.hasCoverage == true
+                      ? ' • CGM fingerprint ready'
+                      : ' • incomplete CGM coverage'}',
                 ),
                 trailing: PopupMenuButton<String>(
                   onSelected: (value) {
@@ -263,29 +340,50 @@ class _MealLabView extends StatelessWidget {
                   },
                   itemBuilder: (context) => [
                     if (meal.groupId != null)
-                      const PopupMenuItem(value: 'ungroup', child: Text('Move out of group')),
+                      const PopupMenuItem(
+                        value: 'ungroup',
+                        child: Text('Move out of group'),
+                      ),
                     if (data.groups.isNotEmpty)
-                      const PopupMenuItem(value: 'group', child: Text('Change group')),
-                    const PopupMenuItem(value: 'template', child: Text('Save as quick-log template')),
-                    const PopupMenuItem(value: 'delete', child: Text('Delete meal')),
+                      const PopupMenuItem(
+                        value: 'group',
+                        child: Text('Change group'),
+                      ),
+                    const PopupMenuItem(
+                      value: 'template',
+                      child: Text('Save as quick-log template'),
+                    ),
+                    const PopupMenuItem(
+                      value: 'delete',
+                      child: Text('Delete meal'),
+                    ),
                   ],
                 ),
               ),
             ),
-        const SizedBox(height: 20),
-        Text('Meal Curve Fingerprints', style: Theme.of(context).textTheme.titleLarge),
-        const SizedBox(height: 8),
-        for (final entry in grouped.entries)
-          _GroupAnalysisCard(
-            name: groupsById[entry.key]?.name ?? 'Meal group',
-            fingerprints: entry.value,
+        // Fingerprints and comparisons are glucose-derived — only shown once
+        // the user has imported glucose data.
+        if (hasGlucose) ...[
+          const SizedBox(height: 20),
+          Text(
+            'Meal Curve Fingerprints',
+            style: Theme.of(context).textTheme.titleLarge,
           ),
-        if (grouped.isEmpty)
-          const Text('AI-group at least one meal and import matching glucose data to see fingerprints.'),
-        const SizedBox(height: 20),
-        Text('Comparisons', style: Theme.of(context).textTheme.titleLarge),
-        const SizedBox(height: 8),
-        _CapabilityGrid(grouped: grouped),
+          const SizedBox(height: 8),
+          for (final entry in grouped.entries)
+            _GroupAnalysisCard(
+              name: groupsById[entry.key]?.name ?? 'Meal group',
+              fingerprints: entry.value,
+            ),
+          if (grouped.isEmpty)
+            const Text(
+              'AI-group at least one meal and import matching glucose data to see fingerprints.',
+            ),
+          const SizedBox(height: 20),
+          Text('Comparisons', style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: 8),
+          _CapabilityGrid(grouped: grouped),
+        ],
       ],
     );
   }
@@ -301,13 +399,16 @@ class _GroupAnalysisCard extends StatelessWidget {
     final covered = fingerprints.where((item) => item.hasCoverage).toList();
     final averageRise = covered.isEmpty
         ? null
-        : covered.map((item) => item.riseMgDl!).reduce((a, b) => a + b) / covered.length;
+        : covered.map((item) => item.riseMgDl!).reduce((a, b) => a + b) /
+              covered.length;
     final delayed = covered.where((item) => item.delayedRise).length;
     final service = const MealAnalysisService();
     return Card(
       child: ExpansionTile(
         title: Text(name),
-        subtitle: Text('${service.evidenceLevel(covered.length)} • ${covered.length} supported events'),
+        subtitle: Text(
+          '${service.evidenceLevel(covered.length)} • ${covered.length} supported events',
+        ),
         childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         children: [
           if (averageRise == null)
@@ -315,9 +416,13 @@ class _GroupAnalysisCard extends StatelessWidget {
           else ...[
             Text('Average recorded rise: ${averageRise.round()} mg/dL.'),
             Text('Delayed largest rise: $delayed of ${covered.length} events.'),
-            Text('Response variability: ${service.consistency(covered).round()} mg/dL.'),
+            Text(
+              'Response variability: ${service.consistency(covered).round()} mg/dL.',
+            ),
             const SizedBox(height: 8),
-            const Text('Why am I seeing this? These values use the 15-minute baseline and up to four hours after each recorded meal.'),
+            const Text(
+              'Why am I seeing this? These values use the 15-minute baseline and up to four hours after each recorded meal.',
+            ),
           ],
         ],
       ),
@@ -400,7 +505,11 @@ String _comparisonSummary(
 }
 
 class _MealLabData {
-  const _MealLabData({required this.meals, required this.groups, required this.fingerprints});
+  const _MealLabData({
+    required this.meals,
+    required this.groups,
+    required this.fingerprints,
+  });
   final List<MealEvent> meals;
   final List<MealGroup> groups;
   final List<MealFingerprint> fingerprints;
