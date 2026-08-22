@@ -15,7 +15,108 @@ void main() {
     expect(enabled, contains('20-30 g protein'));
     expect(enabled, contains('50% produce'));
     expect(enabled, contains('250-500 mL'));
+    expect(enabled, contains("minority of the meal's calories"));
   });
+
+  test('pantry staples guidance always appears in the prompt', () {
+    final prompt = GeminiMealService.buildPromptForTesting(_request(false));
+    expect(prompt, contains('Pantry staples:'));
+    expect(prompt, contains('salt, pepper'));
+  });
+
+  test('substitution guidance only appears when using fridge items', () {
+    final withoutFridge = GeminiMealService.buildPromptForTesting(
+      _request(false),
+    );
+    final withFridge = GeminiMealService.buildPromptForTesting(
+      _request(false, useFridgeItems: true),
+    );
+
+    expect(withoutFridge, isNot(contains('reasonable substitute')));
+    expect(withFridge, contains('reasonable substitute'));
+  });
+
+  test('fridge items include expiry-derived freshness hints', () {
+    final now = DateTime.now();
+    final prompt = GeminiMealService.buildPromptForTesting(
+      _request(
+        false,
+        useFridgeItems: true,
+        fridgeItems: [
+          FoodItem(
+            name: 'Spinach',
+            amount: '1 bag',
+            foodType: FoodType.produce,
+            expiryDate: now.add(const Duration(days: 1)),
+          ),
+          FoodItem(
+            name: 'Yogurt',
+            amount: '1 cup',
+            foodType: FoodType.dairy,
+            expiryDate: now.subtract(const Duration(days: 2)),
+          ),
+          const FoodItem(
+            name: 'Rice',
+            amount: '2 cups',
+            foodType: FoodType.grain,
+          ),
+        ],
+      ),
+    );
+
+    expect(prompt, contains('expires in 1 day(s) — use soon'));
+    expect(prompt, contains('expired 2 day(s) ago'));
+    expect(prompt, contains('no expiry date given'));
+    expect(prompt, contains('use soon'));
+  });
+
+  test('cost anchor guidance appears in the budget section', () {
+    final prompt = GeminiMealService.buildPromptForTesting(_request(false));
+    expect(prompt, contains('estimatedCostPerServing'));
+    expect(prompt, contains('tend to be cheap per serving'));
+  });
+
+  test('MealRecommendation.fromJson parses new transparency fields', () {
+    final recommendation = MealRecommendation.fromJson({
+      'dishName': 'Veggie stir fry',
+      'imagePrompt': 'a plate of stir fry',
+      'reason': 'Uses what you have',
+      'ingredients': ['rice', 'spinach'],
+      'instructions': ['Cook rice', 'Stir fry spinach'],
+      'usedFridgeItems': ['Spinach', 'Rice'],
+      'estimatedCostPerServing': r'$2-3/serving',
+    });
+
+    expect(recommendation.usedFridgeItems, ['Spinach', 'Rice']);
+    expect(recommendation.estimatedCostPerServing, r'$2-3/serving');
+  });
+
+  test(
+    'MealRecommendation.fromJson defaults new fields when omitted or malformed',
+    () {
+      final withoutFields = MealRecommendation.fromJson({
+        'dishName': 'Veggie stir fry',
+        'imagePrompt': 'a plate of stir fry',
+        'reason': 'Uses what you have',
+        'ingredients': ['rice'],
+        'instructions': ['Cook rice'],
+      });
+      expect(withoutFields.usedFridgeItems, isEmpty);
+      expect(withoutFields.estimatedCostPerServing, isNull);
+
+      final mixedTypes = MealRecommendation.fromJson({
+        'dishName': 'Veggie stir fry',
+        'imagePrompt': 'a plate of stir fry',
+        'reason': 'Uses what you have',
+        'ingredients': ['rice'],
+        'instructions': ['Cook rice'],
+        'usedFridgeItems': ['Rice', 2, ''],
+        'estimatedCostPerServing': '',
+      });
+      expect(mixedTypes.usedFridgeItems, ['Rice', '2']);
+      expect(mixedTypes.estimatedCostPerServing, isNull);
+    },
+  );
 
   testWidgets('Agent loads and saves the remembered balance preference', (
     tester,
@@ -34,6 +135,9 @@ void main() {
     );
     await tester.pump();
 
+    await tester.tap(find.text('Preferences'));
+    await tester.pumpAndSettle();
+
     final checkbox = tester.widget<CheckboxListTile>(
       find.byKey(const Key('agentMealBalanceCheckbox')),
     );
@@ -45,8 +149,12 @@ void main() {
   });
 }
 
-AgentRequest _request(bool useMealBalance) => AgentRequest(
-  useFridgeItems: false,
+AgentRequest _request(
+  bool useMealBalance, {
+  bool useFridgeItems = false,
+  List<FoodItem> fridgeItems = const [],
+}) => AgentRequest(
+  useFridgeItems: useFridgeItems,
   hasBudget: false,
   budget: null,
   hasTimeShortage: false,
@@ -55,7 +163,7 @@ AgentRequest _request(bool useMealBalance) => AgentRequest(
   mealType: MealType.lunch,
   cookingExperience: CookingExperience.beginner,
   recommendationCount: 1,
-  fridgeItems: const [],
+  fridgeItems: fridgeItems,
   feedbackHistory: const [],
   useMealBalance: useMealBalance,
 );

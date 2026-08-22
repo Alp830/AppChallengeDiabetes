@@ -4,14 +4,18 @@ A new Flutter project.
 
 ## API key
 
-Put your Gemini API key in `.env`:
+Put your Gemini API key in `.env` (get one free at
+https://aistudio.google.com/apikey):
 
 ```env
 GEMINI_API_KEY=your_api_key_here
 ```
 
-The same key is used for Gemini meal text and generated meal images. The app
-still supports `--dart-define=GEMINI_API_KEY=...` as a fallback.
+The Gemini key powers everything that calls a model, including fridge photo
+recognition, which uses `gemini-3.1-pro-preview` (multimodal) to enumerate every food
+item in a photo. The value also supports `--dart-define=GEMINI_API_KEY=...` as a
+fallback. Note: `.env` is bundled as a Flutter asset, so a full re-run (not hot
+reload) is needed after changing it.
 
 ## Getting Started
 

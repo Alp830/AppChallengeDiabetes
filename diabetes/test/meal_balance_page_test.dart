@@ -51,9 +51,7 @@ void main() {
     );
   });
 
-  testWidgets('six compact circular buttons fit a narrow phone', (
-    tester,
-  ) async {
+  testWidgets('two MVP navigation buttons fit a narrow phone', (tester) async {
     tester.view.physicalSize = const Size(320, 640);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -65,7 +63,7 @@ void main() {
           bottomNavigationBar: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              for (var index = 0; index < 6; index++)
+              for (var index = 0; index < 2; index++)
                 CirclePageButton(
                   icon: Icons.circle,
                   label: 'Tab $index',
@@ -80,7 +78,7 @@ void main() {
     );
 
     expect(tester.takeException(), isNull);
-    expect(find.byType(CirclePageButton), findsNWidgets(6));
+    expect(find.byType(CirclePageButton), findsNWidgets(2));
   });
 
   testWidgets('plate percentages must be complete and total 100', (

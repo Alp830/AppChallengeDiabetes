@@ -38,9 +38,9 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Eggs'), findsOneWidget);
-    expect(find.text('12 pieces'), findsOneWidget);
 
-    await tester.tap(find.byTooltip('Edit food'));
+    // Editing is triggered by tapping the item card body.
+    await tester.tap(find.text('Eggs'));
     await tester.pumpAndSettle();
     await tester.enterText(
       find.widgetWithText(TextFormField, 'Food name'),
@@ -54,14 +54,14 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Milk'), findsOneWidget);
-    expect(find.text('1 carton'), findsOneWidget);
 
-    await tester.tap(find.byTooltip('Remove food'));
+    // Removal is the low-friction top-left [X] on the card.
+    await tester.tap(find.byTooltip('Delete item'));
     await tester.pumpAndSettle();
     expect(find.text('No food added yet.'), findsOneWidget);
   });
 
-  testWidgets('agent page shows configurable meal recommendation controls', (
+  testWidgets('agent page starts with a focused recommendation flow', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -75,7 +75,65 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('Recommend a Meal'), findsOneWidget);
+    expect(find.text('Preferences'), findsOneWidget);
+    expect(find.text('Set a budget'), findsNothing);
+    expect(find.text('Cooking difficulty'), findsNothing);
+    expect(find.text('Meal Lab'), findsNothing);
+    expect(find.text('Log this meal'), findsNothing);
+  });
+
+  testWidgets('agent preferences reveal and retain secondary settings', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(body: AgentPage(foodItems: [])),
+      ),
+    );
+
+    await tester.tap(find.text('Preferences'));
+    await tester.pumpAndSettle();
     expect(find.text('Set a budget'), findsOneWidget);
+    expect(find.text("I'm in a hurry"), findsOneWidget);
+    expect(find.text('Cooking difficulty'), findsOneWidget);
+
+    await tester.tap(find.text('Set a budget'));
+    await tester.pump();
+    expect(find.byKey(const Key('agentBudgetField')), findsOneWidget);
+    await tester.enterText(find.byKey(const Key('agentBudgetField')), '15');
+    await tester.ensureVisible(find.widgetWithText(FilledButton, 'Done'));
+    await tester.tap(find.widgetWithText(FilledButton, 'Done'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('agentPreferencesButton')));
+    await tester.pumpAndSettle();
+    expect(find.text('15'), findsOneWidget);
+  });
+
+  testWidgets('agent meal chip can change the meal type', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(body: AgentPage(foodItems: [])),
+      ),
+    );
+
+    await tester.tap(find.byKey(const Key('agentMealTypeChip')));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Snack'),
+      100,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.tap(find.text('Snack'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('agentMealTypeChip')),
+        matching: find.text('Snack'),
+      ),
+      findsOneWidget,
+    );
   });
 }
 
@@ -87,24 +145,16 @@ class _FridgeHarness extends StatefulWidget {
 }
 
 class _FridgeHarnessState extends State<_FridgeHarness> {
-  final List<FoodItem> _items = [];
+  final List<StoredFoodItem> _items = const [];
+  final List<FridgeChangeSet> committed = [];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: FridgePage(
-        foodItems: _items,
-        onAddFood: (foodItem) async {
-          setState(() => _items.add(foodItem));
-        },
-        onAddFoods: (foodItems) async {
-          setState(() => _items.addAll(foodItems));
-        },
-        onEditFood: (index, foodItem) async {
-          setState(() => _items[index] = foodItem);
-        },
-        onRemoveFood: (index) async {
-          setState(() => _items.removeAt(index));
+        initialItems: _items,
+        onCommit: (changes) async {
+          committed.add(changes);
         },
       ),
     );

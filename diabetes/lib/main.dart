@@ -14,18 +14,16 @@ import 'package:image_picker/image_picker.dart';
 import 'app_features.dart';
 import 'cgm/data/glucose_repository.dart';
 import 'cgm/screens/glucose_settings_page.dart';
-import 'exercise/data/exercise_repository.dart';
-import 'exercise/models/workout_session.dart';
-import 'exercise/screens/exercise_page.dart';
-import 'exercise/screens/today_dashboard.dart';
+import 'design/app_theme.dart';
+import 'design/spacing.dart';
 import 'firebase_options.dart';
+import 'fridge/selectable_fridge_grid.dart';
+import 'home/mvp_home_page.dart';
 import 'meals/data/meal_repository.dart';
 import 'meals/screens/meal_lab_page.dart';
-import 'meals/screens/meal_balance_page.dart';
 import 'meals/screens/meal_log_page.dart';
 import 'navigation/app_feature_navigation.dart';
 import 'sleep/data/sleep_repository.dart';
-import 'sleep/screens/sleep_page.dart';
 import 'sleep/services/evening_food_context_service.dart';
 import 'settings/data/app_preferences_repository.dart';
 
@@ -110,9 +108,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Wellness Companion',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-      ),
+      theme: AppTheme.light(),
       home: home ?? const AuthGate(),
     );
   }
@@ -134,7 +130,7 @@ class AuthGate extends StatelessWidget {
 
         final user = snapshot.data;
         if (user == null) {
-          return const NonLoggedInPage();
+          return const AuthPage();
         }
 
         if (!user.emailVerified) {
@@ -547,81 +543,6 @@ class _AuthPageState extends State<AuthPage> {
   }
 }
 
-class NonLoggedInPage extends StatelessWidget {
-  const NonLoggedInPage({super.key});
-
-  void _showLoginPage(BuildContext context) {
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (context) => const AuthPage()));
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: const Text('Welcome'),
-        actions: [
-          TextButton.icon(
-            onPressed: () => _showLoginPage(context),
-            icon: const Icon(Icons.login),
-            label: const Text('Log in'),
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        child: Align(
-          alignment: Alignment.topCenter,
-          child: Column(
-            children: [
-              ShaderMask(
-                blendMode: BlendMode.srcIn,
-                shaderCallback: (bounds) =>
-                    const LinearGradient(
-                      colors: [
-                        Color.fromARGB(255, 25, 118, 210),
-                        Color.fromARGB(255, 144, 202, 249),
-                        Colors.white,
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.topRight,
-                    ).createShader(
-                      Rect.fromLTWH(0, 0, bounds.width, bounds.height),
-                    ),
-                child: const Text(
-                  'Smarter eating starts here',
-                  style: TextStyle(color: Colors.white, fontSize: 32),
-                ),
-              ),
-
-              Image(
-                image: const AssetImage('assets/Placeholder.png'),
-                width: MediaQuery.sizeOf(context).width,
-                height: MediaQuery.sizeOf(context).height * 0.4,
-                fit: BoxFit.contain,
-              ),
-              Text(
-                'Filler filler filler Filler filler filler Filler filler filler',
-              ),
-              const SizedBox(height: 32),
-              Image(
-                image: const AssetImage('assets/Placeholder.png'),
-                width: MediaQuery.sizeOf(context).width,
-                height: MediaQuery.sizeOf(context).height * 0.4,
-                fit: BoxFit.contain,
-              ),
-              Text(
-                'Filler filler filler Filler filler filler Filler filler filler',
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class MainPage extends StatefulWidget {
   const MainPage({
     super.key,
@@ -639,20 +560,38 @@ class MainPage extends StatefulWidget {
 class _MainPageState extends State<MainPage> {
   static const _tabAnimationDuration = Duration(milliseconds: 238);
 
-  int _selectedIndex = 2;
+  // Home sits in the middle of the bottom nav, flanked by the two features.
+  static const _fridgeTabIndex = 0;
+  static const _homeTabIndex = 1;
+  static const _agentTabIndex = 2;
+
+  int _selectedIndex = _homeTabIndex;
   int _tabChangeDirection = 1;
+
+  /// Lets the host confirm/save/discard unsaved fridge edits before the user
+  /// navigates away from the Fridge tab.
+  final GlobalKey<FridgePageState> _fridgeKey = GlobalKey<FridgePageState>();
 
   static const List<_AppPage> _pages = [
     _AppPage(title: 'Fridge', icon: Icons.kitchen),
-    _AppPage(title: 'Exercise', icon: Icons.directions_run),
     _AppPage(title: 'Home', icon: Icons.home),
-    _AppPage(title: 'Balance', icon: Icons.donut_large),
     _AppPage(title: 'Agent', icon: Icons.smart_toy),
-    _AppPage(title: 'Sleep', icon: Icons.bedtime),
   ];
 
-  void _goToPage(int index) {
+  Future<void> _goToPage(int index) async {
     if (index == _selectedIndex) {
+      return;
+    }
+
+    // Guard unsaved fridge edits when leaving the Fridge tab.
+    if (_selectedIndex == _fridgeTabIndex) {
+      final fridgeState = _fridgeKey.currentState;
+      if (fridgeState != null && !await fridgeState.confirmLeave()) {
+        return;
+      }
+    }
+
+    if (!mounted) {
       return;
     }
 
@@ -672,11 +611,18 @@ class _MainPageState extends State<MainPage> {
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text(_pages[_selectedIndex].title),
+        centerTitle: false,
+        titleSpacing: 20,
+        toolbarHeight: 76,
+        title: _HeaderTitle(
+          eyebrow: _headerEyebrow(user),
+          title: _headerTitle(user),
+        ),
         actions: [
           if (widget.diabetesEnabled)
-            IconButton(
+            _HeaderAction(
+              tooltip: 'Glucose and data settings',
+              icon: Icons.tune,
               onPressed: () => AppFeatureNavigation.pushDiabetesPage<void>(
                 context,
                 diabetesEnabled: widget.diabetesEnabled,
@@ -685,14 +631,13 @@ class _MainPageState extends State<MainPage> {
                   diabetesEnabled: widget.diabetesEnabled,
                 ),
               ),
-              tooltip: 'Glucose and data settings',
-              icon: const Icon(Icons.settings),
             ),
-          IconButton(
-            onPressed: () => FirebaseAuth.instance.signOut(),
+          _HeaderAction(
             tooltip: 'Log out',
-            icon: const Icon(Icons.logout),
+            icon: Icons.logout,
+            onPressed: () => FirebaseAuth.instance.signOut(),
           ),
+          const SizedBox(width: Spacing.s8),
         ],
       ),
       body: AnimatedSwitcher(
@@ -746,50 +691,47 @@ class _MainPageState extends State<MainPage> {
     );
   }
 
+  String? _userDisplayName(User user) {
+    final displayName = user.displayName?.trim();
+    if (displayName != null && displayName.isNotEmpty) return displayName;
+    final emailName = user.email?.split('@').first.trim();
+    if (emailName != null && emailName.isNotEmpty) return emailName;
+    return null;
+  }
+
+  String _headerEyebrow(User user) {
+    switch (_selectedIndex) {
+      case _fridgeTabIndex:
+        return "Let's get cooking";
+      case _agentTabIndex:
+        return 'Your smart assistant';
+      default:
+        final hour = DateTime.now().hour;
+        if (hour < 12) return 'Good morning';
+        if (hour < 17) return 'Good afternoon';
+        return 'Good evening';
+    }
+  }
+
+  String _headerTitle(User user) {
+    switch (_selectedIndex) {
+      case _fridgeTabIndex:
+        return 'Your Fridge';
+      case _agentTabIndex:
+        return 'Meal Assistant';
+      default:
+        return _userDisplayName(user) ?? 'Welcome back';
+    }
+  }
+
   Widget _selectedPage(User user) {
-    if (_selectedIndex == 2) {
+    if (_selectedIndex == _homeTabIndex) {
       final displayName = user.displayName?.trim();
       final emailName = user.email?.split('@').first.trim();
-      return TodayDashboard(
+      return MvpHomePage(
         userId: user.uid,
         userName: displayName?.isNotEmpty == true ? displayName : emailName,
-        onOpenExercise: () => _goToPage(1),
-        onLogMeal: () => Navigator.of(context).push<void>(
-          MaterialPageRoute(
-            builder: (context) => MealLogPage(
-              userId: user.uid,
-              geminiApiKey: AppEnvironment.geminiApiKey,
-              diabetesEnabled: widget.diabetesEnabled,
-            ),
-          ),
-        ),
-        onImportGlucose: widget.diabetesEnabled
-            ? () => AppFeatureNavigation.pushDiabetesPage<void>(
-                context,
-                diabetesEnabled: widget.diabetesEnabled,
-                builder: (context) => GlucoseSettingsPage(
-                  userId: user.uid,
-                  diabetesEnabled: widget.diabetesEnabled,
-                ),
-              )
-            : null,
-        diabetesEnabled: widget.diabetesEnabled,
-        onOpenSleep: () => _goToPage(5),
-      );
-    }
-    if (_selectedIndex == 1) {
-      return ExercisePage(
-        userId: user.uid,
-        diabetesEnabled: widget.diabetesEnabled,
-      );
-    }
-    if (_selectedIndex == 3) {
-      return MealBalancePage(userId: user.uid);
-    }
-    if (_selectedIndex == 5) {
-      return SleepPage(
-        userId: user.uid,
-        diabetesEnabled: widget.diabetesEnabled,
+        onOpenFridge: () => _goToPage(_fridgeTabIndex),
       );
     }
 
@@ -818,15 +760,21 @@ class _MainPageState extends State<MainPage> {
             .map((storedFoodItem) => storedFoodItem.foodItem)
             .toList();
 
-        if (_selectedIndex == 0) {
+        if (_selectedIndex == _fridgeTabIndex) {
           return FridgePage(
-            foodItems: foodItems,
-            onAddFood: (foodItem) => _addFoodItem(user.uid, foodItem),
-            onAddFoods: (foodItems) => _addFoodItems(user.uid, foodItems),
-            onEditFood: (index, foodItem) =>
-                _editFoodItem(user.uid, fridgeItems[index].id, foodItem),
-            onRemoveFood: (index) =>
-                _removeFoodItem(user.uid, fridgeItems[index].id),
+            key: _fridgeKey,
+            initialItems: fridgeItems,
+            onCommit: (changes) => _commitFridgeChanges(user.uid, changes),
+            onAddSelectedToMeal: (foods) => Navigator.of(context).push<void>(
+              MaterialPageRoute(
+                builder: (context) => MealLogPage(
+                  userId: user.uid,
+                  geminiApiKey: AppEnvironment.geminiApiKey,
+                  initialName: foods.map((food) => food.name).join(', '),
+                  diabetesEnabled: widget.diabetesEnabled,
+                ),
+              ),
+            ),
           );
         }
 
@@ -835,17 +783,6 @@ class _MainPageState extends State<MainPage> {
           userId: user.uid,
           geminiApiKey: AppEnvironment.geminiApiKey,
           diabetesEnabled: widget.diabetesEnabled,
-          onStartPostMealWalk: () => Navigator.of(context).push<bool>(
-            MaterialPageRoute(
-              builder: (context) => WorkoutSetupPage(
-                userId: user.uid,
-                repository: ExerciseRepository(),
-                initialActivity: WorkoutActivityType.walking,
-                source: WorkoutSource.postMealWalk,
-                diabetesEnabled: widget.diabetesEnabled,
-              ),
-            ),
-          ),
         );
       },
     );
@@ -858,78 +795,411 @@ class _MainPageState extends State<MainPage> {
         .collection('fridgeItems');
   }
 
-  Future<void> _addFoodItem(String uid, FoodItem foodItem) {
-    return _fridgeItemsCollection(uid).add(foodItem.toFirestore());
-  }
+  /// Applies a batch of staged fridge edits atomically. Only invoked when the
+  /// user explicitly saves (or confirms saving on navigation away).
+  Future<void> _commitFridgeChanges(String uid, FridgeChangeSet changes) async {
+    if (changes.isEmpty) {
+      return;
+    }
 
-  Future<void> _addFoodItems(String uid, List<FoodItem> foodItems) async {
-    final batch = FirebaseFirestore.instance.batch();
     final collection = _fridgeItemsCollection(uid);
+    final batch = FirebaseFirestore.instance.batch();
 
-    for (final foodItem in foodItems) {
+    for (final foodItem in changes.additions) {
       batch.set(collection.doc(), foodItem.toFirestore());
+    }
+    changes.updates.forEach((id, foodItem) {
+      batch.update(
+        collection.doc(id),
+        foodItem.toFirestore(includeCreatedAt: false),
+      );
+    });
+    for (final id in changes.deletions) {
+      batch.delete(collection.doc(id));
     }
 
     await batch.commit();
   }
-
-  Future<void> _editFoodItem(String uid, String id, FoodItem foodItem) {
-    return _fridgeItemsCollection(
-      uid,
-    ).doc(id).update(foodItem.toFirestore(includeCreatedAt: false));
-  }
-
-  Future<void> _removeFoodItem(String uid, String id) {
-    return _fridgeItemsCollection(uid).doc(id).delete();
-  }
 }
 
-class FridgePage extends StatelessWidget {
-  const FridgePage({
-    super.key,
-    required this.foodItems,
-    required this.onAddFood,
-    required this.onAddFoods,
-    required this.onEditFood,
-    required this.onRemoveFood,
-  });
+/// Two-line contextual header title: a small muted eyebrow over a bold title.
+class _HeaderTitle extends StatelessWidget {
+  const _HeaderTitle({required this.eyebrow, required this.title});
 
-  final List<FoodItem> foodItems;
-  final Future<void> Function(FoodItem foodItem) onAddFood;
-  final Future<void> Function(List<FoodItem> foodItems) onAddFoods;
-  final Future<void> Function(int index, FoodItem foodItem) onEditFood;
-  final Future<void> Function(int index) onRemoveFood;
+  final String eyebrow;
+  final String title;
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          eyebrow,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.labelMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 1),
+        Text(
+          title,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.headlineSmall?.copyWith(fontSize: 22),
+        ),
+      ],
+    );
+  }
+}
+
+/// Soft circular icon button used for header actions.
+class _HeaderAction extends StatelessWidget {
+  const _HeaderAction({
+    required this.icon,
+    required this.tooltip,
+    required this.onPressed,
+  });
+
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(left: Spacing.s8),
+      child: Material(
+        color: scheme.surface,
+        shape: CircleBorder(side: BorderSide(color: scheme.outlineVariant)),
+        clipBehavior: Clip.antiAlias,
+        child: IconButton(
+          onPressed: onPressed,
+          tooltip: tooltip,
+          iconSize: 20,
+          color: scheme.onSurface,
+          icon: Icon(icon),
+        ),
+      ),
+    );
+  }
+}
+
+/// A staged batch of fridge edits, applied atomically when the user saves.
+class FridgeChangeSet {
+  const FridgeChangeSet({
+    required this.additions,
+    required this.updates,
+    required this.deletions,
+  });
+
+  /// New items with no backing document yet.
+  final List<FoodItem> additions;
+
+  /// Existing documents (keyed by id) whose contents changed.
+  final Map<String, FoodItem> updates;
+
+  /// Ids of documents removed from the working set.
+  final List<String> deletions;
+
+  bool get isEmpty =>
+      additions.isEmpty && updates.isEmpty && deletions.isEmpty;
+
+  int get count => additions.length + updates.length + deletions.length;
+}
+
+/// One item in the local working copy. [docId] is null for freshly added items
+/// that have not been persisted; [original] is the last-saved snapshot used to
+/// detect edits.
+class _FridgeDraft {
+  _FridgeDraft({required this.localId, this.docId, required this.item})
+    : original = item;
+
+  final int localId;
+  final String? docId;
+  final FoodItem original;
+  FoodItem item;
+}
+
+enum _UnsavedChoice { save, discard, cancel }
+
+/// The Fridge tab. Edits (add / edit / delete) are staged in a local working
+/// copy and only written to the backing store when the user explicitly saves.
+/// Deletion happens via the per-card delete button or multi-select — the old
+/// swipe-up "Ground" disposal mechanic has been removed.
+class FridgePage extends StatefulWidget {
+  const FridgePage({
+    super.key,
+    required this.initialItems,
+    required this.onCommit,
+    this.onAddSelectedToMeal,
+  });
+
+  /// The last-saved fridge contents from the backing store.
+  final List<StoredFoodItem> initialItems;
+
+  /// Persists the staged [FridgeChangeSet]. Called only on an explicit save.
+  final Future<void> Function(FridgeChangeSet changes) onCommit;
+
+  final Future<void> Function(List<FoodItem> foods)? onAddSelectedToMeal;
+
+  @override
+  State<FridgePage> createState() => FridgePageState();
+}
+
+class FridgePageState extends State<FridgePage> {
+  final List<_FridgeDraft> _drafts = [];
+  final Set<String> _baselineIds = {};
+  int _nextLocalId = 0;
+  bool _isDirty = false;
+  bool _isSaving = false;
+  int _selectionCount = 0;
+
+  /// Whether there are staged edits that have not been saved.
+  bool get isDirty => _isDirty;
+
+  @override
+  void initState() {
+    super.initState();
+    _seedFromInitial();
+  }
+
+  @override
+  void didUpdateWidget(covariant FridgePage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Adopt fresh data from the backing store only when there are no pending
+    // edits, so a background refresh never clobbers unsaved work.
+    if (!_isDirty && !identical(oldWidget.initialItems, widget.initialItems)) {
+      setState(_seedFromInitial);
+    }
+  }
+
+  void _seedFromInitial() {
+    _drafts
+      ..clear()
+      ..addAll(
+        widget.initialItems.map(
+          (stored) => _FridgeDraft(
+            localId: _nextLocalId++,
+            docId: stored.id,
+            item: stored.foodItem,
+          ),
+        ),
+      );
+    _baselineIds
+      ..clear()
+      ..addAll(widget.initialItems.map((stored) => stored.id));
+    _isDirty = false;
+  }
+
+  /// Items ranked by earliest expiration date (nulls last). The index into the
+  /// working [_drafts] list is preserved so edit/remove callbacks address the
+  /// correct draft.
+  List<MapEntry<int, FoodItem>> get _rankedItems {
+    final entries = [
+      for (var index = 0; index < _drafts.length; index++)
+        MapEntry(index, _drafts[index].item),
+    ];
+    entries.sort((a, b) {
+      final aDate = a.value.expiryDate;
+      final bDate = b.value.expiryDate;
+      if (aDate == null && bDate == null) return 0;
+      if (aDate == null) return 1;
+      if (bDate == null) return -1;
+      return aDate.compareTo(bDate);
+    });
+    return entries;
+  }
+
+  void _mutate(VoidCallback change) {
+    setState(() {
+      change();
+      _isDirty = true;
+    });
+  }
+
+  void _addDraft(FoodItem item) {
+    _mutate(
+      () => _drafts.add(_FridgeDraft(localId: _nextLocalId++, item: item)),
+    );
+  }
+
+  void _addDrafts(Iterable<FoodItem> items) {
+    _mutate(() {
+      for (final item in items) {
+        _drafts.add(_FridgeDraft(localId: _nextLocalId++, item: item));
+      }
+    });
+  }
+
+  void _editDraft(int index, FoodItem item) {
+    _mutate(() => _drafts[index].item = item);
+  }
+
+  void _removeDrafts(Iterable<int> indices) {
+    final ordered = indices.toList()..sort((a, b) => b.compareTo(a));
+    _mutate(() {
+      for (final index in ordered) {
+        _drafts.removeAt(index);
+      }
+    });
+  }
+
+  FridgeChangeSet _buildChangeSet() {
+    final additions = <FoodItem>[];
+    final updates = <String, FoodItem>{};
+    final remaining = <String>{};
+    for (final draft in _drafts) {
+      final docId = draft.docId;
+      if (docId == null) {
+        additions.add(draft.item);
+      } else {
+        remaining.add(docId);
+        if (!_sameFoodItem(draft.item, draft.original)) {
+          updates[docId] = draft.item;
+        }
+      }
+    }
+    final deletions = [
+      for (final id in _baselineIds)
+        if (!remaining.contains(id)) id,
+    ];
+    return FridgeChangeSet(
+      additions: additions,
+      updates: updates,
+      deletions: deletions,
+    );
+  }
+
+  /// Persists staged edits. Returns true when the fridge is left in a saved
+  /// (non-dirty) state — including the no-op case where nothing was pending.
+  Future<bool> save() async {
+    if (_isSaving) {
+      return false;
+    }
+
+    final changes = _buildChangeSet();
+    if (changes.isEmpty) {
+      if (mounted) {
+        setState(() => _isDirty = false);
+      }
+      return true;
+    }
+
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() => _isSaving = true);
+    try {
+      await widget.onCommit(changes);
+      if (!mounted) {
+        return true;
+      }
+      setState(() {
+        _isSaving = false;
+        _isDirty = false;
+      });
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Fridge changes saved.')),
+      );
+      return true;
+    } catch (error) {
+      if (!mounted) {
+        return false;
+      }
+      setState(() => _isSaving = false);
+      messenger.showSnackBar(
+        SnackBar(content: Text('Could not save changes: $error')),
+      );
+      return false;
+    }
+  }
+
+  /// Throws away staged edits and reverts to the last-saved contents.
+  void discard() {
+    setState(_seedFromInitial);
+  }
+
+  /// Called by the host before navigating away from the Fridge tab. Returns
+  /// true when it is safe to leave: either nothing was pending, or the user
+  /// chose to save or discard.
+  Future<bool> confirmLeave() async {
+    if (!_isDirty) {
+      return true;
+    }
+
+    final choice = await showDialog<_UnsavedChoice>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Save fridge changes?'),
+        content: const Text(
+          'You have unsaved changes to your fridge. Do you want to save them '
+          'before leaving?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () =>
+                Navigator.of(dialogContext).pop(_UnsavedChoice.cancel),
+            child: const Text('Keep editing'),
+          ),
+          TextButton(
+            key: const Key('fridgeDiscardChanges'),
+            onPressed: () =>
+                Navigator.of(dialogContext).pop(_UnsavedChoice.discard),
+            child: const Text('Discard'),
+          ),
+          FilledButton(
+            key: const Key('fridgeSaveChanges'),
+            onPressed: () =>
+                Navigator.of(dialogContext).pop(_UnsavedChoice.save),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+
+    switch (choice) {
+      case _UnsavedChoice.save:
+        return save();
+      case _UnsavedChoice.discard:
+        discard();
+        return true;
+      case _UnsavedChoice.cancel:
+      case null:
+        return false;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ranked = _rankedItems;
+
+    final selecting = _selectionCount > 0;
+
     return Stack(
       children: [
-        if (foodItems.isEmpty)
+        if (_drafts.isEmpty)
           const Center(child: Text('No food added yet.'))
         else
-          ListView(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
-            children: [
-              if (foodItems.isNotEmpty) ...[
-                Text(
-                  'Food Items',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 8),
-                for (var index = 0; index < foodItems.length; index++) ...[
-                  FoodItemTile(
-                    foodItem: foodItems[index],
-                    onEdit: () => _showEditFoodSheet(context, index),
-                    onRemove: () => onRemoveFood(index),
-                  ),
-                  const SizedBox(height: 12),
-                ],
-              ],
-            ],
+          SelectableFridgeGrid(
+            items: ranked,
+            onEdit: (index) => _showEditFoodSheet(context, index),
+            onRemoveSelected: (indices) async => _removeDrafts(indices),
+            onBulkAction: (action, foods) =>
+                _handleBulkAction(context, action, foods),
+            onSelectionCountChanged: (selectedCount) {
+              if (selectedCount != _selectionCount) {
+                setState(() => _selectionCount = selectedCount);
+              }
+            },
           ),
+        // Camera/add buttons. Lifted to clear the bottom selection toolbar.
         Positioned(
-          right: 16,
-          bottom: 16,
+          right: Spacing.margin,
+          bottom: selecting ? 104 : 24,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -939,7 +1209,7 @@ class FridgePage extends StatelessWidget {
                 tooltip: 'Take fridge photo',
                 child: const Icon(Icons.camera_alt),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: Spacing.s12),
               FloatingActionButton(
                 heroTag: 'addFood',
                 onPressed: () => _showAddFoodSheet(context),
@@ -949,12 +1219,58 @@ class FridgePage extends StatelessWidget {
             ],
           ),
         ),
+        // Save / discard controls for staged edits, pinned to the top-right.
+        if (_isDirty)
+          Positioned(
+            top: Spacing.s8,
+            right: Spacing.s12,
+            child: _FridgeSaveControls(
+              pendingCount: _buildChangeSet().count,
+              isSaving: _isSaving,
+              onDiscard: _isSaving ? null : discard,
+              onSave: _isSaving ? null : () => save(),
+            ),
+          ),
       ],
     );
   }
 
+  Future<void> _handleBulkAction(
+    BuildContext context,
+    FoodBulkAction action,
+    List<FoodItem> foods,
+  ) async {
+    if (action == FoodBulkAction.addToMeal ||
+        action == FoodBulkAction.saveMeal) {
+      final callback = widget.onAddSelectedToMeal;
+      if (callback != null) {
+        await callback(foods);
+        return;
+      }
+    }
+
+    final messenger = ScaffoldMessenger.of(context);
+    final message = switch (action) {
+      FoodBulkAction.compareCarbs ||
+      FoodBulkAction.totalCarbs ||
+      FoodBulkAction.totalCalories =>
+        'Nutrition values are not stored for these fridge items yet.',
+      FoodBulkAction.groceryList =>
+        'A grocery list has not been configured for this app yet.',
+      FoodBulkAction.addToMeal ||
+      FoodBulkAction.saveMeal => 'Sign in to add these foods to a saved meal.',
+      FoodBulkAction.delete => '',
+    };
+    if (message.isNotEmpty) {
+      messenger.showSnackBar(SnackBar(content: Text(message)));
+    }
+  }
+
   Future<void> _takeFridgePhoto(BuildContext context) async {
     final messenger = ScaffoldMessenger.of(context);
+
+    // The sheet lets the user choose between taking a live picture and uploading
+    // an existing screenshot/photo, so it handles both web and mobile.
     final imageBytes = await showModalBottomSheet<Uint8List>(
       context: context,
       isScrollControlled: true,
@@ -979,13 +1295,13 @@ class FridgePage extends StatelessWidget {
         return;
       }
 
-      await onAddFoods(detectedFoods);
+      _addDrafts(detectedFoods);
       messenger.showSnackBar(
         SnackBar(
           content: Text(
             detectedFoods.length == 1
-                ? 'Added 1 food item to your fridge.'
-                : 'Added ${detectedFoods.length} food items to your fridge.',
+                ? 'Added 1 item — remember to save.'
+                : 'Added ${detectedFoods.length} items — remember to save.',
           ),
         ),
       );
@@ -1005,7 +1321,7 @@ class FridgePage extends StatelessWidget {
     );
 
     if (foodItem != null) {
-      await onAddFood(foodItem);
+      _addDraft(foodItem);
     }
   }
 
@@ -1014,12 +1330,107 @@ class FridgePage extends StatelessWidget {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      builder: (context) => AddFoodSheet(foodItem: foodItems[index]),
+      builder: (context) => AddFoodSheet(foodItem: _drafts[index].item),
     );
 
     if (foodItem != null) {
-      await onEditFood(index, foodItem);
+      _editDraft(index, foodItem);
     }
+  }
+}
+
+bool _sameFoodItem(FoodItem a, FoodItem b) {
+  return a.name == b.name &&
+      a.amount == b.amount &&
+      a.foodType == b.foodType &&
+      a.description == b.description &&
+      a.expiryDate == b.expiryDate &&
+      _sameBytes(a.imageBytes, b.imageBytes);
+}
+
+bool _sameBytes(Uint8List? a, Uint8List? b) {
+  if (identical(a, b)) return true;
+  if (a == null || b == null) return false;
+  if (a.length != b.length) return false;
+  for (var index = 0; index < a.length; index++) {
+    if (a[index] != b[index]) return false;
+  }
+  return true;
+}
+
+/// Compact Save / Discard controls for staged fridge edits, shown at the
+/// top-right of the Fridge tab while there are unsaved changes.
+class _FridgeSaveControls extends StatelessWidget {
+  const _FridgeSaveControls({
+    required this.pendingCount,
+    required this.isSaving,
+    required this.onDiscard,
+    required this.onSave,
+  });
+
+  final int pendingCount;
+  final bool isSaving;
+  final VoidCallback? onDiscard;
+  final VoidCallback? onSave;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Material(
+      elevation: 3,
+      color: theme.colorScheme.surface,
+      borderRadius: BorderRadius.circular(999),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: Spacing.s8,
+          vertical: Spacing.s4,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Tooltip(
+              message: pendingCount == 1
+                  ? '1 unsaved change'
+                  : '$pendingCount unsaved changes',
+              child: Icon(
+                Icons.edit_note,
+                size: 20,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(width: Spacing.s4),
+            TextButton(
+              key: const Key('fridgeDiscardBar'),
+              onPressed: onDiscard,
+              style: TextButton.styleFrom(
+                minimumSize: const Size(0, 40),
+                padding: const EdgeInsets.symmetric(horizontal: Spacing.s12),
+              ),
+              child: const Text('Discard'),
+            ),
+            const SizedBox(width: Spacing.s4),
+            FilledButton(
+              key: const Key('fridgeSaveBar'),
+              onPressed: onSave,
+              style: FilledButton.styleFrom(
+                minimumSize: const Size(0, 40),
+                padding: const EdgeInsets.symmetric(horizontal: Spacing.s16),
+              ),
+              child: isSaving
+                  ? const SizedBox(
+                      height: 18,
+                      width: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Text('Save'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
@@ -1031,21 +1442,38 @@ class FridgeCameraSheet extends StatefulWidget {
 }
 
 class _FridgeCameraSheetState extends State<FridgeCameraSheet> {
+  final ImagePicker _imagePicker = ImagePicker();
   CameraController? _cameraController;
   Future<void>? _initializeCameraFuture;
   String? _cameraError;
   bool _isTakingPicture = false;
 
-  @override
-  void initState() {
-    super.initState();
-    _initializeCameraFuture = _initializeCamera();
-  }
+  /// The sheet opens on a two-option chooser; the live camera is only started
+  /// when the user explicitly taps "Take a picture".
+  bool _cameraStarted = false;
 
   @override
   void dispose() {
     _cameraController?.dispose();
     super.dispose();
+  }
+
+  void _startCamera() {
+    setState(() {
+      _cameraStarted = true;
+      _cameraError = null;
+      _initializeCameraFuture = _initializeCamera();
+    });
+  }
+
+  void _backToChooser() {
+    _cameraController?.dispose();
+    setState(() {
+      _cameraStarted = false;
+      _cameraController = null;
+      _initializeCameraFuture = null;
+      _cameraError = null;
+    });
   }
 
   Future<void> _initializeCamera() async {
@@ -1061,7 +1489,8 @@ class _FridgeCameraSheetState extends State<FridgeCameraSheet> {
       );
       final cameraController = CameraController(
         camera,
-        ResolutionPreset.medium,
+        // High resolution so small labels stay legible for the food scanner.
+        ResolutionPreset.veryHigh,
         enableAudio: false,
       );
 
@@ -1112,6 +1541,31 @@ class _FridgeCameraSheetState extends State<FridgeCameraSheet> {
     }
   }
 
+  /// Reliable fallback that works on web and mobile even when the live camera
+  /// can't be opened: pick an existing photo (or the OS camera-capture flow)
+  /// and hand its bytes back to the scanner.
+  Future<void> _uploadPhoto() async {
+    if (_isTakingPicture) {
+      return;
+    }
+    try {
+      final picked = await _imagePicker.pickImage(source: ImageSource.gallery);
+      if (picked == null) {
+        return;
+      }
+      final imageBytes = await picked.readAsBytes();
+      if (!mounted) {
+        return;
+      }
+      Navigator.of(context).pop(imageBytes);
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() => _cameraError = error.toString());
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return FractionallySizedBox(
@@ -1123,30 +1577,82 @@ class _FridgeCameraSheetState extends State<FridgeCameraSheet> {
           children: [
             Row(
               children: [
+                if (_cameraStarted)
+                  IconButton(
+                    onPressed: _backToChooser,
+                    tooltip: 'Back',
+                    icon: const Icon(Icons.arrow_back),
+                  ),
                 Expanded(
                   child: Text(
-                    'Take Fridge Photo',
+                    _cameraStarted ? 'Take a picture' : 'Add a fridge photo',
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                 ),
                 IconButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  tooltip: 'Close camera',
+                  tooltip: 'Close',
                   icon: const Icon(Icons.close),
                 ),
               ],
             ),
             const SizedBox(height: 12),
-            Expanded(child: _buildCameraPreview(context)),
-            const SizedBox(height: 16),
-            FilledButton.icon(
-              onPressed: _isTakingPicture ? null : _capturePhoto,
-              icon: const Icon(Icons.camera_alt),
-              label: Text(_isTakingPicture ? 'Scanning...' : 'Take Picture'),
+            Expanded(
+              child: _cameraStarted
+                  ? _buildCameraMode(context)
+                  : _buildChooser(context),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  /// The initial two-option screen: take a live picture, or upload an existing
+  /// screenshot/photo.
+  Widget _buildChooser(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          FilledButton.icon(
+            onPressed: _startCamera,
+            icon: const Icon(Icons.camera_alt),
+            label: const Text('Take a picture'),
+          ),
+          const SizedBox(height: Spacing.s12),
+          OutlinedButton.icon(
+            onPressed: _uploadPhoto,
+            icon: const Icon(Icons.photo_library_outlined),
+            label: const Text('Upload a screenshot/picture'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// The live-camera experience, with an upload fallback when the hardware
+  /// cannot be opened.
+  Widget _buildCameraMode(BuildContext context) {
+    final cameraReady = _cameraError == null;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Expanded(child: _buildCameraPreview(context)),
+        const SizedBox(height: 16),
+        if (cameraReady)
+          FilledButton.icon(
+            onPressed: _isTakingPicture ? null : _capturePhoto,
+            icon: const Icon(Icons.camera_alt),
+            label: Text(_isTakingPicture ? 'Scanning...' : 'Take Picture'),
+          )
+        else
+          FilledButton.icon(
+            onPressed: _isTakingPicture ? null : _uploadPhoto,
+            icon: const Icon(Icons.photo_library_outlined),
+            label: const Text('Upload a photo instead'),
+          ),
+      ],
     );
   }
 
@@ -1155,11 +1661,37 @@ class _FridgeCameraSheetState extends State<FridgeCameraSheet> {
     final initializeCameraFuture = _initializeCameraFuture;
 
     if (_cameraError != null) {
+      final theme = Theme.of(context);
       return Center(
-        child: Text(
-          'Camera unavailable: $_cameraError',
-          textAlign: TextAlign.center,
-          style: TextStyle(color: Theme.of(context).colorScheme.error),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: Spacing.s24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.videocam_off_outlined,
+                size: 48,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(height: Spacing.s12),
+              Text(
+                "Can't open the camera",
+                style: theme.textTheme.titleMedium,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: Spacing.s8),
+              Text(
+                'The camera is usually in use by another app (video call, '
+                'Spotify, OBS…) or blocked by your browser/OS. Close those and '
+                'reopen, or just upload a photo below — it works the same for '
+                'the food scanner.',
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
         ),
       );
     }
@@ -1210,6 +1742,7 @@ class _AddFoodSheetState extends State<AddFoodSheet> {
 
   Uint8List? _imageBytes;
   FoodType _foodType = FoodType.other;
+  DateTime? _expiryDate;
 
   bool get _isEditing => widget.foodItem != null;
 
@@ -1227,6 +1760,7 @@ class _AddFoodSheetState extends State<AddFoodSheet> {
     _descriptionController.text = foodItem.description ?? '';
     _imageBytes = foodItem.imageBytes;
     _foodType = foodItem.foodType;
+    _expiryDate = foodItem.expiryDate;
   }
 
   @override
@@ -1265,8 +1799,32 @@ class _AddFoodSheetState extends State<AddFoodSheet> {
             ? null
             : _descriptionController.text.trim(),
         imageBytes: _imageBytes,
+        expiryDate: _expiryDate,
       ),
     );
+  }
+
+  Future<void> _pickExpiryDate() async {
+    final now = DateTime.now();
+    final initial = _expiryDate ?? now;
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initial.isBefore(now) ? now : initial,
+      firstDate: DateTime(now.year - 1),
+      lastDate: DateTime(now.year + 5),
+    );
+
+    if (picked != null) {
+      setState(() {
+        _expiryDate = picked;
+      });
+    }
+  }
+
+  String _formatExpiryDate(DateTime date) {
+    final two = date.month.toString().padLeft(2, '0');
+    final day = date.day.toString().padLeft(2, '0');
+    return '${date.year}-$two-$day';
   }
 
   @override
@@ -1368,6 +1926,35 @@ class _AddFoodSheetState extends State<AddFoodSheet> {
                     _foodType = foodType;
                   });
                 },
+              ),
+              const SizedBox(height: 12),
+              InputDecorator(
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  labelText: 'Expiry date (optional)',
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        _expiryDate == null
+                            ? 'Not set'
+                            : _formatExpiryDate(_expiryDate!),
+                      ),
+                    ),
+                    if (_expiryDate != null)
+                      IconButton(
+                        tooltip: 'Clear expiry date',
+                        icon: const Icon(Icons.clear),
+                        onPressed: () => setState(() => _expiryDate = null),
+                      ),
+                    TextButton.icon(
+                      onPressed: _pickExpiryDate,
+                      icon: const Icon(Icons.event),
+                      label: Text(_expiryDate == null ? 'Pick date' : 'Change'),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 12),
               TextFormField(
@@ -1502,7 +2089,6 @@ class AgentPage extends StatefulWidget {
 }
 
 class _AgentPageState extends State<AgentPage> {
-  final _formKey = GlobalKey<FormState>();
   final _budgetController = TextEditingController();
   final _timeController = TextEditingController();
   final _preferencesController = TextEditingController();
@@ -1513,7 +2099,7 @@ class _AgentPageState extends State<AgentPage> {
   bool _hasTimeShortage = false;
   bool _useMealBalance = false;
   int _recommendationCount = 1;
-  MealType _mealType = MealType.breakfast;
+  late MealType _mealType;
   CookingExperience _cookingExperience = CookingExperience.beginner;
   AgentRequest? _lastRequest;
   List<MealRecommendation> _recommendations = const [];
@@ -1532,6 +2118,7 @@ class _AgentPageState extends State<AgentPage> {
   @override
   void initState() {
     super.initState();
+    _mealType = _defaultMealType(DateTime.now());
     final userId = widget.userId;
     if (userId != null) {
       _preferencesRepository =
@@ -1547,6 +2134,12 @@ class _AgentPageState extends State<AgentPage> {
     if (widget.diabetesEnabled && userId != null) {
       _loadOvernightSummary(userId);
     }
+  }
+
+  static MealType _defaultMealType(DateTime now) {
+    if (now.hour < 11) return MealType.breakfast;
+    if (now.hour < 16) return MealType.lunch;
+    return MealType.dinner;
   }
 
   Future<void> _loadOvernightSummary(String userId) async {
@@ -1592,10 +2185,6 @@ class _AgentPageState extends State<AgentPage> {
   }
 
   Future<void> _generateRecommendation() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
-
     final request = AgentRequest(
       useFridgeItems: _useFridgeItems,
       hasBudget: _hasBudget,
@@ -1614,6 +2203,201 @@ class _AgentPageState extends State<AgentPage> {
     );
 
     await _loadRecommendation(request);
+  }
+
+  Future<void> _showMealTypePicker() async {
+    final selected = await showModalBottomSheet<MealType>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) => SafeArea(
+        child: FractionallySizedBox(
+          heightFactor: 0.65,
+          child: Column(
+            children: [
+              Text('Meal type', style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox(height: Spacing.s8),
+              Expanded(
+                child: ListView(
+                  children: [
+                    for (final mealType in MealType.values)
+                      ListTile(
+                        leading: Icon(
+                          _mealType == mealType
+                              ? Icons.radio_button_checked
+                              : Icons.radio_button_off,
+                        ),
+                        title: Text(mealType.label),
+                        onTap: () => Navigator.pop(context, mealType),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (selected != null && mounted) {
+      setState(() => _mealType = selected);
+    }
+  }
+
+  Future<void> _showPreferences() async {
+    final preferencesFormKey = GlobalKey<FormState>();
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      showDragHandle: true,
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (context, setSheetState) {
+          void update(VoidCallback change) {
+            setState(change);
+            setSheetState(() {});
+          }
+
+          return Padding(
+            padding: EdgeInsets.fromLTRB(
+              Spacing.s16,
+              0,
+              Spacing.s16,
+              Spacing.s16 + MediaQuery.viewInsetsOf(context).bottom,
+            ),
+            child: Form(
+              key: preferencesFormKey,
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      'Preferences',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    const SizedBox(height: Spacing.s8),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Use items from my fridge'),
+                      subtitle: Text(
+                        widget.foodItems.isEmpty
+                            ? 'Your fridge is empty right now.'
+                            : '${widget.foodItems.length} items available',
+                      ),
+                      value: _useFridgeItems,
+                      onChanged: (value) =>
+                          update(() => _useFridgeItems = value),
+                    ),
+                    CheckboxListTile(
+                      key: const Key('agentMealBalanceCheckbox'),
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Balance my meal'),
+                      subtitle: const Text(
+                        'Include produce, protein, quality carbs, and fiber.',
+                      ),
+                      value: _useMealBalance,
+                      onChanged: (value) {
+                        _setUseMealBalance(value ?? false);
+                        setSheetState(() {});
+                      },
+                    ),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Set a budget'),
+                      value: _hasBudget,
+                      onChanged: (value) => update(() => _hasBudget = value),
+                    ),
+                    if (_hasBudget) ...[
+                      TextFormField(
+                        key: const Key('agentBudgetField'),
+                        controller: _budgetController,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                          border: OutlineInputBorder(),
+                          labelText: 'Budget',
+                          prefixText: r'$',
+                        ),
+                        validator: (value) =>
+                            value == null || value.trim().isEmpty
+                            ? 'Enter a budget or turn budget off'
+                            : null,
+                      ),
+                      const SizedBox(height: Spacing.s8),
+                    ],
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text("I'm in a hurry"),
+                      value: _hasTimeShortage,
+                      onChanged: (value) =>
+                          update(() => _hasTimeShortage = value),
+                    ),
+                    if (_hasTimeShortage) ...[
+                      TextFormField(
+                        key: const Key('agentTimeField'),
+                        controller: _timeController,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                          border: OutlineInputBorder(),
+                          labelText: 'Time available',
+                          suffixText: 'minutes',
+                        ),
+                        validator: (value) =>
+                            value == null || value.trim().isEmpty
+                            ? 'Enter your available time or turn this off'
+                            : null,
+                      ),
+                      const SizedBox(height: Spacing.s16),
+                    ],
+                    Text(
+                      'Cooking difficulty',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: Spacing.s8),
+                    Wrap(
+                      spacing: Spacing.s8,
+                      children: [
+                        for (final experience in CookingExperience.values)
+                          ChoiceChip(
+                            label: Text(experience.label),
+                            selected: _cookingExperience == experience,
+                            onSelected: (_) =>
+                                update(() => _cookingExperience = experience),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: Spacing.s16),
+                    Text(
+                      'Number of recommendations',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: Spacing.s8),
+                    SegmentedButton<int>(
+                      segments: const [
+                        ButtonSegment(value: 1, label: Text('1')),
+                        ButtonSegment(value: 2, label: Text('2')),
+                        ButtonSegment(value: 3, label: Text('3')),
+                        ButtonSegment(value: 4, label: Text('4')),
+                        ButtonSegment(value: 5, label: Text('5')),
+                      ],
+                      selected: {_recommendationCount},
+                      onSelectionChanged: (selection) =>
+                          update(() => _recommendationCount = selection.first),
+                    ),
+                    const SizedBox(height: Spacing.s24),
+                    FilledButton(
+                      onPressed: () {
+                        if (preferencesFormKey.currentState!.validate()) {
+                          Navigator.pop(sheetContext);
+                        }
+                      },
+                      child: const Text('Done'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
   }
 
   /// F5 · keep this dish, ask for one small optional balancing tweak. Reuses the
@@ -1689,303 +2473,82 @@ class _AgentPageState extends State<AgentPage> {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(Spacing.margin),
       children: [
-        if (widget.userId != null) ...[
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text('Meals', style: Theme.of(context).textTheme.titleLarge),
-                  const SizedBox(height: 8),
-                  Text(
-                    widget.diabetesEnabled
-                        ? 'Log what you ate and compare repeated meal experiences with imported glucose data.'
-                        : 'Log what you ate and compare repeated meal experiences over time.',
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: FilledButton.icon(
-                          onPressed: () => Navigator.of(context).push<void>(
-                            MaterialPageRoute(
-                              builder: (context) => MealLogPage(
-                                userId: widget.userId!,
-                                geminiApiKey: widget.geminiApiKey,
-                                diabetesEnabled: widget.diabetesEnabled,
-                              ),
-                            ),
-                          ),
-                          icon: const Icon(Icons.add),
-                          label: const Text('Log Meal'),
-                        ),
-                      ),
-                      if (widget.diabetesEnabled) ...[
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: () =>
-                                AppFeatureNavigation.pushDiabetesPage<void>(
-                                  context,
-                                  diabetesEnabled: widget.diabetesEnabled,
-                                  builder: (context) => MealLabPage(
-                                    userId: widget.userId!,
-                                    diabetesEnabled: widget.diabetesEnabled,
-                                  ),
-                                ),
-                            icon: const Icon(Icons.insights),
-                            label: const Text('Meal Lab'),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Meal recommendations',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: 8),
-        ],
-        Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Use items from my fridge'),
-                subtitle: Text(
-                  widget.foodItems.isEmpty
-                      ? 'Your fridge is empty right now.'
-                      : widget.foodItems.length == 1
-                      ? '1 item in your Fridge'
-                      : "${widget.foodItems.length} items in your Fridge",
-                ),
-                value: _useFridgeItems,
-                onChanged: (value) {
-                  setState(() {
-                    _useFridgeItems = value;
-                  });
-                },
-              ),
-              CheckboxListTile(
-                key: const Key('agentMealBalanceCheckbox'),
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Build recommendations around meal balance'),
-                subtitle: const Text(
-                  'Aim for produce, protein, quality carbs, fiber, and an unsweetened drink.',
-                ),
-                value: _useMealBalance,
-                onChanged: (value) => _setUseMealBalance(value ?? false),
-              ),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Set a budget'),
-                subtitle: const Text('Turn this off if there is no budget.'),
-                value: _hasBudget,
-                onChanged: (value) {
-                  setState(() {
-                    _hasBudget = value;
-                  });
-                },
-              ),
-
-              if (_hasBudget) ...[
-                const SizedBox(height: 8),
-                TextFormField(
-                  controller: _budgetController,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    border: OutlineInputBorder(),
-                    labelText: 'Budget',
-                    prefixText: r'$',
-                  ),
-                  validator: (value) {
-                    if (!_hasBudget) {
-                      return null;
-                    }
-
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Enter a budget or turn budget off';
-                    }
-
-                    return null;
-                  },
-                ),
-              ],
-
-              const SizedBox(height: 16),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Set a time shortage'),
-                subtitle: const Text('Turn this on if you have limited time.'),
-                value: _hasTimeShortage,
-                onChanged: (value) {
-                  setState(() {
-                    _hasTimeShortage = value;
-                  });
-                },
-              ),
-
-              if (_hasTimeShortage) ...[
-                const SizedBox(height: 8),
-                TextFormField(
-                  controller: _timeController,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    border: OutlineInputBorder(),
-                    labelText: 'Time available',
-                    suffixText: 'minutes',
-                  ),
-                  validator: (value) {
-                    if (!_hasTimeShortage) {
-                      return null;
-                    }
-
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Enter the time you have or turn this off';
-                    }
-
-                    return null;
-                  },
-                ),
-              ],
-
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _preferencesController,
-                minLines: 2,
-                maxLines: 4,
-                textCapitalization: TextCapitalization.sentences,
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  labelText: 'What do you want to eat?',
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Tell the agent what kinds of food you like';
-                  }
-
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'What are you planning for?',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                children: [
-                  for (final mealType in MealType.values)
-                    ChoiceChip(
-                      label: Text(mealType.label),
-                      selected: _mealType == mealType,
-                      onSelected: (selected) {
-                        if (!selected) {
-                          return;
-                        }
-
-                        setState(() {
-                          _mealType = mealType;
-                        });
-                      },
-                    ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'What difficulty of food do you want to cook?',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                children: [
-                  for (final experience in CookingExperience.values)
-                    ChoiceChip(
-                      label: Text(experience.label),
-                      selected: _cookingExperience == experience,
-                      onSelected: (selected) {
-                        if (!selected) {
-                          return;
-                        }
-
-                        setState(() {
-                          _cookingExperience = experience;
-                        });
-                      },
-                    ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'How many recommendations do you want?',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: 8),
-              SegmentedButton<int>(
-                segments: const [
-                  ButtonSegment(value: 1, label: Text('1')),
-                  ButtonSegment(value: 2, label: Text('2')),
-                  ButtonSegment(value: 3, label: Text('3')),
-                  ButtonSegment(value: 4, label: Text('4')),
-                  ButtonSegment(value: 5, label: Text('5')),
-                ],
-                selected: {_recommendationCount},
-                onSelectionChanged: (selection) {
-                  setState(() {
-                    _recommendationCount = selection.first;
-                  });
-                },
-              ),
-              const SizedBox(height: 16),
-              FilledButton.icon(
-                key: const Key('recommendMealButton'),
-                onPressed: _isLoadingRecommendation
-                    ? null
-                    : _generateRecommendation,
-                icon: const Icon(Icons.auto_awesome),
-                label: Text(
-                  _isLoadingRecommendation ? 'Thinking...' : 'Recommend a Meal',
-                ),
-              ),
-              if (_isLoadingRecommendation) ...[
-                const SizedBox(height: 12),
-                const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
-                    SizedBox(width: 12),
-                    Text('Choosing a healthy budget meal...'),
-                  ],
-                ),
-              ],
-            ],
+        TextFormField(
+          key: const Key('agentFoodPrompt'),
+          controller: _preferencesController,
+          minLines: 2,
+          maxLines: 4,
+          textCapitalization: TextCapitalization.sentences,
+          decoration: const InputDecoration(
+            border: OutlineInputBorder(),
+            labelText: 'What do you want to eat?',
+            hintText: 'e.g., Something with eggs',
           ),
         ),
+        const SizedBox(height: Spacing.s16),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: ActionChip(
+            key: const Key('agentMealTypeChip'),
+            avatar: const Icon(Icons.schedule, size: 18),
+            label: Text(_mealType.label),
+            onPressed: _showMealTypePicker,
+          ),
+        ),
+        const SizedBox(height: Spacing.s16),
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton.icon(
+            key: const Key('recommendMealButton'),
+            onPressed: _isLoadingRecommendation
+                ? null
+                : _generateRecommendation,
+            icon: const Icon(Icons.auto_awesome),
+            label: Text(
+              _isLoadingRecommendation ? 'Thinking...' : 'Recommend a Meal',
+            ),
+          ),
+        ),
+        const SizedBox(height: Spacing.s8),
+        Align(
+          alignment: Alignment.center,
+          child: TextButton.icon(
+            key: const Key('agentPreferencesButton'),
+            onPressed: _isLoadingRecommendation ? null : _showPreferences,
+            icon: const Icon(Icons.tune),
+            label: const Text('Preferences'),
+          ),
+        ),
+        if (_isLoadingRecommendation) ...[
+          const SizedBox(height: Spacing.s12),
+          Semantics(
+            liveRegion: true,
+            label: 'Finding a meal for you',
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                SizedBox(width: Spacing.s12),
+                Flexible(child: Text('Finding a meal for you...')),
+              ],
+            ),
+          ),
+        ],
         if (_recommendationError != null) ...[
-          const SizedBox(height: 16),
+          const SizedBox(height: Spacing.s16),
           Text(
             _recommendationError!,
             style: TextStyle(color: Theme.of(context).colorScheme.error),
           ),
         ],
         if (_recommendations.isNotEmpty) ...[
-          const SizedBox(height: 24),
+          const SizedBox(height: Spacing.s24),
           for (final recommendation in _recommendations) ...[
             MealRecommendationCard(
               recommendation: recommendation,
@@ -2007,9 +2570,24 @@ class _AgentPageState extends State<AgentPage> {
                       ),
                     ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: Spacing.s16),
           ],
-          const SizedBox(height: 16),
+          if (widget.userId != null && widget.diabetesEnabled) ...[
+            OutlinedButton.icon(
+              key: const Key('agentMealLabButton'),
+              onPressed: () => AppFeatureNavigation.pushDiabetesPage<void>(
+                context,
+                diabetesEnabled: widget.diabetesEnabled,
+                builder: (context) => MealLabPage(
+                  userId: widget.userId!,
+                  diabetesEnabled: widget.diabetesEnabled,
+                ),
+              ),
+              icon: const Icon(Icons.insights),
+              label: const Text('Meal Lab'),
+            ),
+            const SizedBox(height: Spacing.s16),
+          ],
           TextFormField(
             key: const Key('agentFeedbackField'),
             controller: _feedbackController,
@@ -2021,7 +2599,7 @@ class _AgentPageState extends State<AgentPage> {
               labelText: 'What should be different?',
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: Spacing.s12),
           OutlinedButton.icon(
             onPressed: _suggestAnotherMeal,
             icon: const Icon(Icons.refresh),
@@ -2097,6 +2675,15 @@ class MealRecommendationCard extends StatelessWidget {
                 ],
                 const SizedBox(height: 8),
                 Text(recommendation.reason),
+                if (recommendation.usedFridgeItems.isNotEmpty ||
+                    recommendation.estimatedCostPerServing != null) ...[
+                  const SizedBox(height: 8),
+                  _FridgeAndCostRow(
+                    usedFridgeItems: recommendation.usedFridgeItems,
+                    estimatedCostPerServing:
+                        recommendation.estimatedCostPerServing,
+                  ),
+                ],
                 if (diabetesEnabled && recommendation.glucoseNote != null) ...[
                   const SizedBox(height: 12),
                   _GlucoseNoteChip(note: recommendation.glucoseNote!),
@@ -2229,6 +2816,70 @@ class _EveningFitChip extends StatelessWidget {
   }
 }
 
+/// Transparency row showing which fridge items this dish uses and a rough
+/// per-serving cost estimate. Purely informational — hidden entirely when
+/// the model provided neither field.
+class _FridgeAndCostRow extends StatelessWidget {
+  const _FridgeAndCostRow({
+    required this.usedFridgeItems,
+    required this.estimatedCostPerServing,
+  });
+
+  final List<String> usedFridgeItems;
+  final String? estimatedCostPerServing;
+
+  @override
+  Widget build(BuildContext context) {
+    final chips = <Widget>[];
+    if (usedFridgeItems.isNotEmpty) {
+      chips.add(
+        _InfoPill(
+          icon: Icons.kitchen_outlined,
+          label: 'From your fridge: ${usedFridgeItems.join(', ')}',
+        ),
+      );
+    }
+    if (estimatedCostPerServing != null) {
+      chips.add(
+        _InfoPill(icon: Icons.payments_outlined, label: estimatedCostPerServing!),
+      );
+    }
+    return Wrap(spacing: 8, runSpacing: 8, children: chips);
+  }
+}
+
+class _InfoPill extends StatelessWidget {
+  const _InfoPill({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: theme.colorScheme.onSurfaceVariant),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class CirclePageButton extends StatelessWidget {
   static const _animationDuration = Duration(milliseconds: 187);
 
@@ -2319,6 +2970,7 @@ class FoodItem {
     required this.foodType,
     this.description,
     this.imageBytes,
+    this.expiryDate,
   });
 
   final String name;
@@ -2327,18 +2979,43 @@ class FoodItem {
   final String? description;
   final Uint8List? imageBytes;
 
+  /// When this item is expected to spoil. Drives the neutral expiration-date
+  /// ranking and the freshness status shown on the fridge card. Null when
+  /// unknown (e.g. legacy items or an AI scan without an estimate).
+  final DateTime? expiryDate;
+
+  FoodItem copyWith({
+    String? name,
+    String? amount,
+    FoodType? foodType,
+    String? description,
+    Uint8List? imageBytes,
+    DateTime? expiryDate,
+  }) {
+    return FoodItem(
+      name: name ?? this.name,
+      amount: amount ?? this.amount,
+      foodType: foodType ?? this.foodType,
+      description: description ?? this.description,
+      imageBytes: imageBytes ?? this.imageBytes,
+      expiryDate: expiryDate ?? this.expiryDate,
+    );
+  }
+
   Map<String, dynamic> toFirestore({bool includeCreatedAt = true}) {
     return {
       'name': name,
       'amount': amount,
       'foodType': foodType.label,
       'description': description,
+      'expiryDate': expiryDate == null ? null : Timestamp.fromDate(expiryDate!),
       if (includeCreatedAt) 'createdAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
     };
   }
 
   factory FoodItem.fromFirestore(Map<String, dynamic> data) {
+    final expiry = data['expiryDate'];
     return FoodItem(
       name: (data['name'] ?? '').toString(),
       amount: (data['amount'] ?? '').toString(),
@@ -2346,6 +3023,7 @@ class FoodItem {
       description: (data['description'] ?? '').toString().trim().isEmpty
           ? null
           : (data['description'] ?? '').toString(),
+      expiryDate: expiry is Timestamp ? expiry.toDate() : null,
     );
   }
 }
@@ -2479,59 +3157,81 @@ class AgentRequest {
 
 class FridgePhotoFoodAgent {
   static String get _apiKey => AppEnvironment.geminiApiKey;
-  static const _model = 'gemini-3-flash-preview';
 
-  static Future<List<FoodItem>> detectFoods(Uint8List imageBytes) async {
-    if (_apiKey.isEmpty) {
+  /// Gemini 3.1 Pro — strongest vision + label-reading on the Gemini API
+  /// (official gemini-2.5-pro successor). Needed because flash-tier models
+  /// misread uncommon foods (e.g. dried linden flowers as "bread").
+  /// Fallback if this preview ID is retired or costs must drop:
+  /// 'gemini-3.6-flash' (stable, ~10x cheaper).
+  static const model = 'gemini-3.1-pro-preview';
+  static const endpoint =
+      'https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent';
+
+  static Future<List<FoodItem>> detectFoods(
+    Uint8List imageBytes, {
+    http.Client? client,
+    String? apiKey,
+  }) async {
+    final token = apiKey ?? _apiKey;
+    if (token.isEmpty) {
       throw Exception('Missing GEMINI_API_KEY');
     }
 
-    final response = await http.post(
-      Uri.parse(
-        'https://generativelanguage.googleapis.com/v1beta/models/$_model:generateContent',
-      ),
-      headers: {'Content-Type': 'application/json', 'x-goog-api-key': _apiKey},
+    final response = await (client ?? http.Client()).post(
+      Uri.parse(endpoint),
+      headers: {'Content-Type': 'application/json', 'x-goog-api-key': token},
       body: jsonEncode({
         'contents': [
           {
             'parts': [
-              {'text': _buildPrompt()},
               {
-                'inlineData': {
-                  'mimeType': 'image/jpeg',
+                'inline_data': {
+                  'mime_type': 'image/jpeg',
                   'data': base64Encode(imageBytes),
                 },
               },
+              {'text': _buildPrompt()},
             ],
           },
         ],
         'generationConfig': {
-          'temperature': 0.2,
+          'temperature': 0.1,
+          // High media resolution spends more image tokens so fine texture
+          // (rice grains vs flour powder) and small label text stay visible.
+          'mediaResolution': 'MEDIA_RESOLUTION_HIGH',
+          // Deep reasoning helps with unlabeled/ambiguous containers.
+          'thinkingConfig': {'thinkingLevel': 'high'},
+          // Large enough that thinking plus a full grocery bag enumeration
+          // cannot truncate the JSON list mid-array.
+          'maxOutputTokens': 16384,
+          // Force a clean, schema-validated JSON array on the way back.
           'responseMimeType': 'application/json',
+          'responseSchema': _responseSchema,
         },
       }),
     );
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw Exception('Food scan failed: ${response.statusCode}');
+      throw Exception(
+        'Gemini food scan failed: ${response.statusCode} ${response.body}',
+      );
     }
 
     final data = jsonDecode(response.body) as Map<String, dynamic>;
-    final candidates = data['candidates'] as List<dynamic>? ?? [];
+    final candidates = data['candidates'] as List<dynamic>? ?? const [];
     if (candidates.isEmpty) {
-      throw Exception('Food scan returned no candidates');
+      throw Exception('Gemini food scan returned no candidates');
     }
-
-    final candidate = candidates.first as Map<String, dynamic>;
-    final content = candidate['content'] as Map<String, dynamic>;
-    final parts = content['parts'] as List<dynamic>? ?? [];
-    final textPart = parts.cast<Map<String, dynamic>>().firstWhere(
-      (part) => part['text'] is String,
-      orElse: () => const <String, dynamic>{},
-    );
-    final text = textPart['text'] as String?;
+    final content =
+        (candidates.first as Map<String, dynamic>)['content']
+            as Map<String, dynamic>?;
+    final parts = content?['parts'] as List<dynamic>? ?? const [];
+    if (parts.isEmpty) {
+      throw Exception('Gemini food scan returned no content');
+    }
+    final text = (parts.first as Map<String, dynamic>)['text'] as String?;
     if (text == null || text.trim().isEmpty) {
-      throw Exception('Food scan returned no text');
+      throw Exception('Gemini food scan returned no text');
     }
 
     final decodedJson = jsonDecode(_stripJsonFence(text));
@@ -2543,9 +3243,52 @@ class FridgePhotoFoodAgent {
     return foodJson
         .whereType<Map<String, dynamic>>()
         .map(_foodItemFromJson)
-        .where((foodItem) => foodItem.name.isNotEmpty)
+        .where(
+          (foodItem) =>
+              foodItem.name.isNotEmpty && !_isPlaceholderName(foodItem.name),
+        )
         .toList();
   }
+
+  /// The prompt forbids placeholder items, but guard in code too so an
+  /// "Unknown" entry can never reach the fridge UI.
+  static bool _isPlaceholderName(String name) {
+    final normalized = name.toLowerCase().trim();
+    const placeholders = {
+      'unknown',
+      'unknown item',
+      'unknown food',
+      'unidentified',
+      'unidentified item',
+      'unclear',
+      'not sure',
+      'n/a',
+      'none',
+    };
+    return placeholders.contains(normalized) ||
+        normalized.startsWith('unknown ') ||
+        normalized.startsWith('unidentified ');
+  }
+
+  /// Structured-output schema so Gemini returns a strict JSON array of items,
+  /// each with a valid [FoodType] label.
+  static Map<String, dynamic> get _responseSchema => {
+    'type': 'ARRAY',
+    'items': {
+      'type': 'OBJECT',
+      'properties': {
+        'name': {'type': 'STRING'},
+        'amount': {'type': 'STRING'},
+        'foodType': {
+          'type': 'STRING',
+          'enum': [for (final foodType in FoodType.values) foodType.label],
+        },
+        'description': {'type': 'STRING'},
+        'expiryEstimateDays': {'type': 'INTEGER', 'nullable': true},
+      },
+      'required': ['name', 'amount', 'foodType'],
+    },
+  };
 
   static FoodItem _foodItemFromJson(Map<String, dynamic> json) {
     final name = (json['name'] ?? '').toString().trim();
@@ -2559,7 +3302,22 @@ class FridgePhotoFoodAgent {
       description: (json['description'] ?? '').toString().trim().isEmpty
           ? null
           : (json['description'] ?? '').toString().trim(),
+      expiryDate: _expiryFromEstimate(json['expiryEstimateDays']),
     );
+  }
+
+  /// Maps an estimated fridge shelf-life (in days from today) to a concrete
+  /// expiry date. Tolerates ints, numeric strings, and missing/invalid values
+  /// (which yield null, keeping older prompts backward compatible).
+  static DateTime? _expiryFromEstimate(Object? value) {
+    if (value == null) {
+      return null;
+    }
+    final days = value is num ? value.toInt() : int.tryParse(value.toString());
+    if (days == null || days < 0) {
+      return null;
+    }
+    return DateTime.now().add(Duration(days: days));
   }
 
   static String _buildPrompt() {
@@ -2568,9 +3326,16 @@ class FridgePhotoFoodAgent {
         .join(', ');
 
     return '''
-You are a fridge inventory assistant. Look at the image and identify the visible food items.
+You are a fridge inventory assistant. Inspect the entire image and identify every visible food and drink item.
 
-Add only foods you can identify from the image. Do not include unknown, possible, maybe, or uncertain items.
+Include only items you can identify with reasonable confidence. Do not include shelves, containers whose contents are unknown, or uncertain guesses. Combine repeated identical items into one entry.
+
+Identification rules:
+- Systematically examine every bag, jar, box, and container — including partially visible, opaque, or nested ones (a bag inside a bag) and items at the edges of the image.
+- Consider the full range of foods, including dried herbs and herbal teas (e.g. linden/ihlamur, chamomile, mint), spices, and regional or international items. Do not default to a common lookalike food (e.g. never call dried flowers or herbs "bread").
+- For packaged or labeled items, READ any visible text on the packaging and identify the product from its label rather than its shape or color.
+- For unlabeled bags of dry staples, identify by texture and by what is common in a home pantry: fine matte white powder = flour; crystalline white = sugar or salt; small oblong translucent grains = rice; golden cracked grains = bulgur; round dried seeds = beans, chickpeas, or lentils; also consider pasta, semolina, and oats.
+- If you cannot identify an item with reasonable confidence, OMIT it entirely. Never output "Unknown", "Unidentified", or any placeholder name.
 
 Use count-based amounts as the primary measurement style. Examples:
 - 3 bananas
@@ -2582,13 +3347,18 @@ Use count-based amounts as the primary measurement style. Examples:
 Use one of these foodType values:
 $foodTypes
 
-Return only valid JSON as an array. Each object must use this exact shape:
+For each item, estimate "expiryEstimateDays": the typical number of days from
+today until it spoils in a fridge (a whole number). Use null if you cannot
+reasonably estimate it.
+
+Return only valid JSON as an array, with no Markdown or explanation. Each object must use this exact shape:
 [
   {
     "name": "Bananas",
     "amount": "3 bananas",
     "foodType": "Produce",
-    "description": "optional short detail, or empty string"
+    "description": "optional short detail, or empty string",
+    "expiryEstimateDays": 5
   }
 ]
 ''';
@@ -2739,6 +3509,8 @@ class GeminiMealService {
   }
 
   static String _buildPrompt(AgentRequest request) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
     final fridgeItems = request.fridgeItems.isEmpty
         ? 'None. User wants to buy fresh or the fridge is empty.'
         : request.fridgeItems
@@ -2746,7 +3518,29 @@ class GeminiMealService {
                 final description = item.description == null
                     ? ''
                     : ', description: ${item.description}';
-                return '- ${item.name}: ${item.amount}, type: ${item.foodType.label}$description';
+                final expiry = item.expiryDate;
+                String freshness;
+                if (expiry == null) {
+                  freshness = ', no expiry date given';
+                } else {
+                  final expiryDay = DateTime(
+                    expiry.year,
+                    expiry.month,
+                    expiry.day,
+                  );
+                  final daysLeft = expiryDay.difference(today).inDays;
+                  if (daysLeft < 0) {
+                    freshness =
+                        ', expired ${-daysLeft} day(s) ago — use with judgment or skip';
+                  } else if (daysLeft == 0) {
+                    freshness = ', expires today — use soon';
+                  } else if (daysLeft <= 2) {
+                    freshness = ', expires in $daysLeft day(s) — use soon';
+                  } else {
+                    freshness = ', expires in $daysLeft day(s)';
+                  }
+                }
+                return '- ${item.name}: ${item.amount}, type: ${item.foodType.label}$description$freshness';
               })
               .join('\n');
     final feedback = request.feedbackHistory.isEmpty
@@ -2762,7 +3556,14 @@ The user chose meal-balance guidance. Honor their requested food, preferences, a
 - About 1.5 cups of produce or half the plate as produce, emphasizing vegetables while still counting fruit.
 - About 250-500 mL water or another unsweetened drink with or near the meal.
 - A plate or mixed-dish equivalent near 50% produce, 25% protein, and 25% quality carbohydrate.
+- Keep added sugar and saturated fat as a minority of the meal's calories, favoring whole ingredients over heavily processed or sugary ones when it fits the request.
 Briefly explain the balance in the reason. Do not reject a requested food or make medical claims if every target cannot be met.'''
+        : '';
+
+    final substitutionGuidance = request.useFridgeItems
+        ? '''
+
+If a recipe would normally call for an ingredient not present in the fridge list, prefer a reasonable substitute that is already in the fridge when it keeps the dish practical (for example, any bean for another bean, yogurt for sour cream, any leafy green for another). Only fall back to a new ingredient to buy when no reasonable substitute exists. When you make a substitution, mention it briefly in "reason".'''
         : '';
 
     // F1 + F3 · evening ranking and time-of-day awareness. Only for meals eaten
@@ -2810,6 +3611,7 @@ ${request.cookingExperience.label}
 
 Budget:
 ${request.hasBudget ? '\$${request.budget}' : 'No budget selected, but still keep it affordable.'}
+As a rough cost anchor: legumes, eggs, rice, pasta, oats, and seasonal produce tend to be cheap per serving; fresh meat, fish, seafood, and out-of-season produce tend to be pricier. Use this only as a loose guide for affordability language and the estimatedCostPerServing field below, not a strict rule.
 
 Time availability:
 ${request.hasTimeShortage ? '${request.timeAvailable}. If needed, prefer quick, simple meals that can be made in this time.' : 'No time shortage specified. Any reasonable cooking time is fine.'}
@@ -2817,12 +3619,15 @@ ${request.hasTimeShortage ? '${request.timeAvailable}. If needed, prefer quick, 
 Use fridge items:
 ${request.useFridgeItems ? 'Yes, use fridge items when helpful.' : 'No, recommend buying everything fresh.'}
 
+Pantry staples:
+Assume common long-shelf staples are already available even if not listed or scanned — salt, pepper, cooking oil, common dried spices/herbs, sugar, flour, rice, and pasta (use reasonable judgment for what counts as a staple). Do not penalize a recipe, call these "missing," or list them as items the user needs to buy.
+
 Fridge items:
-Use the amount exactly as the user wrote it when they include a measurement. If the amount is only a number, use the default unit of the item. For example, "2 cups" stays 2 cups, but "12" for eggs means 12 eggs.
+Use the amount exactly as the user wrote it when they include a measurement. If the amount is only a number, use the default unit of the item. For example, "2 cups" stays 2 cups, but "12" for eggs means 12 eggs. When it fits the user's request, prefer using items marked "use soon" or already expired-but-usable so less food goes to waste; never force an item that doesn't fit the dish.
 $fridgeItems
 
 Feedback from the user about earlier suggestions:
-$feedback$balanceGuidance$eveningGuidance$overnightContext
+$feedback$balanceGuidance$eveningGuidance$overnightContext$substitutionGuidance
 
 Return only valid JSON as an array with exactly ${request.recommendationCount} objects. Each object must use this exact shape:
 [
@@ -2832,11 +3637,13 @@ Return only valid JSON as an array with exactly ${request.recommendationCount} o
     "reason": "string",
     "ingredients": ["string"],
     "instructions": ["string"],
+    "usedFridgeItems": ["string"],
+    "estimatedCostPerServing": "string, e.g. \\"\$2-3/serving\\"",
     ${request.diabetesEnabled ? '"glucoseNote": "optional short friendly heads-up, or empty string",' : ''}
     "eveningScore": 4
   }
 ]
-${request.diabetesEnabled ? 'Only include a glucoseNote when it genuinely helps; otherwise use an empty string.' : 'Do not include glucose or diabetes advice.'} Only set eveningScore for evening meals; otherwise use null.
+${request.diabetesEnabled ? 'Only include a glucoseNote when it genuinely helps; otherwise use an empty string.' : 'Do not include glucose or diabetes advice.'} Only set eveningScore for evening meals; otherwise use null. Set "usedFridgeItems" to the exact names (from the fridge items list above) that this recipe actually uses; use an empty array if none apply or fridge items were not used. Set "estimatedCostPerServing" to a short rough estimate like "\$2-3/serving"; use your best judgment even without exact prices.
 ''';
   }
 
@@ -2859,6 +3666,8 @@ class MealRecommendation {
     required this.instructions,
     this.glucoseNote,
     this.eveningScore,
+    this.usedFridgeItems = const [],
+    this.estimatedCostPerServing,
     this.imageBytes,
     this.imageError,
   });
@@ -2877,6 +3686,14 @@ class MealRecommendation {
   /// 5 (light and sleep-friendly). Null for non-evening meals.
   final int? eveningScore;
 
+  /// Fridge items (matching the names sent in the prompt) that this recipe
+  /// actually uses. Empty when fridge items weren't offered or none apply.
+  final List<String> usedFridgeItems;
+
+  /// Free-text rough per-serving cost estimate, e.g. "$2-3/serving". Null
+  /// when the model omitted it or it couldn't be parsed as a string.
+  final String? estimatedCostPerServing;
+
   final Uint8List? imageBytes;
   final String? imageError;
 
@@ -2889,6 +3706,8 @@ class MealRecommendation {
       instructions: instructions,
       glucoseNote: glucoseNote,
       eveningScore: eveningScore,
+      usedFridgeItems: usedFridgeItems,
+      estimatedCostPerServing: estimatedCostPerServing,
       imageBytes: imageBytes ?? this.imageBytes,
       imageError: imageError ?? this.imageError,
     );
@@ -2897,6 +3716,13 @@ class MealRecommendation {
   factory MealRecommendation.fromJson(Map<String, dynamic> json) {
     final note = (json['glucoseNote'] as String?)?.trim();
     final score = (json['eveningScore'] as num?)?.toInt();
+    final usedItems =
+        (json['usedFridgeItems'] as List<dynamic>?)
+            ?.map((item) => item.toString())
+            .where((item) => item.trim().isNotEmpty)
+            .toList() ??
+        const [];
+    final cost = (json['estimatedCostPerServing'] as String?)?.trim();
     return MealRecommendation(
       dishName: json['dishName'] as String,
       imagePrompt: json['imagePrompt'] as String? ?? '',
@@ -2909,6 +3735,8 @@ class MealRecommendation {
           .toList(),
       glucoseNote: note == null || note.isEmpty ? null : note,
       eveningScore: score?.clamp(1, 5).toInt(),
+      usedFridgeItems: usedItems,
+      estimatedCostPerServing: cost == null || cost.isEmpty ? null : cost,
     );
   }
 }

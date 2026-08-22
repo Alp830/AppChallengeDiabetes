@@ -39,33 +39,31 @@ void main() {
     expect(find.text('Guarded destination'), findsOneWidget);
   });
 
-  testWidgets(
-    'disabled Agent hides Meal Lab and keeps meal logging prominent',
-    (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: AgentPage(
-              foodItems: const [],
-              userId: 'user-1',
-              diabetesEnabled: false,
-              preferencesRepository: _StaticPreferencesStore(),
-            ),
+  testWidgets('disabled Agent hides meal tools before a recommendation', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: AgentPage(
+            foodItems: const [],
+            userId: 'user-1',
+            diabetesEnabled: false,
+            preferencesRepository: _StaticPreferencesStore(),
           ),
         ),
-      );
-      await tester.pump();
+      ),
+    );
+    await tester.pump();
 
-      expect(find.text('Meal Lab'), findsNothing);
-      expect(find.text('Log Meal'), findsOneWidget);
-      expect(
-        tester.getSize(find.widgetWithText(FilledButton, 'Log Meal')).width,
-        greaterThan(500),
-      );
-    },
-  );
+    expect(find.text('Meal Lab'), findsNothing);
+    expect(find.text('Log Meal'), findsNothing);
+    expect(find.text('Log this meal'), findsNothing);
+  });
 
-  testWidgets('enabled Agent retains the Meal Lab entry point', (tester) async {
+  testWidgets('enabled Agent defers the Meal Lab entry point until results', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
@@ -80,8 +78,8 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('Meal Lab'), findsOneWidget);
-    expect(find.text('Log Meal'), findsOneWidget);
+    expect(find.text('Meal Lab'), findsNothing);
+    expect(find.text('Log Meal'), findsNothing);
   });
 
   testWidgets('Exercise hides Movement Lab only in disabled mode', (
