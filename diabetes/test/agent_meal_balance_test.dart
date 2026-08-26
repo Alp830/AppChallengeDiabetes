@@ -185,4 +185,11 @@ class _FakePreferencesStore implements AppPreferencesStore {
   @override
   Stream<bool> watchMealBalanceAgentEnabled(String userId) =>
       _controller.stream;
+
+  @override
+  Future<void> saveMealQaTipSeen(String userId) async => qaTipSaved = true;
+  bool qaTipSaved = false;
+
+  @override
+  Stream<bool> watchMealQaTipSeen(String userId) => Stream<bool>.value(false);
 }

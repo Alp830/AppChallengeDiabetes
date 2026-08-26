@@ -205,6 +205,12 @@ class _StaticPreferencesStore implements AppPreferencesStore {
   @override
   Stream<bool> watchMealBalanceAgentEnabled(String userId) =>
       Stream<bool>.value(false);
+
+  @override
+  Future<void> saveMealQaTipSeen(String userId) async {}
+
+  @override
+  Stream<bool> watchMealQaTipSeen(String userId) => Stream<bool>.value(false);
 }
 
 class _FakeExerciseRepository implements ExerciseRepository {

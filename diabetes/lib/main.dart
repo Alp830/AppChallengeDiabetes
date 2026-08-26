@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math' as math;
 
 import 'package:camera/camera.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -20,8 +21,10 @@ import 'firebase_options.dart';
 import 'fridge/selectable_fridge_grid.dart';
 import 'home/mvp_home_page.dart';
 import 'meals/data/meal_repository.dart';
+import 'meals/models/meal_qa_models.dart';
 import 'meals/screens/meal_lab_page.dart';
 import 'meals/screens/meal_log_page.dart';
+import 'meals/screens/meal_qa_sheet.dart';
 import 'navigation/app_feature_navigation.dart';
 import 'sleep/data/sleep_repository.dart';
 import 'sleep/services/evening_food_context_service.dart';
@@ -2109,6 +2112,14 @@ class _AgentPageState extends State<AgentPage> {
   AppPreferencesStore? _preferencesRepository;
   StreamSubscription<bool>? _balancePreferenceSubscription;
 
+  /// Ephemeral Q&A transcripts, keyed by dish name. Wiped whenever a new
+  /// recommendation is generated, since the conversation no longer applies.
+  final Map<String, List<MealQaTurn>> _qaHistory = {};
+
+  /// Whether the one-time "tap any step to ask" tip has already been shown.
+  bool _qaTipSeen = false;
+  StreamSubscription<bool>? _qaTipSubscription;
+
   static const _eveningContextService = EveningFoodContextService();
 
   /// F4 · the user's recent overnight phenotype, loaded once. Null until the
@@ -2128,6 +2139,13 @@ class _AgentPageState extends State<AgentPage> {
           .listen((enabled) {
             if (mounted && enabled != _useMealBalance) {
               setState(() => _useMealBalance = enabled);
+            }
+          });
+      _qaTipSubscription = _preferencesRepository!
+          .watchMealQaTipSeen(userId)
+          .listen((seen) {
+            if (mounted && seen != _qaTipSeen) {
+              setState(() => _qaTipSeen = seen);
             }
           });
     }
@@ -2166,6 +2184,7 @@ class _AgentPageState extends State<AgentPage> {
     _preferencesController.dispose();
     _feedbackController.dispose();
     _balancePreferenceSubscription?.cancel();
+    _qaTipSubscription?.cancel();
     super.dispose();
   }
 
@@ -2438,12 +2457,56 @@ class _AgentPageState extends State<AgentPage> {
     await _loadRecommendation(request);
   }
 
+  /// Opens the Q&A sheet for [recommendation], scoped to what the user
+  /// tapped. Transcripts are held here (not in the card or the sheet) so
+  /// closing and reopening the sheet keeps the conversation.
+  Future<void> _openQa(
+    MealRecommendation recommendation,
+    MealQuestionScope scope, {
+    String? initialQuestion,
+  }) async {
+    final showTip = !_qaTipSeen;
+    await showMealQaSheet(
+      context,
+      meal: MealQaContext(
+        dishName: recommendation.dishName,
+        reason: recommendation.reason,
+        ingredients: recommendation.ingredients,
+        instructions: recommendation.instructions,
+        glucoseNote: widget.diabetesEnabled ? recommendation.glucoseNote : null,
+        eveningScore: recommendation.eveningScore,
+        usedFridgeItems: recommendation.usedFridgeItems,
+        estimatedCostPerServing: recommendation.estimatedCostPerServing,
+      ),
+      scope: scope,
+      // The widget param, not AppEnvironment, so tests can inject a fake key.
+      apiKey: widget.geminiApiKey,
+      history: _qaHistory[recommendation.dishName] ?? const [],
+      onHistoryChanged: (turns) =>
+          _qaHistory[recommendation.dishName] = turns,
+      showFirstRunTip: showTip,
+      onTipSeen: _markQaTipSeen,
+      initialQuestion: initialQuestion,
+    );
+  }
+
+  void _markQaTipSeen() {
+    if (_qaTipSeen) return;
+    setState(() => _qaTipSeen = true);
+    final userId = widget.userId;
+    final repository = _preferencesRepository;
+    if (userId == null || repository == null) return;
+    // Best effort: a failed write only means the tip shows once more.
+    unawaited(repository.saveMealQaTipSeen(userId).catchError((_) {}));
+  }
+
   Future<void> _loadRecommendation(AgentRequest request) async {
     setState(() {
       _lastRequest = request;
       _isLoadingRecommendation = true;
       _recommendationError = null;
       _recommendations = const [];
+      _qaHistory.clear();
     });
 
     try {
@@ -2557,6 +2620,11 @@ class _AgentPageState extends State<AgentPage> {
               onMakeBalanced: _isLoadingRecommendation
                   ? null
                   : () => _makeMoreBalanced(recommendation),
+              onAsk: (scope, {String? initialQuestion}) => _openQa(
+                recommendation,
+                scope,
+                initialQuestion: initialQuestion,
+              ),
               onLogMeal: widget.userId == null
                   ? null
                   : () => Navigator.of(context).push<void>(
@@ -2619,6 +2687,7 @@ class MealRecommendationCard extends StatelessWidget {
     this.onStartPostMealWalk,
     this.onLogMeal,
     this.onMakeBalanced,
+    this.onAsk,
   });
 
   final MealRecommendation recommendation;
@@ -2630,6 +2699,51 @@ class MealRecommendationCard extends StatelessWidget {
   /// optional tweak. Null hides the option.
   final VoidCallback? onMakeBalanced;
 
+  /// Opens the Q&A sheet scoped to whatever the user tapped. When null the
+  /// card renders exactly as it did before the feature existed — no chip row
+  /// and no tap targets.
+  final void Function(MealQuestionScope scope, {String? initialQuestion})?
+  onAsk;
+
+  /// Horizontal space an ActionChip spends on its own padding and border,
+  /// subtracted so the label constraint leaves room for the chip chrome.
+  static const _chipChromeWidth = 48.0;
+
+  /// Wraps a card line in a tap target that asks about that exact line.
+  ///
+  /// Intentionally adds no icon or tint: the lines look identical to before
+  /// and only reveal themselves on press. Discoverability is carried by the
+  /// suggested-question chip row instead.
+  Widget _askable({
+    required Widget child,
+    required MealQuestionScope scope,
+    required String semanticLabel,
+    Key? key,
+  }) {
+    if (onAsk == null) return child;
+    return InkWell(
+      key: key,
+      onTap: () => onAsk!(scope),
+      borderRadius: BorderRadius.circular(8),
+      child: Semantics(
+        button: true,
+        label: semanticLabel,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+          child: child,
+        ),
+      ),
+    );
+  }
+
+  /// Shown before there is a URL and when the load fails. Deliberately quiet:
+  /// a missing photo is cosmetic, and the recipe below it is the real content.
+  Widget _imagePlaceholder(BuildContext context) => Icon(
+    Icons.rice_bowl,
+    size: 76,
+    color: Theme.of(context).colorScheme.onPrimaryContainer,
+  );
+
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -2640,26 +2754,31 @@ class MealRecommendationCard extends StatelessWidget {
           Container(
             height: 180,
             color: Theme.of(context).colorScheme.primaryContainer,
-            child: recommendation.imageBytes == null
-                ? Icon(
-                    Icons.rice_bowl,
-                    size: 76,
-                    color: Theme.of(context).colorScheme.onPrimaryContainer,
-                  )
-                : Image.memory(
-                    recommendation.imageBytes!,
+            child: recommendation.imageUrl == null
+                ? _imagePlaceholder(context)
+                : Image.network(
+                    recommendation.imageUrl!,
                     fit: BoxFit.cover,
                     gaplessPlayback: true,
+                    // On web this renders an <img> element instead of
+                    // fetching the bytes, so the browser sends no `Origin`
+                    // header — the header the image host answers with a 403.
+                    webHtmlElementStrategy: WebHtmlElementStrategy.prefer,
+                    loadingBuilder: (context, child, progress) =>
+                        progress == null
+                        ? child
+                        : Center(
+                            child: CircularProgressIndicator(
+                              value: progress.expectedTotalBytes == null
+                                  ? null
+                                  : progress.cumulativeBytesLoaded /
+                                        progress.expectedTotalBytes!,
+                            ),
+                          ),
+                    errorBuilder: (context, error, stackTrace) =>
+                        _imagePlaceholder(context),
                   ),
           ),
-          if (recommendation.imageError != null)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-              child: Text(
-                'Image could not be generated: ${recommendation.imageError}',
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
-              ),
-            ),
           Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -2674,7 +2793,14 @@ class MealRecommendationCard extends StatelessWidget {
                   _EveningFitChip(score: recommendation.eveningScore!),
                 ],
                 const SizedBox(height: 8),
-                Text(recommendation.reason),
+                _askable(
+                  key: const Key('mealQaReason'),
+                  scope: const MealQuestionScope(
+                    kind: MealQuestionScopeKind.reason,
+                  ),
+                  semanticLabel: 'Ask why this meal was picked',
+                  child: Text(recommendation.reason),
+                ),
                 if (recommendation.usedFridgeItems.isNotEmpty ||
                     recommendation.estimatedCostPerServing != null) ...[
                   const SizedBox(height: 8),
@@ -2686,28 +2812,112 @@ class MealRecommendationCard extends StatelessWidget {
                 ],
                 if (diabetesEnabled && recommendation.glucoseNote != null) ...[
                   const SizedBox(height: 12),
-                  _GlucoseNoteChip(note: recommendation.glucoseNote!),
+                  _askable(
+                    key: const Key('mealQaGlucoseNote'),
+                    scope: MealQuestionScope(
+                      kind: MealQuestionScopeKind.glucoseNote,
+                      quote: recommendation.glucoseNote!,
+                    ),
+                    semanticLabel: 'Ask about this blood sugar tip',
+                    child: _GlucoseNoteChip(note: recommendation.glucoseNote!),
+                  ),
                 ],
                 const SizedBox(height: 16),
                 Text(
                   'Ingredients',
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
-                const SizedBox(height: 8),
-                for (final ingredient in recommendation.ingredients)
-                  Text('- $ingredient'),
+                const SizedBox(height: 4),
+                for (
+                  var index = 0;
+                  index < recommendation.ingredients.length;
+                  index++
+                )
+                  _askable(
+                    key: Key('mealQaIngredient_$index'),
+                    scope: MealQuestionScope(
+                      kind: MealQuestionScopeKind.ingredient,
+                      quote: recommendation.ingredients[index],
+                      ordinal: index + 1,
+                    ),
+                    semanticLabel:
+                        'Ask about ${recommendation.ingredients[index]}',
+                    child: Text('- ${recommendation.ingredients[index]}'),
+                  ),
                 const SizedBox(height: 16),
                 Text(
                   'Instructions',
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 4),
                 for (
                   var index = 0;
                   index < recommendation.instructions.length;
                   index++
                 )
-                  Text('${index + 1}. ${recommendation.instructions[index]}'),
+                  _askable(
+                    key: Key('mealQaStep_$index'),
+                    scope: MealQuestionScope(
+                      kind: MealQuestionScopeKind.step,
+                      quote: recommendation.instructions[index],
+                      ordinal: index + 1,
+                    ),
+                    semanticLabel: 'Ask about step ${index + 1}',
+                    child: Text(
+                      '${index + 1}. ${recommendation.instructions[index]}',
+                    ),
+                  ),
+                if (onAsk != null &&
+                    recommendation.suggestedQuestions.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  const Divider(height: 1),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Ask about this meal',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 8),
+                  // LayoutBuilder so a long question wraps inside its chip
+                  // instead of being clipped at the card edge.
+                  LayoutBuilder(
+                    builder: (context, constraints) => Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        for (
+                          var index = 0;
+                          index < recommendation.suggestedQuestions.length;
+                          index++
+                        )
+                          ActionChip(
+                            key: Key('mealQaChip_$index'),
+                            label: ConstrainedBox(
+                              constraints: BoxConstraints(
+                                maxWidth: math.max(
+                                  0,
+                                  constraints.maxWidth - _chipChromeWidth,
+                                ),
+                              ),
+                              child: Text(
+                                recommendation.suggestedQuestions[index],
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            // Submits immediately rather than prefilling — the
+                            // whole point is that one tap gets an answer.
+                            onPressed: () => onAsk!(
+                              const MealQuestionScope.meal(),
+                              initialQuestion:
+                                  recommendation.suggestedQuestions[index],
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  const Divider(height: 1),
+                ],
                 if (onMakeBalanced != null) ...[
                   const SizedBox(height: 20),
                   OutlinedButton.icon(
@@ -2868,10 +3078,14 @@ class _InfoPill extends StatelessWidget {
         children: [
           Icon(icon, size: 14, color: theme.colorScheme.onSurfaceVariant),
           const SizedBox(width: 4),
-          Text(
-            label,
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+          // Flexible so a long fridge list wraps inside the pill instead of
+          // overflowing the card on narrow phones.
+          Flexible(
+            child: Text(
+              label,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
         ],
@@ -3377,14 +3591,18 @@ Return only valid JSON as an array, with no Markdown or explanation. Each object
 class GeminiMealService {
   static String get _apiKey => AppEnvironment.geminiApiKey;
   static const _textModel = 'gemini-3-flash-preview';
-  static const _imageModel = 'gemini-3.1-flash-image';
+
+  @visibleForTesting
+  static http.Client httpClient = http.Client();
+
+  static const _imageHost = 'image.pollinations.ai';
 
   static Future<List<MealRecommendation>> generate(AgentRequest request) async {
     if (_apiKey.isEmpty) {
       throw Exception('Missing GEMINI_API_KEY');
     }
 
-    final response = await http.post(
+    final response = await httpClient.post(
       Uri.parse(
         'https://generativelanguage.googleapis.com/v1beta/models/$_textModel:generateContent',
       ),
@@ -3437,76 +3655,70 @@ class GeminiMealService {
       );
     }
 
-    return Future.wait(recommendations.map(_withGeneratedImage));
+    return _attachImages(recommendations);
   }
 
   @visibleForTesting
   static String buildPromptForTesting(AgentRequest request) =>
       _buildPrompt(request);
 
-  static Future<MealRecommendation> _withGeneratedImage(
-    MealRecommendation recommendation,
-  ) async {
+  @visibleForTesting
+  static List<MealRecommendation> attachImagesForTesting(
+    List<MealRecommendation> recommendations,
+  ) => _attachImages(recommendations);
+
+  /// Only builds URLs. The widget layer loads them, which on web means an
+  /// `<img>` element rather than a Dart fetch — the fetch is what carried a
+  /// localhost `Origin` header and drew an immediate 403 from the host.
+  static List<MealRecommendation> _attachImages(
+    List<MealRecommendation> recommendations,
+  ) => [for (final r in recommendations) _withImageUrl(r)];
+
+  static MealRecommendation _withImageUrl(MealRecommendation recommendation) {
     if (recommendation.imagePrompt.isEmpty) {
       return recommendation;
     }
-
-    try {
-      final imageBytes = await _generateImage(recommendation.imagePrompt);
-      return recommendation.copyWith(imageBytes: imageBytes);
-    } catch (error) {
-      return recommendation.copyWith(imageError: error.toString());
-    }
-  }
-
-  static Future<Uint8List> _generateImage(String prompt) async {
-    final response = await http.post(
-      Uri.parse(
-        'https://generativelanguage.googleapis.com/v1/models/$_imageModel:generateContent',
-      ),
-      headers: {'Content-Type': 'application/json', 'x-goog-api-key': _apiKey},
-      body: jsonEncode({
-        'contents': [
-          {
-            'parts': [
-              {
-                'text':
-                    'Generate a realistic appetizing food photo. No text, labels, logos, or watermarks. $prompt',
-              },
-            ],
-          },
-        ],
-      }),
+    return recommendation.copyWith(
+      imageUrl: _imageUrl(recommendation.imagePrompt),
     );
-
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw Exception(
-        'Gemini image request failed: ${response.statusCode} ${response.body}',
-      );
-    }
-
-    final data = jsonDecode(response.body) as Map<String, dynamic>;
-    final candidates = data['candidates'] as List<dynamic>? ?? [];
-    if (candidates.isEmpty) {
-      throw Exception('Gemini image returned no candidates');
-    }
-
-    final candidate = candidates.first as Map<String, dynamic>;
-    final content = candidate['content'] as Map<String, dynamic>;
-    final parts = content['parts'] as List<dynamic>? ?? [];
-
-    for (final part in parts.cast<Map<String, dynamic>>()) {
-      final inlineData =
-          part['inlineData'] as Map<String, dynamic>? ??
-          part['inline_data'] as Map<String, dynamic>?;
-      final encodedImage = inlineData?['data'] as String?;
-      if (encodedImage != null && encodedImage.isNotEmpty) {
-        return base64Decode(encodedImage);
-      }
-    }
-
-    throw Exception('Gemini image returned no image data');
   }
+
+  /// Width and height are stated in the prompt as well as the query string:
+  /// the host crops to the requested size regardless, so the model has to be
+  /// told the shape it is composing for or it centres for a square and loses
+  /// the dish to the crop.
+  static const _imageWidth = 1280;
+  static const _imageHeight = 512;
+
+  static String _imageUrl(String prompt) {
+    return Uri(
+      scheme: 'https',
+      host: _imageHost,
+      pathSegments: ['prompt', _imageInstruction(prompt)],
+      queryParameters: const {
+        'width': '$_imageWidth',
+        'height': '$_imageHeight',
+        'nologo': 'true',
+        'referrer': 'diabetes-app',
+      },
+    ).toString();
+  }
+
+  /// The dish goes first on purpose. With the framing notes in front, the
+  /// subject sat ~120 words in and the model drifted off it — same seed, same
+  /// size, it returned a cheese tart for a lentil curry. Leading with the
+  /// dish and keeping the rest short holds the subject.
+  static String _imageInstruction(String prompt) =>
+      '$prompt. '
+      'Appetizing, realistic photo of this finished dish, for a recipe card — '
+      'it shows the cook how their own result will look, so make it genuinely '
+      'good: natural light, careful plating, the food clearly the subject. '
+      'Compose for a $_imageWidth x $_imageHeight wide banner '
+      '(2.5:1 landscape) — a short, wide frame, not a square. Fill that '
+      'frame. Keep the dish itself comfortably inside it, but parts of the '
+      'wider scene may run past the edges where a tighter crop simply looks '
+      'better — a well-framed close-up beats shrinking everything to fit. '
+      'No text, labels, logos, or watermarks.';
 
   static String _buildPrompt(AgentRequest request) {
     final now = DateTime.now();
@@ -3639,11 +3851,12 @@ Return only valid JSON as an array with exactly ${request.recommendationCount} o
     "instructions": ["string"],
     "usedFridgeItems": ["string"],
     "estimatedCostPerServing": "string, e.g. \\"\$2-3/serving\\"",
+    "suggestedQuestions": ["string"],
     ${request.diabetesEnabled ? '"glucoseNote": "optional short friendly heads-up, or empty string",' : ''}
     "eveningScore": 4
   }
 ]
-${request.diabetesEnabled ? 'Only include a glucoseNote when it genuinely helps; otherwise use an empty string.' : 'Do not include glucose or diabetes advice.'} Only set eveningScore for evening meals; otherwise use null. Set "usedFridgeItems" to the exact names (from the fridge items list above) that this recipe actually uses; use an empty array if none apply or fridge items were not used. Set "estimatedCostPerServing" to a short rough estimate like "\$2-3/serving"; use your best judgment even without exact prices.
+${request.diabetesEnabled ? 'Only include a glucoseNote when it genuinely helps; otherwise use an empty string.' : 'Do not include glucose or diabetes advice.'} Only set eveningScore for evening meals; otherwise use null. Set "usedFridgeItems" to the exact names (from the fridge items list above) that this recipe actually uses; use an empty array if none apply or fridge items were not used. Set "estimatedCostPerServing" to a short rough estimate like "\$2-3/serving"; use your best judgment even without exact prices. Set "suggestedQuestions" to exactly 3 short questions this user would plausibly ask about this dish, written in their own casual first-person voice, that the rest of this card does not already answer; keep each under 8 words and never ask about medication or dosing.
 ''';
   }
 
@@ -3668,8 +3881,8 @@ class MealRecommendation {
     this.eveningScore,
     this.usedFridgeItems = const [],
     this.estimatedCostPerServing,
-    this.imageBytes,
-    this.imageError,
+    this.suggestedQuestions = const [],
+    this.imageUrl,
   });
 
   final String dishName;
@@ -3694,10 +3907,17 @@ class MealRecommendation {
   /// when the model omitted it or it couldn't be parsed as a string.
   final String? estimatedCostPerServing;
 
-  final Uint8List? imageBytes;
-  final String? imageError;
+  /// Three short questions the user is likely to ask about this dish, used to
+  /// seed the "Ask about this meal" chip row. Empty when the model omitted
+  /// them, which simply hides the row.
+  final List<String> suggestedQuestions;
 
-  MealRecommendation copyWith({Uint8List? imageBytes, String? imageError}) {
+  /// Where the dish photo lives, loaded by the platform's own image loader
+  /// rather than fetched here. On web that matters: a Dart fetch is a CORS
+  /// request, and the image host rejects a localhost `Origin` outright.
+  final String? imageUrl;
+
+  MealRecommendation copyWith({String? imageUrl}) {
     return MealRecommendation(
       dishName: dishName,
       imagePrompt: imagePrompt,
@@ -3708,8 +3928,8 @@ class MealRecommendation {
       eveningScore: eveningScore,
       usedFridgeItems: usedFridgeItems,
       estimatedCostPerServing: estimatedCostPerServing,
-      imageBytes: imageBytes ?? this.imageBytes,
-      imageError: imageError ?? this.imageError,
+      suggestedQuestions: suggestedQuestions,
+      imageUrl: imageUrl ?? this.imageUrl,
     );
   }
 
@@ -3723,6 +3943,14 @@ class MealRecommendation {
             .toList() ??
         const [];
     final cost = (json['estimatedCostPerServing'] as String?)?.trim();
+    final questions =
+        (json['suggestedQuestions'] as List<dynamic>?)
+            ?.whereType<String>()
+            .map((question) => question.trim())
+            .where((question) => question.isNotEmpty)
+            .take(3)
+            .toList() ??
+        const <String>[];
     return MealRecommendation(
       dishName: json['dishName'] as String,
       imagePrompt: json['imagePrompt'] as String? ?? '',
@@ -3737,6 +3965,7 @@ class MealRecommendation {
       eveningScore: score?.clamp(1, 5).toInt(),
       usedFridgeItems: usedItems,
       estimatedCostPerServing: cost == null || cost.isEmpty ? null : cost,
+      suggestedQuestions: questions,
     );
   }
 }
