@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../../design/app_radius.dart';
 import '../../design/spacing.dart';
 import '../models/meal_qa_models.dart';
 import '../services/meal_qa_service.dart';
@@ -336,7 +337,7 @@ class _TurnBubble extends StatelessWidget {
           color: turn.isUser
               ? scheme.primaryContainer
               : scheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(AppRadius.md),
         ),
         child: Text(
           turn.text,
@@ -388,7 +389,7 @@ class _ErrorBubble extends StatelessWidget {
         padding: EdgeInsets.all(Spacing.s12),
         decoration: BoxDecoration(
           color: scheme.errorContainer,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(AppRadius.md),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -462,7 +463,7 @@ class _ChipSkeletons extends StatelessWidget {
             height: 32,
             decoration: BoxDecoration(
               color: scheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(999),
+              borderRadius: BorderRadius.circular(AppRadius.full),
             ),
           ),
       ],

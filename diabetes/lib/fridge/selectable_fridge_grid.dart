@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../design/drag_selection_surface.dart';
+import '../design/app_radius.dart';
 import '../design/spacing.dart';
 import '../design/text_scale.dart';
 import '../main.dart' show FoodItem;
@@ -230,7 +231,7 @@ class _SelectableFridgeGridState extends State<SelectableFridgeGrid> {
                         ),
                         decoration: BoxDecoration(
                           color: Theme.of(context).colorScheme.surface,
-                          borderRadius: BorderRadius.circular(999),
+                          borderRadius: BorderRadius.circular(AppRadius.full),
                           border: Border.all(
                             color: Theme.of(context).colorScheme.outlineVariant,
                           ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../design/app_radius.dart';
 import '../design/app_status_colors.dart';
 import '../design/spacing.dart';
 import '../design/text_scale.dart';
@@ -45,11 +46,11 @@ class FridgeItemCard extends StatelessWidget {
           color: selected ? scheme.primary : scheme.outlineVariant,
           width: selected ? 2 : 1,
         ),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
       ),
       child: Material(
         color: Colors.transparent,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: selectionMode ? onToggleSelection : onEdit,
@@ -69,7 +70,7 @@ class FridgeItemCard extends StatelessWidget {
                         width: 36,
                         decoration: BoxDecoration(
                           color: statusTint,
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(AppRadius.md),
                         ),
                         child: Icon(
                           foodItem.foodType.icon,
@@ -95,7 +96,7 @@ class FridgeItemCard extends StatelessWidget {
                         ),
                         decoration: BoxDecoration(
                           color: statusTint,
-                          borderRadius: BorderRadius.circular(999),
+                          borderRadius: BorderRadius.circular(AppRadius.full),
                         ),
                         child: Text(
                           freshness.label,

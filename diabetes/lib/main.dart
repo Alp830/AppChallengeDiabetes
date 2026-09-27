@@ -244,29 +244,29 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
       appBar: AppBar(title: const Text('Verify your email')),
       body: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(Spacing.s24),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 420),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const Icon(Icons.mark_email_unread_outlined, size: 64),
-                const SizedBox(height: 20),
+                const SizedBox(height: Spacing.s24),
                 Text(
                   'Check your inbox',
                   style: Theme.of(context).textTheme.headlineSmall,
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: Spacing.s12),
                 Text(
                   'We sent a verification link to ${widget.user.email ?? 'your email address'}. Open it before continuing.',
                   textAlign: TextAlign.center,
                 ),
                 if (_message != null) ...[
-                  const SizedBox(height: 16),
+                  const SizedBox(height: Spacing.s16),
                   Text(_message!, textAlign: TextAlign.center),
                 ],
-                const SizedBox(height: 24),
+                const SizedBox(height: Spacing.s24),
                 FilledButton(
                   onPressed: isBusy ? null : _checkVerification,
                   child: Text(
@@ -594,7 +594,9 @@ class _AuthPageState extends State<AuthPage> {
                         children: [
                           const Expanded(child: Divider()),
                           Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: Spacing.s12,
+                            ),
                             child: Text(
                               'or',
                               style: Theme.of(context).textTheme.bodySmall,
@@ -1833,7 +1835,7 @@ class _FridgeCameraSheetState extends State<FridgeCameraSheet> {
     return FractionallySizedBox(
       heightFactor: 0.92,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(Spacing.s16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -1858,7 +1860,7 @@ class _FridgeCameraSheetState extends State<FridgeCameraSheet> {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: Spacing.s12),
             Expanded(
               child: _cameraStarted
                   ? _buildCameraMode(context)
@@ -1901,7 +1903,7 @@ class _FridgeCameraSheetState extends State<FridgeCameraSheet> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Expanded(child: _buildCameraPreview(context)),
-        const SizedBox(height: 16),
+        const SizedBox(height: Spacing.s16),
         if (cameraReady)
           FilledButton.icon(
             onPressed: _isTakingPicture ? null : _capturePhoto,
@@ -1970,7 +1972,7 @@ class _FridgeCameraSheetState extends State<FridgeCameraSheet> {
         }
 
         return ClipRRect(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppRadius.sm),
           child: ColoredBox(
             color: Colors.black,
             child: Center(
@@ -2086,18 +2088,17 @@ class _AddFoodSheetState extends State<AddFoodSheet> {
     }
   }
 
-  String _formatExpiryDate(DateTime date) {
-    final two = date.month.toString().padLeft(2, '0');
-    final day = date.day.toString().padLeft(2, '0');
-    return '${date.year}-$two-$day';
-  }
-
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
 
     return Padding(
-      padding: EdgeInsets.fromLTRB(16, 16, 16, bottomInset + 16),
+      padding: EdgeInsets.fromLTRB(
+        Spacing.s16,
+        Spacing.s16,
+        Spacing.s16,
+        bottomInset + Spacing.s16,
+      ),
       child: Form(
         key: _formKey,
         child: SingleChildScrollView(
@@ -2109,7 +2110,7 @@ class _AddFoodSheetState extends State<AddFoodSheet> {
                 _isEditing ? 'Edit Food' : 'Add Food',
                 style: Theme.of(context).textTheme.titleLarge,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: Spacing.s16),
               OutlinedButton.icon(
                 onPressed: _pickImage,
                 icon: const Icon(Icons.add_photo_alternate),
@@ -2118,9 +2119,9 @@ class _AddFoodSheetState extends State<AddFoodSheet> {
                 ),
               ),
               if (_imageBytes != null) ...[
-                const SizedBox(height: 12),
+                const SizedBox(height: Spacing.s12),
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
                   child: Image.memory(
                     _imageBytes!,
                     height: 160,
@@ -2128,7 +2129,7 @@ class _AddFoodSheetState extends State<AddFoodSheet> {
                   ),
                 ),
               ],
-              const SizedBox(height: 16),
+              const SizedBox(height: Spacing.s16),
               TextFormField(
                 controller: _nameController,
                 textCapitalization: TextCapitalization.words,
@@ -2141,7 +2142,7 @@ class _AddFoodSheetState extends State<AddFoodSheet> {
                   return null;
                 },
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: Spacing.s12),
               TextFormField(
                 controller: _amountController,
                 keyboardType: TextInputType.text,
@@ -2158,7 +2159,7 @@ class _AddFoodSheetState extends State<AddFoodSheet> {
                   return null;
                 },
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: Spacing.s12),
               DropdownButtonFormField<FoodType>(
                 initialValue: _foodType,
                 decoration: const InputDecoration(labelText: 'Food type'),
@@ -2169,7 +2170,7 @@ class _AddFoodSheetState extends State<AddFoodSheet> {
                       child: Row(
                         children: [
                           Icon(foodType.icon),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: Spacing.s12),
                           Text(foodType.label),
                         ],
                       ),
@@ -2185,7 +2186,7 @@ class _AddFoodSheetState extends State<AddFoodSheet> {
                   });
                 },
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: Spacing.s12),
               InputDecorator(
                 decoration: const InputDecoration(
                   labelText: 'Expiry date (optional)',
@@ -2196,7 +2197,9 @@ class _AddFoodSheetState extends State<AddFoodSheet> {
                       child: Text(
                         _expiryDate == null
                             ? 'Not set'
-                            : _formatExpiryDate(_expiryDate!),
+                            : MaterialLocalizations.of(
+                                context,
+                              ).formatMediumDate(_expiryDate!),
                       ),
                     ),
                     if (_expiryDate != null)
@@ -2213,7 +2216,7 @@ class _AddFoodSheetState extends State<AddFoodSheet> {
                   ],
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: Spacing.s12),
               TextFormField(
                 controller: _descriptionController,
                 minLines: 2,
@@ -2223,7 +2226,7 @@ class _AddFoodSheetState extends State<AddFoodSheet> {
                   labelText: 'Description (optional)',
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: Spacing.s16),
               FilledButton(
                 onPressed: _saveFoodItem,
                 child: Text(_isEditing ? 'Save Changes' : 'Save Food'),
@@ -2247,83 +2250,6 @@ class _AddFoodSheetState extends State<AddFoodSheet> {
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-class FoodItemTile extends StatelessWidget {
-  const FoodItemTile({
-    super.key,
-    required this.foodItem,
-    required this.onEdit,
-    required this.onRemove,
-  });
-
-  final FoodItem foodItem;
-  final VoidCallback onEdit;
-  final VoidCallback onRemove;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: ListTile(
-        leading: FoodImage(
-          imageBytes: foodItem.imageBytes,
-          foodType: foodItem.foodType,
-        ),
-        title: Text(foodItem.name),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(foodItem.amount),
-            Text(foodItem.foodType.label),
-            if (foodItem.description != null) Text(foodItem.description!),
-          ],
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-              onPressed: onEdit,
-              tooltip: 'Edit food',
-              icon: const Icon(Icons.edit),
-            ),
-            IconButton(
-              onPressed: onRemove,
-              tooltip: 'Remove food',
-              icon: const Icon(Icons.delete),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class FoodImage extends StatelessWidget {
-  const FoodImage({
-    super.key,
-    required this.imageBytes,
-    required this.foodType,
-  });
-
-  final Uint8List? imageBytes;
-  final FoodType foodType;
-
-  @override
-  Widget build(BuildContext context) {
-    if (imageBytes == null) {
-      return CircleAvatar(child: Icon(foodType.icon));
-    }
-
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
-      child: Image.memory(
-        imageBytes!,
-        width: 56,
-        height: 56,
-        fit: BoxFit.cover,
       ),
     );
   }
