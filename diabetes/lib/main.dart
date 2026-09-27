@@ -1006,7 +1006,7 @@ enum _UnsavedChoice { save, discard, cancel }
 
 /// The Fridge tab. Edits (add / edit / delete) are staged in a local working
 /// copy and only written to the backing store when the user explicitly saves.
-/// Deletion happens via the per-card delete button or multi-select — the old
+/// Deletion happens via the edit sheet or multi-select — the old
 /// swipe-up "Ground" disposal mechanic has been removed.
 class FridgePage extends StatefulWidget {
   const FridgePage({
@@ -1257,6 +1257,8 @@ class FridgePageState extends State<FridgePage> {
     final ranked = _rankedItems;
 
     final selecting = _selectionCount > 0;
+    final scheme = Theme.of(context).colorScheme;
+    final barShowing = selecting || _isDirty;
 
     return Stack(
       children: [
@@ -1277,37 +1279,45 @@ class FridgePageState extends State<FridgePage> {
                 setState(() => _selectionCount = selectedCount);
               }
             },
+            bottomPadding: barShowing ? 216 : 144,
           ),
-        // Camera/add buttons. Lifted to clear the bottom selection toolbar.
+        // Camera/add buttons. Lifted to clear the bottom selection toolbar
+        // and the unsaved-changes bar.
         if (_drafts.isNotEmpty)
           Positioned(
             right: Spacing.margin,
-            bottom: selecting ? 104 : 24,
+            bottom: barShowing ? 88 : Spacing.s16,
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                FloatingActionButton(
-                  heroTag: 'takeFridgePhoto',
-                  onPressed: () => _takeFridgePhoto(context),
-                  tooltip: 'Take fridge photo',
-                  child: const Icon(Icons.camera_alt),
-                ),
-                const SizedBox(height: Spacing.s12),
-                FloatingActionButton(
+                FloatingActionButton.small(
                   heroTag: 'addFood',
                   onPressed: () => _showAddFoodSheet(context),
                   tooltip: 'Add food',
+                  backgroundColor: scheme.secondaryContainer,
+                  foregroundColor: scheme.onSecondaryContainer,
                   child: const Icon(Icons.add),
+                ),
+                const SizedBox(height: Spacing.s12),
+                FloatingActionButton.extended(
+                  heroTag: 'takeFridgePhoto',
+                  onPressed: () => _takeFridgePhoto(context),
+                  tooltip: 'Scan a fridge photo',
+                  icon: const Icon(Icons.photo_camera_outlined),
+                  label: const Text('Scan fridge'),
                 ),
               ],
             ),
           ),
-        // Save / discard controls for staged edits, pinned to the top-right.
-        if (_isDirty)
+        // Unsaved-changes bar, in the same bottom slot as the selection toolbar
+        // (which takes precedence while selecting).
+        if (_isDirty && !selecting)
           Positioned(
-            top: Spacing.s8,
-            right: Spacing.s12,
-            child: _FridgeSaveControls(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: _FridgeSaveBar(
               pendingCount: _buildChangeSet().count,
               isSaving: _isSaving,
               onDiscard: _isSaving ? null : discard,
@@ -1428,7 +1438,10 @@ class FridgePageState extends State<FridgePage> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      builder: (context) => AddFoodSheet(foodItem: _drafts[index].item),
+      builder: (context) => AddFoodSheet(
+        foodItem: _drafts[index].item,
+        onDelete: () => _removeDrafts([index]),
+      ),
     );
 
     if (foodItem != null) {
@@ -1515,10 +1528,10 @@ class _FridgeEmptyState extends StatelessWidget {
   }
 }
 
-/// Compact Save / Discard controls for staged fridge edits, shown at the
-/// top-right of the Fridge tab while there are unsaved changes.
-class _FridgeSaveControls extends StatelessWidget {
-  const _FridgeSaveControls({
+/// Save / Discard bar for staged fridge edits, full-width bar pinned to the
+/// bottom while there are unsaved changes.
+class _FridgeSaveBar extends StatelessWidget {
+  const _FridgeSaveBar({
     required this.pendingCount,
     required this.isSaving,
     required this.onDiscard,
@@ -1535,51 +1548,42 @@ class _FridgeSaveControls extends StatelessWidget {
     final theme = Theme.of(context);
     return Material(
       elevation: 3,
-      color: theme.colorScheme.surface,
-      borderRadius: BorderRadius.circular(999),
+      color: theme.colorScheme.surfaceContainer,
       child: Padding(
         padding: const EdgeInsets.symmetric(
-          horizontal: Spacing.s8,
-          vertical: Spacing.s4,
+          horizontal: Spacing.s16,
+          vertical: Spacing.s8,
         ),
         child: Row(
-          mainAxisSize: MainAxisSize.min,
           children: [
-            Tooltip(
-              message: pendingCount == 1
-                  ? '1 unsaved change'
-                  : '$pendingCount unsaved changes',
-              child: Icon(
-                Icons.edit_note,
-                size: 20,
-                color: theme.colorScheme.onSurfaceVariant,
+            Icon(Icons.edit_note, color: theme.colorScheme.onSurfaceVariant),
+            const SizedBox(width: Spacing.s8),
+            Expanded(
+              child: Text(
+                pendingCount == 1
+                    ? '1 unsaved change'
+                    : '$pendingCount unsaved changes',
+                style: theme.textTheme.titleSmall,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
-            const SizedBox(width: Spacing.s4),
             TextButton(
               key: const Key('fridgeDiscardBar'),
               onPressed: onDiscard,
-              style: TextButton.styleFrom(
-                minimumSize: const Size(0, 40),
-                padding: const EdgeInsets.symmetric(horizontal: Spacing.s12),
-              ),
               child: const Text('Discard'),
             ),
-            const SizedBox(width: Spacing.s4),
+            const SizedBox(width: Spacing.s8),
             FilledButton(
               key: const Key('fridgeSaveBar'),
               onPressed: onSave,
-              style: FilledButton.styleFrom(
-                minimumSize: const Size(0, 40),
-                padding: const EdgeInsets.symmetric(horizontal: Spacing.s16),
-              ),
+              style: FilledButton.styleFrom(minimumSize: const Size(0, 48)),
               child: isSaving
-                  ? const SizedBox(
-                      height: 18,
-                      width: 18,
+                  ? SizedBox.square(
+                      dimension: 18,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: Colors.white,
+                        color: theme.colorScheme.onPrimary,
                       ),
                     )
                   : const Text('Save'),
@@ -1882,9 +1886,12 @@ class _FridgeCameraSheetState extends State<FridgeCameraSheet> {
 }
 
 class AddFoodSheet extends StatefulWidget {
-  const AddFoodSheet({super.key, this.foodItem});
+  const AddFoodSheet({super.key, this.foodItem, this.onDelete});
 
   final FoodItem? foodItem;
+
+  /// Edit mode only: deletes the item (staged until the fridge is saved).
+  final VoidCallback? onDelete;
 
   @override
   State<AddFoodSheet> createState() => _AddFoodSheetState();
@@ -2120,6 +2127,22 @@ class _AddFoodSheetState extends State<AddFoodSheet> {
                 onPressed: _saveFoodItem,
                 child: Text(_isEditing ? 'Save Changes' : 'Save Food'),
               ),
+              if (_isEditing && widget.onDelete != null) ...[
+                const SizedBox(height: Spacing.s8),
+                TextButton.icon(
+                  key: const Key('fridgeEditDelete'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: Theme.of(context).colorScheme.error,
+                    minimumSize: const Size(0, 48),
+                  ),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    widget.onDelete!();
+                  },
+                  icon: const Icon(Icons.delete_outline),
+                  label: const Text('Delete item'),
+                ),
+              ],
             ],
           ),
         ),

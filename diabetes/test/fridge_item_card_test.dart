@@ -23,7 +23,6 @@ void main() {
             expiryDate: DateTime(2026, 7, 22),
           ),
           onEdit: () {},
-          onRemove: () {},
           now: now,
         ),
       ),
@@ -44,7 +43,6 @@ void main() {
             foodType: FoodType.protein,
           ),
           onEdit: () => edited = true,
-          onRemove: () {},
           now: now,
         ),
       ),
@@ -54,8 +52,10 @@ void main() {
     expect(edited, isTrue);
   });
 
-  testWidgets('tapping [X] triggers remove', (tester) async {
-    var removed = false;
+  testWidgets('no per-tile delete; selection mode shows a check slot', (
+    tester,
+  ) async {
+    var toggled = false;
     await tester.pumpWidget(
       wrap(
         FridgeItemCard(
@@ -65,14 +65,17 @@ void main() {
             foodType: FoodType.protein,
           ),
           onEdit: () {},
-          onRemove: () => removed = true,
+          selectionMode: true,
+          onToggleSelection: () => toggled = true,
           now: now,
         ),
       ),
     );
 
-    await tester.tap(find.byTooltip('Delete item'));
-    expect(removed, isTrue);
+    expect(find.byTooltip('Delete item'), findsNothing);
+    expect(find.bySemanticsLabel('Not selected'), findsOneWidget);
+    await tester.tap(find.text('Eggs'));
+    expect(toggled, isTrue);
   });
 
   testWidgets('no expiry shows unknown status and "No date"', (tester) async {
@@ -85,7 +88,6 @@ void main() {
             foodType: FoodType.grain,
           ),
           onEdit: () {},
-          onRemove: () {},
           now: now,
         ),
       ),

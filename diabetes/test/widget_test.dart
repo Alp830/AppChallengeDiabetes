@@ -55,8 +55,11 @@ void main() {
 
     expect(find.text('Milk'), findsOneWidget);
 
-    // Removal is the low-friction top-left [X] on the card.
-    await tester.tap(find.byTooltip('Delete item'));
+    // Removal happens via the edit sheet's delete action.
+    await tester.tap(find.text('Milk'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byKey(const Key('fridgeEditDelete')));
+    await tester.tap(find.byKey(const Key('fridgeEditDelete')));
     await tester.pumpAndSettle();
     expect(find.text('Your fridge is empty'), findsOneWidget);
   });

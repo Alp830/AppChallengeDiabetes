@@ -5,14 +5,13 @@ import '../design/spacing.dart';
 import '../main.dart' show FoodItem;
 import 'freshness.dart';
 
-/// Compact inventory tile. Tapping the body edits the item; the close control
-/// removes it without forcing every card to reserve space for full metadata.
+/// Compact inventory tile. Tapping edits the item (delete lives in the edit
+/// sheet), and in selection mode tapping toggles selection.
 class FridgeItemCard extends StatelessWidget {
   const FridgeItemCard({
     super.key,
     required this.foodItem,
     required this.onEdit,
-    required this.onRemove,
     this.selected = false,
     this.selectionMode = false,
     this.onToggleSelection,
@@ -21,7 +20,6 @@ class FridgeItemCard extends StatelessWidget {
 
   final FoodItem foodItem;
   final VoidCallback onEdit;
-  final VoidCallback onRemove;
   final bool selected;
   final bool selectionMode;
   final VoidCallback? onToggleSelection;
@@ -113,32 +111,23 @@ class FridgeItemCard extends StatelessWidget {
                   ),
                 ),
               ),
-              if (selected)
+              if (selectionMode)
                 Positioned(
-                  top: 2,
-                  right: 2,
-                  child: Icon(
-                    Icons.check_circle,
-                    size: 20,
-                    color: theme.colorScheme.primary,
-                    semanticLabel: 'Selected',
-                  ),
-                )
-              else
-                Positioned(
-                  top: 0,
-                  right: 0,
-                  child: SizedBox(
-                    width: 28,
-                    height: 28,
-                    child: IconButton(
-                      key: ValueKey('fridgeDelete_${foodItem.name}'),
-                      padding: EdgeInsets.zero,
-                      iconSize: 17,
-                      tooltip: 'Delete item',
-                      visualDensity: VisualDensity.compact,
-                      onPressed: onRemove,
-                      icon: const Icon(Icons.close),
+                  top: Spacing.s4,
+                  left: Spacing.s4,
+                  child: Semantics(
+                    container: true,
+                    label: selected ? 'Selected' : 'Not selected',
+                    child: ExcludeSemantics(
+                      child: Icon(
+                        selected
+                            ? Icons.check_circle
+                            : Icons.radio_button_unchecked,
+                        size: 22,
+                        color: selected
+                            ? scheme.primary
+                            : scheme.onSurfaceVariant,
+                      ),
                     ),
                   ),
                 ),

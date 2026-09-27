@@ -24,6 +24,14 @@ void main() {
     );
   }
 
+  Future<void> deleteViaEditSheet(WidgetTester tester, String name) async {
+    await tester.tap(find.text(name));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byKey(const Key('fridgeEditDelete')));
+    await tester.tap(find.byKey(const Key('fridgeEditDelete')));
+    await tester.pumpAndSettle();
+  }
+
   testWidgets('edits stage locally and only commit when saved', (tester) async {
     final key = GlobalKey<FridgePageState>();
     final committed = <FridgeChangeSet>[];
@@ -65,10 +73,10 @@ void main() {
     final committed = <FridgeChangeSet>[];
     await tester.pumpWidget(wrap(key, [stored('a', 'Milk')], committed));
 
-    await tester.tap(find.byTooltip('Delete item'));
-    await tester.pumpAndSettle();
+    await deleteViaEditSheet(tester, 'Milk');
     expect(find.text('Your fridge is empty'), findsOneWidget);
     expect(committed, isEmpty);
+    expect(find.text('1 unsaved change'), findsOneWidget);
 
     await tester.tap(find.byKey(const Key('fridgeSaveBar')));
     await tester.pumpAndSettle();
@@ -82,8 +90,7 @@ void main() {
     final committed = <FridgeChangeSet>[];
     await tester.pumpWidget(wrap(key, [stored('a', 'Milk')], committed));
 
-    await tester.tap(find.byTooltip('Delete item'));
-    await tester.pumpAndSettle();
+    await deleteViaEditSheet(tester, 'Milk');
     expect(key.currentState!.isDirty, isTrue);
 
     await tester.tap(find.byKey(const Key('fridgeDiscardBar')));
@@ -101,8 +108,7 @@ void main() {
     final committed = <FridgeChangeSet>[];
     await tester.pumpWidget(wrap(key, [stored('a', 'Milk')], committed));
 
-    await tester.tap(find.byTooltip('Delete item'));
-    await tester.pumpAndSettle();
+    await deleteViaEditSheet(tester, 'Milk');
 
     final leaving = key.currentState!.confirmLeave();
     await tester.pumpAndSettle();
@@ -121,8 +127,7 @@ void main() {
     final committed = <FridgeChangeSet>[];
     await tester.pumpWidget(wrap(key, [stored('a', 'Milk')], committed));
 
-    await tester.tap(find.byTooltip('Delete item'));
-    await tester.pumpAndSettle();
+    await deleteViaEditSheet(tester, 'Milk');
 
     final leaving = key.currentState!.confirmLeave();
     await tester.pumpAndSettle();
@@ -141,5 +146,18 @@ void main() {
     expect(find.byKey(const Key('fridgeEmptyScan')), findsOneWidget);
     expect(find.byKey(const Key('fridgeEmptyAdd')), findsOneWidget);
     expect(find.byType(FloatingActionButton), findsNothing);
+  });
+
+  testWidgets('one extended Scan fridge FAB plus a small add FAB', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      wrap(GlobalKey<FridgePageState>(), [stored('a', 'Milk')], []),
+    );
+    expect(
+      find.widgetWithText(FloatingActionButton, 'Scan fridge'),
+      findsOneWidget,
+    );
+    expect(find.byTooltip('Add food'), findsOneWidget);
   });
 }

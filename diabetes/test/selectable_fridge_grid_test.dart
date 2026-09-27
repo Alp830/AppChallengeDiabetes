@@ -130,7 +130,7 @@ void main() {
     await tester.tap(find.byKey(const Key('deleteSelectedFridgeItems')));
     await tester.pumpAndSettle();
     expect(find.text('Delete 2 items?'), findsOneWidget);
-    await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
+    await tester.tap(find.widgetWithText(FilledButton, 'Delete 2 items'));
     await tester.pumpAndSettle();
     expect(deleted, {0, 1});
   });

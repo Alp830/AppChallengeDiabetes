@@ -29,6 +29,7 @@ class SelectableFridgeGrid extends StatefulWidget {
     required this.onRemoveSelected,
     required this.onBulkAction,
     this.onSelectionCountChanged,
+    this.bottomPadding = 144,
   });
 
   final List<MapEntry<int, FoodItem>> items;
@@ -39,6 +40,9 @@ class SelectableFridgeGrid extends StatefulWidget {
   /// Reports how many items are currently selected so the host can make room
   /// for the bottom selection toolbar (e.g. lifting its floating buttons).
   final ValueChanged<int>? onSelectionCountChanged;
+
+  /// Space kept clear below the grid for the host's floating buttons and bars.
+  final double bottomPadding;
 
   @override
   State<SelectableFridgeGrid> createState() => _SelectableFridgeGridState();
@@ -89,7 +93,11 @@ class _SelectableFridgeGridState extends State<SelectableFridgeGrid> {
       final confirmed = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          title: Text('Delete ${_selected.length} items?'),
+          title: Text(
+            _selected.length == 1
+                ? 'Delete 1 item?'
+                : 'Delete ${_selected.length} items?',
+          ),
           content: const Text(
             'This removes the selected foods from your fridge.',
           ),
@@ -100,7 +108,15 @@ class _SelectableFridgeGridState extends State<SelectableFridgeGrid> {
             ),
             FilledButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Delete'),
+              style: FilledButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.error,
+                foregroundColor: Theme.of(context).colorScheme.onError,
+              ),
+              child: Text(
+                _selected.length == 1
+                    ? 'Delete 1 item'
+                    : 'Delete ${_selected.length} items',
+              ),
             ),
           ],
         ),
@@ -206,9 +222,7 @@ class _SelectableFridgeGridState extends State<SelectableFridgeGrid> {
                             Text(
                               'Expiry',
                               style: Theme.of(context).textTheme.labelMedium
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                                  ?.copyWith(fontWeight: FontWeight.w600),
                             ),
                           ],
                         ),
@@ -218,11 +232,11 @@ class _SelectableFridgeGridState extends State<SelectableFridgeGrid> {
                 ),
               ),
               SliverPadding(
-                padding: const EdgeInsets.fromLTRB(
+                padding: EdgeInsets.fromLTRB(
                   Spacing.margin,
                   0,
                   Spacing.margin,
-                  280,
+                  widget.bottomPadding,
                 ),
                 sliver: SliverGrid(
                   gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
@@ -247,7 +261,6 @@ class _SelectableFridgeGridState extends State<SelectableFridgeGrid> {
                             widget.onEdit(entry.key);
                           }
                         },
-                        onRemove: () => widget.onRemoveSelected({entry.key}),
                       ),
                     );
                   }, childCount: widget.items.length),
@@ -287,29 +300,34 @@ class _SelectableFridgeGridState extends State<SelectableFridgeGrid> {
                         Expanded(
                           child: Text(
                             '${_selected.length} selected',
-                            style: Theme.of(context).textTheme.titleMedium,
+                            style: Theme.of(context).textTheme.titleSmall,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        TextButton.icon(
-                          onPressed: () => _runAction(FoodBulkAction.addToMeal),
-                          icon: const Icon(Icons.restaurant),
-                          label: const Text('Meal'),
+                        IconButton.outlined(
+                          key: const Key('deleteSelectedFridgeItems'),
+                          tooltip: 'Remove selected',
+                          onPressed: () => _runAction(FoodBulkAction.delete),
+                          style: IconButton.styleFrom(
+                            foregroundColor: Theme.of(
+                              context,
+                            ).colorScheme.error,
+                            side: BorderSide(
+                              color: Theme.of(context).colorScheme.error,
+                            ),
+                          ),
+                          icon: const Icon(Icons.delete_outline),
                         ),
                         const SizedBox(width: Spacing.s8),
                         FilledButton.icon(
-                          key: const Key('deleteSelectedFridgeItems'),
-                          onPressed: () => _runAction(FoodBulkAction.delete),
+                          key: const Key('addSelectedToMeal'),
+                          onPressed: () => _runAction(FoodBulkAction.addToMeal),
                           style: FilledButton.styleFrom(
-                            minimumSize: const Size(0, 44),
-                            backgroundColor: Theme.of(
-                              context,
-                            ).colorScheme.errorContainer,
-                            foregroundColor: Theme.of(
-                              context,
-                            ).colorScheme.onErrorContainer,
+                            minimumSize: const Size(0, 48),
                           ),
-                          icon: const Icon(Icons.delete_outline, size: 20),
-                          label: const Text('Remove'),
+                          icon: const Icon(Icons.restaurant),
+                          label: const Text('Add to meal'),
                         ),
                       ],
                     ),
