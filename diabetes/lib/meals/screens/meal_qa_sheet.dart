@@ -27,7 +27,6 @@ Future<void> showMealQaSheet(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
-    showDragHandle: true,
     builder: (sheetContext) => _MealQaSheet(
       meal: meal,
       scope: scope,

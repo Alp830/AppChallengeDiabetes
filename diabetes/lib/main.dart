@@ -910,8 +910,7 @@ class FridgeChangeSet {
   /// Ids of documents removed from the working set.
   final List<String> deletions;
 
-  bool get isEmpty =>
-      additions.isEmpty && updates.isEmpty && deletions.isEmpty;
+  bool get isEmpty => additions.isEmpty && updates.isEmpty && deletions.isEmpty;
 
   int get count => additions.length + updates.length + deletions.length;
 }
@@ -2267,7 +2266,6 @@ class _AgentPageState extends State<AgentPage> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      showDragHandle: true,
       builder: (sheetContext) => StatefulBuilder(
         builder: (context, setSheetState) {
           void update(VoidCallback change) {
@@ -2482,8 +2480,7 @@ class _AgentPageState extends State<AgentPage> {
       // The widget param, not AppEnvironment, so tests can inject a fake key.
       apiKey: widget.geminiApiKey,
       history: _qaHistory[recommendation.dishName] ?? const [],
-      onHistoryChanged: (turns) =>
-          _qaHistory[recommendation.dishName] = turns,
+      onHistoryChanged: (turns) => _qaHistory[recommendation.dishName] = turns,
       showFirstRunTip: showTip,
       onTipSeen: _markQaTipSeen,
       initialQuestion: initialQuestion,
@@ -3051,7 +3048,10 @@ class _FridgeAndCostRow extends StatelessWidget {
     }
     if (estimatedCostPerServing != null) {
       chips.add(
-        _InfoPill(icon: Icons.payments_outlined, label: estimatedCostPerServing!),
+        _InfoPill(
+          icon: Icons.payments_outlined,
+          label: estimatedCostPerServing!,
+        ),
       );
     }
     return Wrap(spacing: 8, runSpacing: 8, children: chips);

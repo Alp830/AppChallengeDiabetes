@@ -1,6 +1,8 @@
+import 'package:flutter/cupertino.dart' show CupertinoPageTransitionsBuilder;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'app_radius.dart';
 import 'app_status_colors.dart';
 
 /// Central design system for the Wellness Companion app.
@@ -28,9 +30,6 @@ abstract class AppTheme {
   static const Color _ink = Color(0xFF1B241F);
   static const Color _muted = Color(0xFF63706A);
   static const Color _hairline = Color(0xFFE4E9E4);
-
-  /// Corner radius used for the app's larger surfaces (cards, sheets, fields).
-  static const double radius = 18;
 
   static ThemeData light() {
     final scheme =
@@ -85,7 +84,6 @@ abstract class AppTheme {
         foregroundColor: _ink,
         elevation: 0,
         scrolledUnderElevation: 0.5,
-        centerTitle: true,
         systemOverlayStyle: SystemUiOverlayStyle.dark,
         titleTextStyle: text.titleLarge,
       ),
@@ -95,7 +93,7 @@ abstract class AppTheme {
         margin: EdgeInsets.zero,
         clipBehavior: Clip.antiAlias,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(radius),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
           side: const BorderSide(color: _hairline),
         ),
       ),
@@ -109,7 +107,7 @@ abstract class AppTheme {
           minimumSize: const Size(0, 52),
           textStyle: text.labelLarge,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(AppRadius.md),
           ),
         ),
       ),
@@ -121,7 +119,7 @@ abstract class AppTheme {
           foregroundColor: Colors.white,
           textStyle: text.labelLarge,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(AppRadius.md),
           ),
         ),
       ),
@@ -132,7 +130,7 @@ abstract class AppTheme {
           side: const BorderSide(color: _hairline),
           textStyle: text.labelLarge,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(AppRadius.md),
           ),
         ),
       ),
@@ -151,7 +149,9 @@ abstract class AppTheme {
       chipTheme: ChipThemeData(
         backgroundColor: _surface,
         side: const BorderSide(color: _hairline),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.md),
+        ),
         labelStyle: text.labelLarge,
       ),
       listTileTheme: const ListTileThemeData(
@@ -166,15 +166,15 @@ abstract class AppTheme {
           vertical: 16,
         ),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(AppRadius.md),
           borderSide: BorderSide(color: scheme.outline),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(AppRadius.md),
           borderSide: BorderSide(color: scheme.outline),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(AppRadius.md),
           borderSide: const BorderSide(color: _primary, width: 2),
         ),
         labelStyle: const TextStyle(color: _muted),
@@ -184,19 +184,41 @@ abstract class AppTheme {
         behavior: SnackBarBehavior.floating,
         backgroundColor: _ink,
         contentTextStyle: const TextStyle(color: Colors.white),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.md),
+        ),
       ),
       bottomSheetTheme: const BottomSheetThemeData(
         backgroundColor: _surface,
         surfaceTintColor: Colors.transparent,
+        showDragHandle: true,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(AppRadius.xl),
+          ),
         ),
+      ),
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: scheme.surfaceContainer,
+        indicatorColor: scheme.secondaryContainer,
+        labelTextStyle: WidgetStatePropertyAll(text.labelMedium),
+      ),
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: FadeForwardsPageTransitionsBuilder(),
+          TargetPlatform.fuchsia: FadeForwardsPageTransitionsBuilder(),
+          TargetPlatform.linux: FadeForwardsPageTransitionsBuilder(),
+          TargetPlatform.windows: FadeForwardsPageTransitionsBuilder(),
+          TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+          TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
+        },
       ),
       dialogTheme: DialogThemeData(
         backgroundColor: _surface,
         surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.xl),
+        ),
       ),
     );
   }

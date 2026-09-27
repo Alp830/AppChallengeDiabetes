@@ -4,6 +4,10 @@
 /// standard gutter/margin. Keeping these as named constants (rather than the
 /// inline literals used elsewhere in the app) makes the mandate explicit and
 /// keeps the new Fridge widgets consistent.
+///
+/// Off-grid literals map as 20/28 → s24 between sections or s16 inside a
+/// component, 10 → s8 or s12, 6 → s8 (s4 between an icon and its label), and
+/// 1–3 → s4 or remove.
 abstract class Spacing {
   static const double s4 = 4;
   static const double s8 = 8;
@@ -11,6 +15,9 @@ abstract class Spacing {
   static const double s16 = 16;
   static const double s24 = 24;
   static const double s32 = 32;
+
+  /// Gap between unrelated sections of a screen.
+  static const double section = s24;
 
   /// 16px gutter between grid columns/rows, per the 4-column mobile grid.
   static const double gutter = s16;

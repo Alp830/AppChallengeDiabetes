@@ -1,3 +1,4 @@
+import 'package:diabetes/design/app_radius.dart';
 import 'package:diabetes/design/app_status_colors.dart';
 import 'package:diabetes/design/app_theme.dart';
 import 'package:diabetes/fridge/freshness.dart';
@@ -45,5 +46,18 @@ void main() {
   test('freshness colors come from the theme extension', () {
     final status = theme.extension<AppStatusColors>()!;
     expect(status.forFreshness(Freshness.expired), const Color(0xFFB00020));
+  });
+
+  test('sheets get a drag handle from the theme', () {
+    expect(theme.bottomSheetTheme.showDragHandle, isTrue);
+  });
+
+  test('app bars use the platform title alignment', () {
+    expect(theme.appBarTheme.centerTitle, isNull);
+  });
+
+  test('cards use the large radius token', () {
+    final shape = theme.cardTheme.shape! as RoundedRectangleBorder;
+    expect(shape.borderRadius, BorderRadius.circular(AppRadius.lg));
   });
 }
