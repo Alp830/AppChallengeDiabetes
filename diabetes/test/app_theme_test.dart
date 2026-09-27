@@ -60,4 +60,18 @@ void main() {
     final shape = theme.cardTheme.shape! as RoundedRectangleBorder;
     expect(shape.borderRadius, BorderRadius.circular(AppRadius.lg));
   });
+
+  test('whole text theme uses the bundled family with explicit weights', () {
+    final t = theme.textTheme;
+    expect(t.bodyMedium!.fontFamily, 'AtkinsonHyperlegibleNext');
+    for (final style in [
+      t.titleSmall,
+      t.labelLarge,
+      t.labelMedium,
+      t.labelSmall,
+    ]) {
+      expect(style!.fontWeight, FontWeight.w600);
+    }
+    expect(t.displaySmall!.fontWeight, FontWeight.w700);
+  });
 }

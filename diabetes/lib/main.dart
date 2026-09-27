@@ -32,6 +32,10 @@ import 'settings/data/app_preferences_repository.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  LicenseRegistry.addLicense(() async* {
+    final license = await rootBundle.loadString('assets/fonts/OFL.txt');
+    yield LicenseEntryWithLineBreaks(['AtkinsonHyperlegibleNext'], license);
+  });
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await AppEnvironment.load();
 
@@ -853,7 +857,7 @@ class _HeaderTitle extends StatelessWidget {
           title,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.headlineSmall?.copyWith(fontSize: 22),
+          style: theme.textTheme.titleLarge,
         ),
       ],
     );

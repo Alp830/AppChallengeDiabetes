@@ -103,10 +103,9 @@ class FridgeItemCard extends StatelessWidget {
                           textAlign: TextAlign.center,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.labelSmall?.copyWith(
+                          style: theme.textTheme.labelMedium?.copyWith(
                             color: statusColor,
                             fontWeight: FontWeight.w700,
-                            fontSize: 10,
                           ),
                         ),
                       ),

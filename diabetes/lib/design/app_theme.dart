@@ -52,30 +52,33 @@ abstract class AppTheme {
     final base = ThemeData(
       useMaterial3: true,
       colorScheme: scheme,
+      fontFamily: 'AtkinsonHyperlegibleNext',
       scaffoldBackgroundColor: scheme.surfaceContainerLow,
       splashFactory: InkSparkle.splashFactory,
       visualDensity: VisualDensity.standard,
       extensions: const [AppStatusColors.standard],
     );
 
-    final text = base.textTheme
-        .apply(bodyColor: _ink, displayColor: _ink)
-        .copyWith(
-          headlineSmall: base.textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.w700,
-            letterSpacing: -0.4,
-          ),
-          titleLarge: base.textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.w700,
-            letterSpacing: -0.2,
-          ),
-          titleMedium: base.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
-          labelLarge: base.textTheme.labelLarge?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
-        );
+    TextStyle? weight(TextStyle? style, FontWeight w, [double? tracking]) =>
+        style?.copyWith(fontWeight: w, letterSpacing: tracking);
+    final t = base.textTheme.apply(bodyColor: _ink, displayColor: _ink);
+    final text = t.copyWith(
+      displayLarge: weight(t.displayLarge, FontWeight.w700),
+      displayMedium: weight(t.displayMedium, FontWeight.w700),
+      displaySmall: weight(t.displaySmall, FontWeight.w700),
+      headlineLarge: weight(t.headlineLarge, FontWeight.w700),
+      headlineMedium: weight(t.headlineMedium, FontWeight.w700),
+      headlineSmall: weight(t.headlineSmall, FontWeight.w700, -0.4),
+      titleLarge: weight(t.titleLarge, FontWeight.w700, -0.2),
+      titleMedium: weight(t.titleMedium, FontWeight.w600),
+      titleSmall: weight(t.titleSmall, FontWeight.w600),
+      bodyLarge: weight(t.bodyLarge, FontWeight.w400),
+      bodyMedium: weight(t.bodyMedium, FontWeight.w400),
+      bodySmall: weight(t.bodySmall, FontWeight.w400),
+      labelLarge: weight(t.labelLarge, FontWeight.w600),
+      labelMedium: weight(t.labelMedium, FontWeight.w600),
+      labelSmall: weight(t.labelSmall, FontWeight.w600),
+    );
 
     return base.copyWith(
       textTheme: text,
