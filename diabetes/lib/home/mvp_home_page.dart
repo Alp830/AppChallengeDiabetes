@@ -281,18 +281,21 @@ class _HomeContentState extends State<_HomeContent> {
               padding: const EdgeInsets.only(bottom: Spacing.s8),
               child: Card(
                 child: ListTile(
-                  leading: Checkbox(
-                    value: item.isCompleted,
-                    onChanged: _saving
-                        ? null
-                        : (value) => _commit([
-                            for (final current in _items)
-                              current.id == item.id
-                                  ? current.copyWith(
-                                      isCompleted: value ?? false,
-                                    )
-                                  : current,
-                          ]),
+                  leading: Semantics(
+                    label: item.name,
+                    child: Checkbox(
+                      value: item.isCompleted,
+                      onChanged: _saving
+                          ? null
+                          : (value) => _commit([
+                              for (final current in _items)
+                                current.id == item.id
+                                    ? current.copyWith(
+                                        isCompleted: value ?? false,
+                                      )
+                                    : current,
+                            ]),
+                    ),
                   ),
                   title: Text(
                     item.name,

@@ -139,6 +139,7 @@ class _DragSelectionSurfaceState<T extends Object>
 
     return GestureDetector(
       behavior: HitTestBehavior.translucent,
+      excludeFromSemantics: true,
       onTapUp: (details) {
         if (!_overItem(details.localPosition)) {
           widget.onSelectionChanged(<T>{});
