@@ -1,27 +1,17 @@
-import 'package:flutter/material.dart';
-
 /// Freshness status derived from an item's expiry date.
 ///
-/// This is the single source of truth for the status label and colour shown on
-/// a fridge item card. Colours are chosen for AAA high-contrast against a light
-/// surface, per the accessibility mandate in Design Spec V3.
+/// Single source of truth for the status label on a fridge card. Colors live
+/// in [AppStatusColors] on the theme.
 enum Freshness {
-  expired('Expired', Color(0xFFB00020)),
-  expiringSoon('Expiring Soon', Color(0xFF8A5A00)),
-  fresh('Fresh', Color(0xFF1B5E20)),
-  unknown('No date', Color(0xFF49454F));
+  expired('Expired'),
+  expiringSoon('Expiring Soon'),
+  fresh('Fresh'),
+  unknown('No date');
 
-  const Freshness(this.label, this.color);
+  const Freshness(this.label);
 
   /// Human-readable status shown on the card.
   final String label;
-
-  /// AAA-contrast foreground colour for the status text.
-  final Color color;
-
-  /// Soft tinted fill used behind icon chips and status pills, echoing the
-  /// colored-chip style of the reference nutrition apps.
-  Color get tint => color.withValues(alpha: 0.12);
 }
 
 /// Number of days before expiry within which an item is "Expiring Soon".

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../design/app_status_colors.dart';
 import '../design/spacing.dart';
 import '../main.dart' show FoodItem;
 import 'freshness.dart';
@@ -30,13 +31,17 @@ class FridgeItemCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final freshness = freshnessFor(foodItem.expiryDate, now: now);
+    final statusColor = AppStatusColors.of(context).forFreshness(freshness);
+    final statusTint = AppStatusColors.tint(statusColor);
 
     final scheme = theme.colorScheme;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 140),
       decoration: BoxDecoration(
-        color: selected ? scheme.primaryContainer.withValues(alpha: 0.4) : scheme.surface,
+        color: selected
+            ? scheme.primaryContainer.withValues(alpha: 0.4)
+            : scheme.surface,
         border: Border.all(
           color: selected ? scheme.primary : scheme.outlineVariant,
           width: selected ? 2 : 1,
@@ -64,13 +69,13 @@ class FridgeItemCard extends StatelessWidget {
                         height: 36,
                         width: 36,
                         decoration: BoxDecoration(
-                          color: freshness.tint,
+                          color: statusTint,
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Icon(
                           foodItem.foodType.icon,
                           size: 20,
-                          color: freshness.color,
+                          color: statusColor,
                         ),
                       ),
                       const SizedBox(height: Spacing.s4),
@@ -90,7 +95,7 @@ class FridgeItemCard extends StatelessWidget {
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: freshness.tint,
+                          color: statusTint,
                           borderRadius: BorderRadius.circular(999),
                         ),
                         child: Text(
@@ -99,7 +104,7 @@ class FridgeItemCard extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.labelSmall?.copyWith(
-                            color: freshness.color,
+                            color: statusColor,
                             fontWeight: FontWeight.w700,
                             fontSize: 10,
                           ),
