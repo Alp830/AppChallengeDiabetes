@@ -304,6 +304,7 @@ class _AuthPageState extends State<AuthPage> {
 
   bool _isLoading = false;
   bool _isSignUp = false;
+  bool _obscurePassword = true;
   String? _authError;
 
   @override
@@ -390,7 +391,7 @@ class _AuthPageState extends State<AuthPage> {
         if (mounted) {
           setState(() {
             _authError =
-                'No account was found. Sign up with email and password first.';
+                'No account found for that Google address. Create an account with email first.';
           });
         }
         return;
@@ -422,6 +423,36 @@ class _AuthPageState extends State<AuthPage> {
     }
   }
 
+  Future<void> _resetPassword() async {
+    final email = _emailController.text.trim();
+    if (!email.contains('@')) {
+      setState(
+        () => _authError =
+            'Enter your email above, then tap "Forgot password?" again.',
+      );
+      return;
+    }
+    setState(() {
+      _isLoading = true;
+      _authError = null;
+    });
+    try {
+      await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'If an account exists for $email, a reset link is on its way.',
+          ),
+        ),
+      );
+    } on FirebaseAuthException catch (error) {
+      if (mounted) setState(() => _authError = FriendlyErrors.auth(error));
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
   Future<void> _createUserProfile(User user, String email) {
     return FirebaseFirestore.instance.collection('users').doc(user.uid).set({
       'email': email,
@@ -443,108 +474,156 @@ class _AuthPageState extends State<AuthPage> {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(Spacing.s16),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 420),
               child: Form(
                 key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      _isSignUp ? 'Create Account' : 'Sign In',
-                      style: Theme.of(context).textTheme.headlineMedium,
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 24),
-                    TextFormField(
-                      controller: _emailController,
-                      keyboardType: TextInputType.emailAddress,
-                      autofillHints: const [AutofillHints.email],
-                      decoration: const InputDecoration(labelText: 'Email'),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Enter your email';
-                        }
-
-                        if (!value.contains('@')) {
-                          return 'Enter a valid email';
-                        }
-
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      controller: _passwordController,
-                      obscureText: true,
-                      autofillHints: const [AutofillHints.password],
-                      decoration: const InputDecoration(labelText: 'Password'),
-                      validator: (value) {
-                        if (value == null || value.length < 6) {
-                          return 'Use at least 6 characters';
-                        }
-
-                        return null;
-                      },
-                    ),
-                    if (_authError != null) ...[
-                      const SizedBox(height: 12),
+                child: AutofillGroup(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.eco,
+                        size: 32,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      const SizedBox(height: Spacing.s4),
                       Text(
-                        _authError!,
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.error,
+                        'Wellness Companion',
+                        style: Theme.of(context).textTheme.headlineMedium,
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: Spacing.s4),
+                      Text(
+                        "Turn what's in your fridge into meal ideas.",
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: Spacing.s12),
+                      Text(
+                        _isSignUp ? 'Create account' : 'Sign in',
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      const SizedBox(height: Spacing.s12),
+                      TextFormField(
+                        controller: _emailController,
+                        keyboardType: TextInputType.emailAddress,
+                        autofillHints: const [AutofillHints.email],
+                        decoration: const InputDecoration(labelText: 'Email'),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Enter your email';
+                          }
+
+                          if (!value.contains('@')) {
+                            return 'Enter a valid email';
+                          }
+
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: Spacing.s12),
+                      TextFormField(
+                        controller: _passwordController,
+                        obscureText: _obscurePassword,
+                        autofillHints: _isSignUp
+                            ? const [AutofillHints.newPassword]
+                            : const [AutofillHints.password],
+                        decoration: InputDecoration(
+                          labelText: 'Password',
+                          suffixIcon: IconButton(
+                            tooltip: _obscurePassword
+                                ? 'Show password'
+                                : 'Hide password',
+                            icon: Icon(
+                              _obscurePassword
+                                  ? Icons.visibility_outlined
+                                  : Icons.visibility_off_outlined,
+                            ),
+                            onPressed: () => setState(
+                              () => _obscurePassword = !_obscurePassword,
+                            ),
+                          ),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Enter your password';
+                          }
+                          if (_isSignUp && value.length < 6) {
+                            return 'Use at least 6 characters';
+                          }
+                          return null;
+                        },
+                      ),
+                      if (!_isSignUp)
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton(
+                            onPressed: _isLoading ? null : _resetPassword,
+                            child: const Text('Forgot password?'),
+                          ),
+                        ),
+                      if (_authError != null) ...[
+                        const SizedBox(height: Spacing.s8),
+                        Text(
+                          _authError!,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.error,
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: Spacing.s16),
+                      FilledButton(
+                        onPressed: _isLoading ? null : _submit,
+                        child: Text(
+                          _isLoading
+                              ? 'Please wait\u2026'
+                              : _isSignUp
+                              ? 'Create account'
+                              : 'Sign in',
+                        ),
+                      ),
+                      const SizedBox(height: Spacing.s12),
+                      Row(
+                        children: [
+                          const Expanded(child: Divider()),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            child: Text(
+                              'or',
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ),
+                          const Expanded(child: Divider()),
+                        ],
+                      ),
+                      const SizedBox(height: Spacing.s12),
+                      OutlinedButton.icon(
+                        onPressed: _isLoading ? null : _signInWithGoogle,
+                        icon: const Icon(Icons.account_circle_outlined),
+                        label: const Text('Continue with Google'),
+                      ),
+                      TextButton(
+                        onPressed: _isLoading
+                            ? null
+                            : () {
+                                setState(() {
+                                  _isSignUp = !_isSignUp;
+                                  _authError = null;
+                                });
+                              },
+                        child: Text(
+                          _isSignUp
+                              ? 'Already have an account? Sign in'
+                              : 'New here? Create an account',
                         ),
                       ),
                     ],
-                    const SizedBox(height: 16),
-                    FilledButton(
-                      onPressed: _isLoading ? null : _submit,
-                      child: Text(
-                        _isLoading
-                            ? 'Please wait...'
-                            : _isSignUp
-                            ? 'Sign Up'
-                            : 'Log In',
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        const Expanded(child: Divider()),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          child: Text(
-                            'or',
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                        ),
-                        const Expanded(child: Divider()),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    OutlinedButton.icon(
-                      onPressed: _isLoading ? null : _signInWithGoogle,
-                      icon: const Icon(Icons.account_circle_outlined),
-                      label: const Text('Log in with Google'),
-                    ),
-                    TextButton(
-                      onPressed: _isLoading
-                          ? null
-                          : () {
-                              setState(() {
-                                _isSignUp = !_isSignUp;
-                                _authError = null;
-                              });
-                            },
-                      child: Text(
-                        _isSignUp
-                            ? 'Already have an account? Log in'
-                            : 'Need an account? Sign up',
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ),
