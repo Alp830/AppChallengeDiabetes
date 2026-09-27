@@ -11,11 +11,6 @@ import 'fridge_item_card.dart';
 
 enum FoodBulkAction {
   addToMeal('Add selected foods to a meal', Icons.restaurant),
-  compareCarbs('Compare carbohydrates', Icons.compare_arrows),
-  totalCarbs('Calculate total carbohydrates', Icons.calculate),
-  totalCalories('Calculate total calories', Icons.local_fire_department),
-  saveMeal('Save as a reusable meal', Icons.bookmark_add),
-  groceryList('Add to grocery list', Icons.shopping_cart),
   delete('Delete selected items', Icons.delete_outline);
 
   const FoodBulkAction(this.label, this.icon);

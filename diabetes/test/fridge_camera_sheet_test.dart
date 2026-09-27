@@ -12,10 +12,7 @@ void main() {
     // The chooser offers both a live-capture and an upload path. It does not
     // touch the camera plugin until "Take a picture" is tapped, so simply
     // rendering it is safe in a widget test.
-    expect(
-      find.widgetWithText(FilledButton, 'Take a picture'),
-      findsOneWidget,
-    );
-    expect(find.text('Upload a screenshot/picture'), findsOneWidget);
+    expect(find.widgetWithText(FilledButton, 'Take a picture'), findsOneWidget);
+    expect(find.text('Upload a photo'), findsOneWidget);
   });
 }

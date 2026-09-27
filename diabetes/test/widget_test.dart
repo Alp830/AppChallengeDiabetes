@@ -34,7 +34,7 @@ void main() {
       find.widgetWithText(TextFormField, 'Description (optional)'),
       'Breakfast food',
     );
-    await tester.tap(find.text('Save Food'));
+    await tester.tap(find.text('Save food'));
     await tester.pumpAndSettle();
 
     expect(find.text('Eggs'), findsOneWidget);
@@ -50,7 +50,7 @@ void main() {
       find.widgetWithText(TextFormField, 'Amount'),
       '1 carton',
     );
-    await tester.tap(find.text('Save Changes'));
+    await tester.tap(find.text('Save changes'));
     await tester.pumpAndSettle();
 
     expect(find.text('Milk'), findsOneWidget);

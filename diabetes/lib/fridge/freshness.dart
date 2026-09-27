@@ -4,7 +4,7 @@
 /// in [AppStatusColors] on the theme.
 enum Freshness {
   expired('Expired'),
-  expiringSoon('Expiring Soon'),
+  expiringSoon('Expiring soon'),
   fresh('Fresh'),
   unknown('No date');
 

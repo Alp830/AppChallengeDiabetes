@@ -45,7 +45,7 @@ void main() {
       'Eggs',
     );
     await tester.enterText(find.widgetWithText(TextFormField, 'Amount'), '12');
-    await tester.tap(find.text('Save Food'));
+    await tester.tap(find.text('Save food'));
     await tester.pumpAndSettle();
 
     // Staged, but nothing has been written yet.

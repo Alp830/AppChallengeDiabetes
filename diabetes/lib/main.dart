@@ -270,12 +270,12 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
                 FilledButton(
                   onPressed: isBusy ? null : _checkVerification,
                   child: Text(
-                    _isChecking ? 'Checking...' : 'I verified my email',
+                    _isChecking ? 'Checking…' : 'I verified my email',
                   ),
                 ),
                 TextButton(
                   onPressed: isBusy ? null : _resendVerification,
-                  child: Text(_isSending ? 'Sending...' : 'Resend email'),
+                  child: Text(_isSending ? 'Sending…' : 'Resend email'),
                 ),
                 TextButton(
                   onPressed: isBusy
@@ -1337,7 +1337,7 @@ class FridgePageState extends State<FridgePage> {
             key: const Key('fridgeSaveChanges'),
             onPressed: () =>
                 Navigator.of(dialogContext).pop(_UnsavedChoice.save),
-            child: const Text('Save'),
+            child: const Text('Save changes'),
           ),
         ],
       ),
@@ -1436,30 +1436,8 @@ class FridgePageState extends State<FridgePage> {
     FoodBulkAction action,
     List<FoodItem> foods,
   ) async {
-    if (action == FoodBulkAction.addToMeal ||
-        action == FoodBulkAction.saveMeal) {
-      final callback = widget.onAddSelectedToMeal;
-      if (callback != null) {
-        await callback(foods);
-        return;
-      }
-    }
-
-    final messenger = ScaffoldMessenger.of(context);
-    final message = switch (action) {
-      FoodBulkAction.compareCarbs ||
-      FoodBulkAction.totalCarbs ||
-      FoodBulkAction.totalCalories =>
-        'Nutrition values are not stored for these fridge items yet.',
-      FoodBulkAction.groceryList =>
-        'A grocery list has not been configured for this app yet.',
-      FoodBulkAction.addToMeal ||
-      FoodBulkAction.saveMeal => 'Sign in to add these foods to a saved meal.',
-      FoodBulkAction.delete => '',
-    };
-    if (message.isNotEmpty) {
-      messenger.showSnackBar(SnackBar(content: Text(message)));
-    }
+    if (action != FoodBulkAction.addToMeal) return;
+    await widget.onAddSelectedToMeal?.call(foods);
   }
 
   Future<void> _takeFridgePhoto(BuildContext context) async {
@@ -1888,7 +1866,7 @@ class _FridgeCameraSheetState extends State<FridgeCameraSheet> {
           OutlinedButton.icon(
             onPressed: _uploadPhoto,
             icon: const Icon(Icons.photo_library_outlined),
-            label: const Text('Upload a screenshot/picture'),
+            label: const Text('Upload a photo'),
           ),
         ],
       ),
@@ -1908,7 +1886,7 @@ class _FridgeCameraSheetState extends State<FridgeCameraSheet> {
           FilledButton.icon(
             onPressed: _isTakingPicture ? null : _capturePhoto,
             icon: const Icon(Icons.camera_alt),
-            label: Text(_isTakingPicture ? 'Scanning...' : 'Take Picture'),
+            label: Text(_isTakingPicture ? 'Capturing…' : 'Take picture'),
           )
         else
           FilledButton.icon(
@@ -1945,10 +1923,7 @@ class _FridgeCameraSheetState extends State<FridgeCameraSheet> {
               ),
               const SizedBox(height: Spacing.s8),
               Text(
-                'The camera is usually in use by another app (video call, '
-                'Spotify, OBS…) or blocked by your browser/OS. Close those and '
-                'reopen, or just upload a photo below — it works the same for '
-                'the food scanner.',
+                'Close other apps using it, or upload a photo instead.',
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
@@ -2107,16 +2082,14 @@ class _AddFoodSheetState extends State<AddFoodSheet> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                _isEditing ? 'Edit Food' : 'Add Food',
+                _isEditing ? 'Edit food' : 'Add food',
                 style: Theme.of(context).textTheme.titleLarge,
               ),
               const SizedBox(height: Spacing.s16),
               OutlinedButton.icon(
                 onPressed: _pickImage,
                 icon: const Icon(Icons.add_photo_alternate),
-                label: Text(
-                  _imageBytes == null ? 'Add Picture' : 'Change Picture',
-                ),
+                label: Text(_imageBytes == null ? 'Add photo' : 'Change photo'),
               ),
               if (_imageBytes != null) ...[
                 const SizedBox(height: Spacing.s12),
@@ -2229,7 +2202,7 @@ class _AddFoodSheetState extends State<AddFoodSheet> {
               const SizedBox(height: Spacing.s16),
               FilledButton(
                 onPressed: _saveFoodItem,
-                child: Text(_isEditing ? 'Save Changes' : 'Save Food'),
+                child: Text(_isEditing ? 'Save changes' : 'Save food'),
               ),
               if (_isEditing && widget.onDelete != null) ...[
                 const SizedBox(height: Spacing.s8),
@@ -2399,7 +2372,9 @@ class _AgentPageState extends State<AgentPage> {
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not save that Agent preference.')),
+        const SnackBar(
+          content: Text("Couldn't save that preference. Try again."),
+        ),
       );
     }
   }

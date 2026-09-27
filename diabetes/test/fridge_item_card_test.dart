@@ -29,7 +29,7 @@ void main() {
     );
 
     expect(find.text('Milk'), findsOneWidget);
-    expect(find.text('Expiring Soon'), findsOneWidget);
+    expect(find.text('Expiring soon'), findsOneWidget);
   });
 
   testWidgets('tapping the card body triggers edit', (tester) async {
