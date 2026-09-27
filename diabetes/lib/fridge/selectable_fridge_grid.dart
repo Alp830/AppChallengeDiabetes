@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 
 import '../design/drag_selection_surface.dart';
 import '../design/spacing.dart';
+import '../design/text_scale.dart';
 import '../main.dart' show FoodItem;
 import 'fridge_item_card.dart';
 
@@ -151,8 +152,32 @@ class _SelectableFridgeGridState extends State<SelectableFridgeGrid> {
         keys.contains(LogicalKeyboardKey.metaRight);
   }
 
+  /// Tile height from the real text metrics, so names and pills never clip.
+  double _tileExtent(BuildContext context, bool largeText) {
+    final textTheme = Theme.of(context).textTheme;
+    final scaler = MediaQuery.textScalerOf(context);
+    double line(TextStyle style) =>
+        scaler.scale(style.fontSize!) * (style.height ?? 1.2);
+    return Spacing.s8 *
+            2 // card vertical padding
+            +
+        4 // selected card's 2px border consumes 2px top and bottom
+        +
+        1 // float rounding slack in text line-height math
+        +
+        36 +
+        Spacing
+            .s4 // icon tile + gap
+            +
+        line(textTheme.bodyMedium!) * (largeText ? 2 : 1) +
+        Spacing.s4 +
+        line(textTheme.labelMedium!) +
+        Spacing.s4; // pill text + its padding
+  }
+
   @override
   Widget build(BuildContext context) {
+    final largeText = useLargeTextLayout(context);
     final keys = <int, GlobalKey>{
       for (final entry in widget.items)
         entry.key: _itemKeys.putIfAbsent(entry.key, GlobalKey.new),
@@ -239,11 +264,11 @@ class _SelectableFridgeGridState extends State<SelectableFridgeGrid> {
                   widget.bottomPadding,
                 ),
                 sliver: SliverGrid(
-                  gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                    maxCrossAxisExtent: 125,
+                  gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                    maxCrossAxisExtent: largeText ? 180 : 125,
                     mainAxisSpacing: Spacing.s12,
                     crossAxisSpacing: Spacing.s12,
-                    childAspectRatio: 0.95,
+                    mainAxisExtent: _tileExtent(context, largeText),
                   ),
                   delegate: SliverChildBuilderDelegate((context, position) {
                     final entry = widget.items[position];

@@ -21,6 +21,7 @@ import 'design/app_theme.dart';
 import 'design/friendly_errors.dart';
 import 'design/load_error.dart';
 import 'design/spacing.dart';
+import 'design/text_scale.dart';
 import 'firebase_options.dart';
 import 'fridge/freshness.dart';
 import 'fridge/fridge_scan_dialog.dart';
@@ -736,15 +737,21 @@ class _MainPageState extends State<MainPage> {
     final animationDuration = reduceMotion
         ? AppMotion.reducedFade
         : AppMotion.medium;
+    final largeText = useLargeTextLayout(context);
+    final titleScale = math.min(
+      MediaQuery.textScalerOf(context).scale(22) / 22,
+      2.0,
+    );
 
     return Scaffold(
       appBar: AppBar(
         centerTitle: false,
         titleSpacing: Spacing.s16,
-        toolbarHeight: 76,
+        toolbarHeight: 32 + (16 + 28 * (largeText ? 2 : 1)) * titleScale,
         title: _HeaderTitle(
           eyebrow: _headerEyebrow(user),
           title: _headerTitle(user),
+          maxTitleLines: largeText ? 2 : 1,
         ),
         actions: [
           _HeaderAction(
@@ -990,10 +997,15 @@ class _MainPageState extends State<MainPage> {
 
 /// Two-line contextual header title: a small muted eyebrow over a bold title.
 class _HeaderTitle extends StatelessWidget {
-  const _HeaderTitle({required this.eyebrow, required this.title});
+  const _HeaderTitle({
+    required this.eyebrow,
+    required this.title,
+    this.maxTitleLines = 1,
+  });
 
   final String eyebrow;
   final String title;
+  final int maxTitleLines;
 
   @override
   Widget build(BuildContext context) {
@@ -1014,7 +1026,7 @@ class _HeaderTitle extends StatelessWidget {
         const SizedBox(height: 1),
         Text(
           title,
-          maxLines: 1,
+          maxLines: maxTitleLines,
           overflow: TextOverflow.ellipsis,
           style: theme.textTheme.titleLarge,
         ),
@@ -3031,23 +3043,32 @@ class MealRecommendationCard extends StatelessWidget {
 
   Widget _sectionHeader(BuildContext context, String title) {
     final theme = Theme.of(context);
-    return Row(
+    return Wrap(
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: Spacing.s4,
+      runSpacing: Spacing.s4,
       children: [
-        Expanded(child: Text(title, style: theme.textTheme.titleMedium)),
-        if (onAsk != null) ...[
-          Icon(
-            Icons.chat_bubble_outline,
-            size: 16,
-            color: theme.colorScheme.onSurfaceVariant,
+        Text(title, style: theme.textTheme.titleMedium),
+        if (onAsk != null)
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.chat_bubble_outline,
+                size: 16,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: Spacing.s4),
+              Flexible(
+                child: Text(
+                  'Tap a line to ask',
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: Spacing.s4),
-          Text(
-            'Tap a line to ask',
-            style: theme.textTheme.labelMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
       ],
     );
   }

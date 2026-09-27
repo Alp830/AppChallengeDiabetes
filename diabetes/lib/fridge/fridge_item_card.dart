@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../design/app_status_colors.dart';
 import '../design/spacing.dart';
+import '../design/text_scale.dart';
 import '../main.dart' show FoodItem;
 import 'freshness.dart';
 
@@ -57,7 +58,7 @@ class FridgeItemCard extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: Spacing.s8,
-                  vertical: Spacing.s4,
+                  vertical: Spacing.s8,
                 ),
                 child: Center(
                   child: Column(
@@ -80,13 +81,13 @@ class FridgeItemCard extends StatelessWidget {
                       Text(
                         foodItem.name,
                         textAlign: TextAlign.center,
-                        maxLines: 1,
+                        maxLines: useLargeTextLayout(context) ? 2 : 1,
                         overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.w700,
                         ),
                       ),
-                      const SizedBox(height: 3),
+                      const SizedBox(height: Spacing.s4),
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 8,
