@@ -3,8 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  Future<void> pump(WidgetTester tester) =>
-      tester.pumpWidget(const MaterialApp(home: AuthPage()));
+  // Portrait phone, not the default 800×600 landscape test window.
+  Future<void> pump(WidgetTester tester) {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    return tester.pumpWidget(const MaterialApp(home: AuthPage()));
+  }
 
   testWidgets('says what the app is and offers recovery', (tester) async {
     await pump(tester);

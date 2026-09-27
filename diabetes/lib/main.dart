@@ -474,7 +474,7 @@ class _AuthPageState extends State<AuthPage> {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(Spacing.s16),
+            padding: const EdgeInsets.all(Spacing.s24),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 420),
               child: Form(
@@ -486,10 +486,10 @@ class _AuthPageState extends State<AuthPage> {
                     children: [
                       Icon(
                         Icons.eco,
-                        size: 32,
+                        size: 48,
                         color: Theme.of(context).colorScheme.primary,
                       ),
-                      const SizedBox(height: Spacing.s4),
+                      const SizedBox(height: Spacing.s8),
                       Text(
                         'Wellness Companion',
                         style: Theme.of(context).textTheme.headlineMedium,
@@ -503,12 +503,12 @@ class _AuthPageState extends State<AuthPage> {
                         ),
                         textAlign: TextAlign.center,
                       ),
-                      const SizedBox(height: Spacing.s12),
+                      const SizedBox(height: Spacing.s32),
                       Text(
                         _isSignUp ? 'Create account' : 'Sign in',
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
-                      const SizedBox(height: Spacing.s12),
+                      const SizedBox(height: Spacing.s16),
                       TextFormField(
                         controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
