@@ -160,7 +160,8 @@ class _MealQaSheetState extends State<_MealQaSheet> {
         // Drop the unanswered user turn so Retry does not duplicate it.
         _turns = _turns.sublist(0, _turns.length - 1);
         _thinking = false;
-        _error = error.message;
+        debugPrint('meal Q&A: ${error.message}');
+        _error = "Couldn't get an answer right now.";
         _failedQuestion = trimmed;
       });
       widget.onHistoryChanged(List.of(_turns));

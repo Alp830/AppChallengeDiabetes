@@ -16,6 +16,7 @@ import 'app_features.dart';
 import 'cgm/data/glucose_repository.dart';
 import 'cgm/screens/glucose_settings_page.dart';
 import 'design/app_theme.dart';
+import 'design/friendly_errors.dart';
 import 'design/spacing.dart';
 import 'firebase_options.dart';
 import 'fridge/selectable_fridge_grid.dart';
@@ -183,7 +184,10 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
     } on FirebaseAuthException catch (error) {
       if (mounted) {
         setState(() {
-          _message = error.message ?? 'Could not check your email status.';
+          _message = FriendlyErrors.describe(
+            error,
+            context: 'email verification',
+          );
         });
       }
     } finally {
@@ -211,7 +215,10 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
     } on FirebaseAuthException catch (error) {
       if (mounted) {
         setState(() {
-          _message = error.message ?? 'Could not send a verification email.';
+          _message = FriendlyErrors.describe(
+            error,
+            context: 'email verification',
+          );
         });
       }
     } finally {
@@ -337,11 +344,11 @@ class _AuthPageState extends State<AuthPage> {
       }
     } on FirebaseAuthException catch (error) {
       setState(() {
-        _authError = error.message ?? 'Authentication failed.';
+        _authError = FriendlyErrors.auth(error);
       });
     } catch (error) {
       setState(() {
-        _authError = 'Authentication failed: $error';
+        _authError = FriendlyErrors.describe(error, context: 'auth');
       });
     } finally {
       if (mounted) {
@@ -393,13 +400,13 @@ class _AuthPageState extends State<AuthPage> {
     } on FirebaseAuthException catch (error) {
       if (mounted) {
         setState(() {
-          _authError = error.message ?? 'Google sign-in failed.';
+          _authError = FriendlyErrors.auth(error);
         });
       }
     } catch (error) {
       if (mounted) {
         setState(() {
-          _authError = 'Google sign-in failed: $error';
+          _authError = FriendlyErrors.describe(error, context: 'auth');
         });
       }
     } finally {
@@ -1112,7 +1119,10 @@ class FridgePageState extends State<FridgePage> {
       }
       setState(() => _isSaving = false);
       messenger.showSnackBar(
-        SnackBar(content: Text('Could not save changes: $error')),
+        SnackBar(
+          content: Text(FriendlyErrors.describe(error, context: 'fridge save')),
+          action: SnackBarAction(label: 'Retry', onPressed: save),
+        ),
       );
       return false;
     }
