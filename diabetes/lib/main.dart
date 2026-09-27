@@ -22,6 +22,7 @@ import 'design/friendly_errors.dart';
 import 'design/load_error.dart';
 import 'design/spacing.dart';
 import 'firebase_options.dart';
+import 'fridge/fridge_scan_dialog.dart';
 import 'fridge/selectable_fridge_grid.dart';
 import 'home/mvp_home_page.dart';
 import 'meals/data/meal_repository.dart';
@@ -1360,34 +1361,49 @@ class FridgePageState extends State<FridgePage> {
       return;
     }
 
-    messenger.showSnackBar(
-      const SnackBar(content: Text('Scanning fridge photo...')),
+    if (!context.mounted) return;
+    final result = await showDialog<FridgeScanResult>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => FridgeScanDialog(
+        imageBytes: imageBytes,
+        detect: FridgePhotoFoodAgent.detectFoods,
+      ),
     );
+    if (result == null) return; // Cancelled.
 
-    try {
-      final detectedFoods = await FridgePhotoFoodAgent.detectFoods(imageBytes);
-      if (detectedFoods.isEmpty) {
-        messenger.showSnackBar(
-          const SnackBar(content: Text('No food items were found.')),
-        );
-        return;
-      }
-
-      _addDrafts(detectedFoods);
+    final error = result.error;
+    if (error != null) {
       messenger.showSnackBar(
         SnackBar(
-          content: Text(
-            detectedFoods.length == 1
-                ? 'Added 1 item — remember to save.'
-                : 'Added ${detectedFoods.length} items — remember to save.',
+          content: Text(FriendlyErrors.describe(error, context: 'fridge scan')),
+          action: SnackBarAction(
+            label: 'Retry',
+            onPressed: () => _takeFridgePhoto(context),
           ),
         ),
       );
-    } catch (error) {
-      messenger.showSnackBar(
-        SnackBar(content: Text('Could not scan fridge photo: $error')),
-      );
+      return;
     }
+    if (result.foods.isEmpty) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('No foods found. Try a closer, well-lit photo.'),
+        ),
+      );
+      return;
+    }
+
+    _addDrafts(result.foods);
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          result.foods.length == 1
+              ? 'Added 1 item — remember to save.'
+              : 'Added ${result.foods.length} items — remember to save.',
+        ),
+      ),
+    );
   }
 
   Future<void> _showAddFoodSheet(BuildContext context) async {
