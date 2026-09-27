@@ -15,8 +15,10 @@ import 'package:image_picker/image_picker.dart';
 import 'app_features.dart';
 import 'cgm/data/glucose_repository.dart';
 import 'cgm/screens/glucose_settings_page.dart';
+import 'design/app_motion.dart';
 import 'design/app_theme.dart';
 import 'design/friendly_errors.dart';
+import 'design/load_error.dart';
 import 'design/spacing.dart';
 import 'firebase_options.dart';
 import 'fridge/selectable_fridge_grid.dart';
@@ -566,8 +568,6 @@ class MainPage extends StatefulWidget {
 }
 
 class _MainPageState extends State<MainPage> {
-  static const _tabAnimationDuration = Duration(milliseconds: 238);
-
   // Home sits in the middle of the bottom nav, flanked by the two features.
   static const _fridgeTabIndex = 0;
   static const _homeTabIndex = 1;
@@ -580,11 +580,49 @@ class _MainPageState extends State<MainPage> {
   /// navigates away from the Fridge tab.
   final GlobalKey<FridgePageState> _fridgeKey = GlobalKey<FridgePageState>();
 
-  static const List<_AppPage> _pages = [
-    _AppPage(title: 'Fridge', icon: Icons.kitchen),
-    _AppPage(title: 'Home', icon: Icons.home),
-    _AppPage(title: 'Agent', icon: Icons.smart_toy),
-  ];
+  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _fridgeSubscription;
+
+  /// Latest fridge contents; null until the first snapshot arrives.
+  List<StoredFoodItem>? _fridgeItems;
+
+  /// Plain-language load error, or null.
+  String? _fridgeError;
+
+  @override
+  void initState() {
+    super.initState();
+    _subscribeToFridge();
+  }
+
+  @override
+  void dispose() {
+    _fridgeSubscription?.cancel();
+    super.dispose();
+  }
+
+  /// One subscription for the life of the shell, so switching tabs never
+  /// re-subscribes and flashes a loading spinner.
+  void _subscribeToFridge() {
+    _fridgeSubscription?.cancel();
+    _fridgeError = null;
+    _fridgeSubscription = _fridgeItemsCollection(widget.user.uid)
+        .orderBy('createdAt', descending: false)
+        .snapshots()
+        .listen(
+          (snapshot) => setState(() {
+            _fridgeItems = snapshot.docs
+                .map(StoredFoodItem.fromDocument)
+                .toList();
+            _fridgeError = null;
+          }),
+          onError: (Object error) => setState(
+            () => _fridgeError = FriendlyErrors.describe(
+              error,
+              context: 'fridge stream',
+            ),
+          ),
+        );
+  }
 
   Future<void> _goToPage(int index) async {
     if (index == _selectedIndex) {
@@ -614,36 +652,23 @@ class _MainPageState extends State<MainPage> {
     final user = widget.user;
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
     final animationDuration = reduceMotion
-        ? Duration.zero
-        : _tabAnimationDuration;
+        ? AppMotion.reducedFade
+        : AppMotion.medium;
 
     return Scaffold(
       appBar: AppBar(
         centerTitle: false,
-        titleSpacing: 20,
+        titleSpacing: Spacing.s16,
         toolbarHeight: 76,
         title: _HeaderTitle(
           eyebrow: _headerEyebrow(user),
           title: _headerTitle(user),
         ),
         actions: [
-          if (widget.diabetesEnabled)
-            _HeaderAction(
-              tooltip: 'Glucose and data settings',
-              icon: Icons.tune,
-              onPressed: () => AppFeatureNavigation.pushDiabetesPage<void>(
-                context,
-                diabetesEnabled: widget.diabetesEnabled,
-                builder: (context) => GlucoseSettingsPage(
-                  userId: user.uid,
-                  diabetesEnabled: widget.diabetesEnabled,
-                ),
-              ),
-            ),
           _HeaderAction(
-            tooltip: 'Log out',
-            icon: Icons.logout,
-            onPressed: () => FirebaseAuth.instance.signOut(),
+            tooltip: 'Account',
+            icon: Icons.account_circle_outlined,
+            onPressed: _showAccountSheet,
           ),
           const SizedBox(width: Spacing.s8),
         ],
@@ -651,9 +676,12 @@ class _MainPageState extends State<MainPage> {
       body: AnimatedSwitcher(
         duration: animationDuration,
         reverseDuration: animationDuration,
-        switchInCurve: Curves.easeOutCubic,
-        switchOutCurve: Curves.easeInCubic,
+        switchInCurve: AppMotion.enter,
+        switchOutCurve: AppMotion.exit,
         transitionBuilder: (child, animation) {
+          if (reduceMotion) {
+            return FadeTransition(opacity: animation, child: child);
+          }
           final isIncoming = child.key == ValueKey(_selectedIndex);
           final horizontalOffset = isIncoming
               ? 0.07 * _tabChangeDirection
@@ -673,30 +701,82 @@ class _MainPageState extends State<MainPage> {
           child: _selectedPage(user),
         ),
       ),
-      bottomNavigationBar: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final compact = constraints.maxWidth < 430;
-              return Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  for (var index = 0; index < _pages.length; index++)
-                    CirclePageButton(
-                      icon: _pages[index].icon,
-                      label: _pages[index].title,
-                      isSelected: _selectedIndex == index,
-                      onTap: () => _goToPage(index),
-                      compact: compact,
-                    ),
-                ],
-              );
-            },
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _selectedIndex,
+        onDestinationSelected: _goToPage,
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.kitchen_outlined),
+            selectedIcon: Icon(Icons.kitchen),
+            label: 'Fridge',
           ),
+          NavigationDestination(
+            icon: Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.restaurant_menu_outlined),
+            selectedIcon: Icon(Icons.restaurant_menu),
+            label: 'Meals',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showAccountSheet() async {
+    final user = widget.user;
+    await showModalBottomSheet<void>(
+      context: context,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.account_circle_outlined),
+              title: Text(_userDisplayName(user) ?? 'Your account'),
+              subtitle: user.email == null ? null : Text(user.email!),
+            ),
+            const Divider(),
+            if (widget.diabetesEnabled)
+              ListTile(
+                leading: const Icon(Icons.monitor_heart_outlined),
+                title: const Text('Glucose & data sources'),
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  AppFeatureNavigation.pushDiabetesPage<void>(
+                    context,
+                    diabetesEnabled: widget.diabetesEnabled,
+                    builder: (context) => GlucoseSettingsPage(
+                      userId: user.uid,
+                      diabetesEnabled: widget.diabetesEnabled,
+                    ),
+                  );
+                },
+              ),
+            ListTile(
+              key: const Key('accountSignOut'),
+              leading: const Icon(Icons.logout),
+              title: const Text('Sign out'),
+              onTap: () {
+                Navigator.pop(sheetContext);
+                _signOut();
+              },
+            ),
+          ],
         ),
       ),
     );
+  }
+
+  /// Runs the same unsaved-fridge guard as a tab switch before signing out.
+  Future<void> _signOut() async {
+    if (_selectedIndex == _fridgeTabIndex) {
+      final fridgeState = _fridgeKey.currentState;
+      if (fridgeState != null && !await fridgeState.confirmLeave()) return;
+    }
+    await FirebaseAuth.instance.signOut();
   }
 
   String? _userDisplayName(User user) {
@@ -712,7 +792,7 @@ class _MainPageState extends State<MainPage> {
       case _fridgeTabIndex:
         return "Let's get cooking";
       case _agentTabIndex:
-        return 'Your smart assistant';
+        return 'Cook from what you have';
       default:
         final hour = DateTime.now().hour;
         if (hour < 12) return 'Good morning';
@@ -724,9 +804,9 @@ class _MainPageState extends State<MainPage> {
   String _headerTitle(User user) {
     switch (_selectedIndex) {
       case _fridgeTabIndex:
-        return 'Your Fridge';
+        return 'Your fridge';
       case _agentTabIndex:
-        return 'Meal Assistant';
+        return 'Meal ideas';
       default:
         return _userDisplayName(user) ?? 'Welcome back';
     }
@@ -743,56 +823,43 @@ class _MainPageState extends State<MainPage> {
       );
     }
 
-    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-      stream: _fridgeItemsCollection(
-        user.uid,
-      ).orderBy('createdAt', descending: false).snapshots(),
-      builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          return Center(
-            child: Text(
-              'Could not load fridge items: ${snapshot.error}',
-              textAlign: TextAlign.center,
+    final fridgeError = _fridgeError;
+    if (fridgeError != null) {
+      return Center(
+        child: LoadErrorView(
+          message: fridgeError,
+          onRetry: () => setState(_subscribeToFridge),
+        ),
+      );
+    }
+    final storedItems = _fridgeItems;
+    if (storedItems == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_selectedIndex == _fridgeTabIndex) {
+      return FridgePage(
+        key: _fridgeKey,
+        initialItems: storedItems,
+        onCommit: (changes) => _commitFridgeChanges(user.uid, changes),
+        onAddSelectedToMeal: (foods) => Navigator.of(context).push<void>(
+          MaterialPageRoute(
+            builder: (context) => MealLogPage(
+              userId: user.uid,
+              geminiApiKey: AppEnvironment.geminiApiKey,
+              initialName: foods.map((food) => food.name).join(', '),
+              diabetesEnabled: widget.diabetesEnabled,
             ),
-          );
-        }
+          ),
+        ),
+      );
+    }
 
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        final fridgeItems =
-            snapshot.data?.docs.map(StoredFoodItem.fromDocument).toList() ??
-            const <StoredFoodItem>[];
-        final foodItems = fridgeItems
-            .map((storedFoodItem) => storedFoodItem.foodItem)
-            .toList();
-
-        if (_selectedIndex == _fridgeTabIndex) {
-          return FridgePage(
-            key: _fridgeKey,
-            initialItems: fridgeItems,
-            onCommit: (changes) => _commitFridgeChanges(user.uid, changes),
-            onAddSelectedToMeal: (foods) => Navigator.of(context).push<void>(
-              MaterialPageRoute(
-                builder: (context) => MealLogPage(
-                  userId: user.uid,
-                  geminiApiKey: AppEnvironment.geminiApiKey,
-                  initialName: foods.map((food) => food.name).join(', '),
-                  diabetesEnabled: widget.diabetesEnabled,
-                ),
-              ),
-            ),
-          );
-        }
-
-        return AgentPage(
-          foodItems: foodItems,
-          userId: user.uid,
-          geminiApiKey: AppEnvironment.geminiApiKey,
-          diabetesEnabled: widget.diabetesEnabled,
-        );
-      },
+    return AgentPage(
+      foodItems: [for (final stored in storedItems) stored.foodItem],
+      userId: user.uid,
+      geminiApiKey: AppEnvironment.geminiApiKey,
+      diabetesEnabled: widget.diabetesEnabled,
     );
   }
 
@@ -865,7 +932,7 @@ class _HeaderTitle extends StatelessWidget {
   }
 }
 
-/// Soft circular icon button used for header actions.
+/// Soft circular icon button for the header's account action.
 class _HeaderAction extends StatelessWidget {
   const _HeaderAction({
     required this.icon,
@@ -3087,89 +3154,6 @@ class _InfoPill extends StatelessWidget {
       ),
     );
   }
-}
-
-class CirclePageButton extends StatelessWidget {
-  static const _animationDuration = Duration(milliseconds: 187);
-
-  const CirclePageButton({
-    super.key,
-    required this.icon,
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-    this.compact = false,
-  });
-
-  final IconData icon;
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-  final bool compact;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final animationDuration = MediaQuery.disableAnimationsOf(context)
-        ? Duration.zero
-        : _animationDuration;
-    final backgroundColor = isSelected
-        ? colorScheme.primary
-        : colorScheme.surfaceContainerHighest;
-    final foregroundColor = isSelected
-        ? colorScheme.onPrimary
-        : colorScheme.onSurfaceVariant;
-
-    return Semantics(
-      button: true,
-      selected: isSelected,
-      label: label,
-      child: InkResponse(
-        onTap: onTap,
-        radius: 34,
-        customBorder: const CircleBorder(),
-        child: TweenAnimationBuilder<double>(
-          duration: animationDuration,
-          curve: Curves.easeOutBack,
-          tween: Tween(begin: 1, end: isSelected ? 1.08 : 1),
-          builder: (context, scale, child) =>
-              Transform.scale(scale: scale, child: child),
-          child: AnimatedContainer(
-            duration: animationDuration,
-            curve: Curves.easeOutCubic,
-            width: compact ? 48 : 56,
-            height: compact ? 48 : 56,
-            decoration: BoxDecoration(
-              color: backgroundColor,
-              shape: BoxShape.circle,
-              boxShadow: isSelected
-                  ? [
-                      BoxShadow(
-                        color: colorScheme.primary.withValues(alpha: 0.24),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ]
-                  : const [],
-            ),
-            child: AnimatedScale(
-              scale: isSelected ? 1.08 : 1,
-              duration: animationDuration,
-              curve: Curves.easeOutCubic,
-              child: Icon(icon, color: foregroundColor),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _AppPage {
-  const _AppPage({required this.title, required this.icon});
-
-  final String title;
-  final IconData icon;
 }
 
 class FoodItem {

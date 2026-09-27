@@ -1,5 +1,4 @@
 import 'package:diabetes/meals/models/meal_balance_models.dart';
-import 'package:diabetes/main.dart';
 import 'package:diabetes/meals/screens/meal_balance_input_form.dart';
 import 'package:diabetes/meals/screens/meal_balance_page.dart';
 import 'package:flutter/material.dart';
@@ -49,36 +48,6 @@ void main() {
       ),
       findsOneWidget,
     );
-  });
-
-  testWidgets('two MVP navigation buttons fit a narrow phone', (tester) async {
-    tester.view.physicalSize = const Size(320, 640);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          bottomNavigationBar: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              for (var index = 0; index < 2; index++)
-                CirclePageButton(
-                  icon: Icons.circle,
-                  label: 'Tab $index',
-                  isSelected: index == 0,
-                  onTap: () {},
-                  compact: true,
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-
-    expect(tester.takeException(), isNull);
-    expect(find.byType(CirclePageButton), findsNWidgets(2));
   });
 
   testWidgets('plate percentages must be complete and total 100', (
