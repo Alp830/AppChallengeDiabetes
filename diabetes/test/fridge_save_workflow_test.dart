@@ -67,7 +67,7 @@ void main() {
 
     await tester.tap(find.byTooltip('Delete item'));
     await tester.pumpAndSettle();
-    expect(find.text('No food added yet.'), findsOneWidget);
+    expect(find.text('Your fridge is empty'), findsOneWidget);
     expect(committed, isEmpty);
 
     await tester.tap(find.byKey(const Key('fridgeSaveBar')));
@@ -131,5 +131,15 @@ void main() {
 
     expect(await leaving, isFalse);
     expect(key.currentState!.isDirty, isTrue);
+  });
+
+  testWidgets('empty fridge explains itself and offers scan and add', (
+    tester,
+  ) async {
+    await tester.pumpWidget(wrap(GlobalKey<FridgePageState>(), const [], []));
+    expect(find.text('Your fridge is empty'), findsOneWidget);
+    expect(find.byKey(const Key('fridgeEmptyScan')), findsOneWidget);
+    expect(find.byKey(const Key('fridgeEmptyAdd')), findsOneWidget);
+    expect(find.byType(FloatingActionButton), findsNothing);
   });
 }

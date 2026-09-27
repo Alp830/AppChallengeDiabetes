@@ -18,9 +18,9 @@ void main() {
   ) async {
     await tester.pumpWidget(const MaterialApp(home: _FridgeHarness()));
 
-    expect(find.text('No food added yet.'), findsOneWidget);
+    expect(find.text('Your fridge is empty'), findsOneWidget);
 
-    await tester.tap(find.byTooltip('Add food'));
+    await tester.tap(find.byKey(const Key('fridgeEmptyAdd')));
     await tester.pumpAndSettle();
     await tester.enterText(
       find.widgetWithText(TextFormField, 'Food name'),
@@ -58,7 +58,7 @@ void main() {
     // Removal is the low-friction top-left [X] on the card.
     await tester.tap(find.byTooltip('Delete item'));
     await tester.pumpAndSettle();
-    expect(find.text('No food added yet.'), findsOneWidget);
+    expect(find.text('Your fridge is empty'), findsOneWidget);
   });
 
   testWidgets('agent page starts with a focused recommendation flow', (

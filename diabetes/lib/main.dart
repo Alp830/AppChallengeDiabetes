@@ -1261,7 +1261,10 @@ class FridgePageState extends State<FridgePage> {
     return Stack(
       children: [
         if (_drafts.isEmpty)
-          const Center(child: Text('No food added yet.'))
+          _FridgeEmptyState(
+            onScan: () => _takeFridgePhoto(context),
+            onAdd: () => _showAddFoodSheet(context),
+          )
         else
           SelectableFridgeGrid(
             items: ranked,
@@ -1276,28 +1279,29 @@ class FridgePageState extends State<FridgePage> {
             },
           ),
         // Camera/add buttons. Lifted to clear the bottom selection toolbar.
-        Positioned(
-          right: Spacing.margin,
-          bottom: selecting ? 104 : 24,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              FloatingActionButton(
-                heroTag: 'takeFridgePhoto',
-                onPressed: () => _takeFridgePhoto(context),
-                tooltip: 'Take fridge photo',
-                child: const Icon(Icons.camera_alt),
-              ),
-              const SizedBox(height: Spacing.s12),
-              FloatingActionButton(
-                heroTag: 'addFood',
-                onPressed: () => _showAddFoodSheet(context),
-                tooltip: 'Add food',
-                child: const Icon(Icons.add),
-              ),
-            ],
+        if (_drafts.isNotEmpty)
+          Positioned(
+            right: Spacing.margin,
+            bottom: selecting ? 104 : 24,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                FloatingActionButton(
+                  heroTag: 'takeFridgePhoto',
+                  onPressed: () => _takeFridgePhoto(context),
+                  tooltip: 'Take fridge photo',
+                  child: const Icon(Icons.camera_alt),
+                ),
+                const SizedBox(height: Spacing.s12),
+                FloatingActionButton(
+                  heroTag: 'addFood',
+                  onPressed: () => _showAddFoodSheet(context),
+                  tooltip: 'Add food',
+                  child: const Icon(Icons.add),
+                ),
+              ],
+            ),
           ),
-        ),
         // Save / discard controls for staged edits, pinned to the top-right.
         if (_isDirty)
           Positioned(
@@ -1450,6 +1454,65 @@ bool _sameBytes(Uint8List? a, Uint8List? b) {
     if (a[index] != b[index]) return false;
   }
   return true;
+}
+
+/// First-run state for the core loop: says what the fridge is for and gives
+/// both ways to fill it (NN/g empty-state guidelines).
+class _FridgeEmptyState extends StatelessWidget {
+  const _FridgeEmptyState({required this.onScan, required this.onAdd});
+
+  final VoidCallback onScan;
+  final VoidCallback onAdd;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(Spacing.s24),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 360),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.kitchen_outlined,
+                size: 56,
+                color: theme.colorScheme.primary,
+              ),
+              const SizedBox(height: Spacing.s16),
+              Text(
+                'Your fridge is empty',
+                style: theme.textTheme.titleLarge,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: Spacing.s8),
+              Text(
+                "Scan a photo of your fridge or add foods one by one — we'll suggest meals from them.",
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: Spacing.s24),
+              FilledButton.icon(
+                key: const Key('fridgeEmptyScan'),
+                onPressed: onScan,
+                icon: const Icon(Icons.photo_camera_outlined),
+                label: const Text('Scan fridge'),
+              ),
+              const SizedBox(height: Spacing.s8),
+              TextButton(
+                key: const Key('fridgeEmptyAdd'),
+                onPressed: onAdd,
+                child: const Text('Add manually'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 /// Compact Save / Discard controls for staged fridge edits, shown at the
