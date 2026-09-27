@@ -385,10 +385,7 @@ class _TodoCardState extends State<_TodoCard> {
           autofocus: true,
           maxLength: 100,
           textCapitalization: TextCapitalization.sentences,
-          decoration: const InputDecoration(
-            labelText: 'Task name',
-            border: OutlineInputBorder(),
-          ),
+          decoration: const InputDecoration(labelText: 'Task name'),
           onChanged: (value) => enteredName = value,
           onFieldSubmitted: (value) {
             final name = value.trim();

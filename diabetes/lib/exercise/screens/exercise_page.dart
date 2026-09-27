@@ -478,10 +478,7 @@ class _WorkoutSetupPageState extends State<WorkoutSetupPage> {
             ],
             DropdownButtonFormField<WorkoutActivityType>(
               initialValue: _activity,
-              decoration: InputDecoration(
-                border: const OutlineInputBorder(),
-                labelText: 'Activity',
-              ),
+              decoration: InputDecoration(labelText: 'Activity'),
               items: [
                 for (final activity in WorkoutActivityType.values)
                   DropdownMenuItem(
@@ -502,10 +499,7 @@ class _WorkoutSetupPageState extends State<WorkoutSetupPage> {
               TextFormField(
                 controller: _customActivityController,
                 maxLength: 60,
-                decoration: InputDecoration(
-                  border: const OutlineInputBorder(),
-                  labelText: 'Activity name',
-                ),
+                decoration: InputDecoration(labelText: 'Activity name'),
                 validator: (value) => value == null || value.trim().isEmpty
                     ? 'Enter an activity name'
                     : null,
@@ -576,7 +570,6 @@ class _WorkoutSetupPageState extends State<WorkoutSetupPage> {
                   decimal: true,
                 ),
                 decoration: InputDecoration(
-                  border: const OutlineInputBorder(),
                   labelText: 'Current glucose (optional)',
                   suffixText: _glucoseUnit,
                 ),
@@ -588,7 +581,6 @@ class _WorkoutSetupPageState extends State<WorkoutSetupPage> {
               controller: _mealMinutesController,
               keyboardType: TextInputType.number,
               decoration: const InputDecoration(
-                border: OutlineInputBorder(),
                 labelText: 'Minutes since last meal (optional)',
               ),
               validator: _validateOptionalPositiveNumber,
@@ -647,10 +639,7 @@ class _WorkoutSetupPageState extends State<WorkoutSetupPage> {
               controller: _notesController,
               maxLength: 300,
               maxLines: 3,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                labelText: 'Notes (optional)',
-              ),
+              decoration: const InputDecoration(labelText: 'Notes (optional)'),
             ),
             const SizedBox(height: 16),
             FilledButton.icon(
@@ -997,7 +986,6 @@ class _WorkoutReviewPageState extends State<WorkoutReviewPage> {
                     decimal: true,
                   ),
                   decoration: InputDecoration(
-                    border: const OutlineInputBorder(),
                     labelText: 'Ending glucose (optional)',
                     suffixText: widget.draft.preWorkout.glucoseUnit,
                   ),
@@ -1039,7 +1027,6 @@ class _WorkoutReviewPageState extends State<WorkoutReviewPage> {
                 maxLength: 500,
                 maxLines: 4,
                 decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
                   labelText: 'Notes (optional)',
                 ),
               ),
@@ -1188,7 +1175,6 @@ class _ProfileProgressCard extends StatelessWidget {
                     keyboardType: TextInputType.number,
                     decoration: const InputDecoration(
                       labelText: 'Weekly active minutes',
-                      border: OutlineInputBorder(),
                     ),
                     validator: (value) {
                       final number = int.tryParse(value ?? '');
@@ -1203,7 +1189,6 @@ class _ProfileProgressCard extends StatelessWidget {
                     keyboardType: TextInputType.number,
                     decoration: const InputDecoration(
                       labelText: 'Weekly strength sessions',
-                      border: OutlineInputBorder(),
                     ),
                     validator: (value) {
                       final number = int.tryParse(value ?? '');
@@ -1218,7 +1203,6 @@ class _ProfileProgressCard extends StatelessWidget {
                       initialValue: glucoseUnit,
                       decoration: const InputDecoration(
                         labelText: 'Glucose unit',
-                        border: OutlineInputBorder(),
                       ),
                       items: const [
                         DropdownMenuItem(value: 'mg/dL', child: Text('mg/dL')),

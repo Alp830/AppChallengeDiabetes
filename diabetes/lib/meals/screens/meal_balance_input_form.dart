@@ -119,7 +119,6 @@ class _MealBalanceInputFormState extends State<MealBalanceInputForm> {
                 decoration: const InputDecoration(
                   labelText: 'Protein',
                   suffixText: 'g',
-                  border: OutlineInputBorder(),
                 ),
                 validator: _nonNegative,
                 onChanged: _notify,
@@ -134,7 +133,6 @@ class _MealBalanceInputFormState extends State<MealBalanceInputForm> {
                 decoration: const InputDecoration(
                   labelText: 'Fiber',
                   suffixText: 'g',
-                  border: OutlineInputBorder(),
                 ),
                 validator: _nonNegative,
                 onChanged: _notify,
@@ -153,7 +151,6 @@ class _MealBalanceInputFormState extends State<MealBalanceInputForm> {
                 decoration: const InputDecoration(
                   labelText: 'Produce',
                   suffixText: 'cups',
-                  border: OutlineInputBorder(),
                 ),
                 validator: _nonNegative,
                 onChanged: _notify,
@@ -168,7 +165,6 @@ class _MealBalanceInputFormState extends State<MealBalanceInputForm> {
                 decoration: const InputDecoration(
                   labelText: 'Unsweetened drink',
                   suffixText: 'mL',
-                  border: OutlineInputBorder(),
                 ),
                 validator: _nonNegative,
                 onChanged: _notify,
@@ -192,7 +188,6 @@ class _MealBalanceInputFormState extends State<MealBalanceInputForm> {
                 decoration: const InputDecoration(
                   labelText: 'Produce',
                   suffixText: '%',
-                  border: OutlineInputBorder(),
                 ),
                 validator: _nonNegative,
                 onChanged: _notify,
@@ -207,7 +202,6 @@ class _MealBalanceInputFormState extends State<MealBalanceInputForm> {
                 decoration: const InputDecoration(
                   labelText: 'Protein',
                   suffixText: '%',
-                  border: OutlineInputBorder(),
                 ),
                 validator: _nonNegative,
                 onChanged: _notify,
@@ -222,7 +216,6 @@ class _MealBalanceInputFormState extends State<MealBalanceInputForm> {
                 decoration: const InputDecoration(
                   labelText: 'Quality carbs',
                   suffixText: '%',
-                  border: OutlineInputBorder(),
                 ),
                 validator: _plateValidation,
                 onChanged: _notify,

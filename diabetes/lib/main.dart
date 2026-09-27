@@ -451,10 +451,7 @@ class _AuthPageState extends State<AuthPage> {
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
                       autofillHints: const [AutofillHints.email],
-                      decoration: const InputDecoration(
-                        border: OutlineInputBorder(),
-                        labelText: 'Email',
-                      ),
+                      decoration: const InputDecoration(labelText: 'Email'),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
                           return 'Enter your email';
@@ -472,10 +469,7 @@ class _AuthPageState extends State<AuthPage> {
                       controller: _passwordController,
                       obscureText: true,
                       autofillHints: const [AutofillHints.password],
-                      decoration: const InputDecoration(
-                        border: OutlineInputBorder(),
-                        labelText: 'Password',
-                      ),
+                      decoration: const InputDecoration(labelText: 'Password'),
                       validator: (value) {
                         if (value == null || value.length < 6) {
                           return 'Use at least 6 characters';
@@ -1873,10 +1867,7 @@ class _AddFoodSheetState extends State<AddFoodSheet> {
               TextFormField(
                 controller: _nameController,
                 textCapitalization: TextCapitalization.words,
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  labelText: 'Food name',
-                ),
+                decoration: const InputDecoration(labelText: 'Food name'),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return 'Enter a food name';
@@ -1891,7 +1882,6 @@ class _AddFoodSheetState extends State<AddFoodSheet> {
                 keyboardType: TextInputType.text,
                 textCapitalization: TextCapitalization.words,
                 decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
                   labelText: 'Amount',
                   hintText: 'Example: 2 cups, 1 carton, 12 eggs',
                 ),
@@ -1906,10 +1896,7 @@ class _AddFoodSheetState extends State<AddFoodSheet> {
               const SizedBox(height: 12),
               DropdownButtonFormField<FoodType>(
                 initialValue: _foodType,
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  labelText: 'Food type',
-                ),
+                decoration: const InputDecoration(labelText: 'Food type'),
                 items: [
                   for (final foodType in FoodType.values)
                     DropdownMenuItem(
@@ -1936,7 +1923,6 @@ class _AddFoodSheetState extends State<AddFoodSheet> {
               const SizedBox(height: 12),
               InputDecorator(
                 decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
                   labelText: 'Expiry date (optional)',
                 ),
                 child: Row(
@@ -1969,7 +1955,6 @@ class _AddFoodSheetState extends State<AddFoodSheet> {
                 maxLines: 4,
                 textCapitalization: TextCapitalization.sentences,
                 decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
                   labelText: 'Description (optional)',
                 ),
               ),
@@ -2332,7 +2317,6 @@ class _AgentPageState extends State<AgentPage> {
                         controller: _budgetController,
                         keyboardType: TextInputType.number,
                         decoration: const InputDecoration(
-                          border: OutlineInputBorder(),
                           labelText: 'Budget',
                           prefixText: r'$',
                         ),
@@ -2356,7 +2340,6 @@ class _AgentPageState extends State<AgentPage> {
                         controller: _timeController,
                         keyboardType: TextInputType.number,
                         decoration: const InputDecoration(
-                          border: OutlineInputBorder(),
                           labelText: 'Time available',
                           suffixText: 'minutes',
                         ),
@@ -2546,7 +2529,6 @@ class _AgentPageState extends State<AgentPage> {
           maxLines: 4,
           textCapitalization: TextCapitalization.sentences,
           decoration: const InputDecoration(
-            border: OutlineInputBorder(),
             labelText: 'What do you want to eat?',
             hintText: 'e.g., Something with eggs',
           ),
@@ -2664,7 +2646,6 @@ class _AgentPageState extends State<AgentPage> {
             maxLines: 3,
             textCapitalization: TextCapitalization.sentences,
             decoration: const InputDecoration(
-              border: OutlineInputBorder(),
               labelText: 'What should be different?',
             ),
           ),

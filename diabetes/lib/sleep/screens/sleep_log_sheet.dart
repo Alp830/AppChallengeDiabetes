@@ -219,10 +219,7 @@ class _SleepLogSheetState extends State<SleepLogSheet> {
               minLines: 1,
               maxLines: 3,
               textCapitalization: TextCapitalization.sentences,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                labelText: 'Note (optional)',
-              ),
+              decoration: const InputDecoration(labelText: 'Note (optional)'),
             ),
             const SizedBox(height: 16),
             FilledButton.icon(

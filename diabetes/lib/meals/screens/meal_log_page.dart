@@ -302,10 +302,7 @@ class _MealLogPageState extends State<MealLogPage> {
             const SizedBox(height: 16),
             TextFormField(
               controller: _name,
-              decoration: const InputDecoration(
-                labelText: 'Meal or dish name',
-                border: OutlineInputBorder(),
-              ),
+              decoration: const InputDecoration(labelText: 'Meal or dish name'),
               validator: (value) => value == null || value.trim().isEmpty
                   ? 'Enter a meal name'
                   : null,
@@ -315,7 +312,6 @@ class _MealLogPageState extends State<MealLogPage> {
               controller: _restaurant,
               decoration: const InputDecoration(
                 labelText: 'Restaurant (optional)',
-                border: OutlineInputBorder(),
               ),
             ),
             ListTile(
