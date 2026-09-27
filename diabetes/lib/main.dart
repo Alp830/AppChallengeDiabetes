@@ -22,6 +22,7 @@ import 'design/friendly_errors.dart';
 import 'design/load_error.dart';
 import 'design/spacing.dart';
 import 'firebase_options.dart';
+import 'fridge/freshness.dart';
 import 'fridge/fridge_scan_dialog.dart';
 import 'fridge/selectable_fridge_grid.dart';
 import 'home/mvp_home_page.dart';
@@ -897,10 +898,19 @@ class _MainPageState extends State<MainPage> {
     if (_selectedIndex == _homeTabIndex) {
       final displayName = user.displayName?.trim();
       final emailName = user.email?.split('@').first.trim();
+      final items = _fridgeItems;
       return MvpHomePage(
         userId: user.uid,
         userName: displayName?.isNotEmpty == true ? displayName : emailName,
         onOpenFridge: () => _goToPage(_fridgeTabIndex),
+        fridgeItemCount: items?.length,
+        expiringCount: items == null
+            ? 0
+            : items.where((stored) {
+                final status = freshnessFor(stored.foodItem.expiryDate);
+                return status == Freshness.expired ||
+                    status == Freshness.expiringSoon;
+              }).length,
       );
     }
 
