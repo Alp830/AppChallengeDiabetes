@@ -10,6 +10,8 @@ import '../data/meal_repository.dart';
 import '../models/meal_models.dart';
 import '../models/meal_balance_models.dart';
 import '../services/meal_grouping_service.dart';
+import '../../design/app_radius.dart';
+import '../../design/spacing.dart';
 import 'meal_balance_input_form.dart';
 
 class MealLogPage extends StatefulWidget {
@@ -30,6 +32,44 @@ class MealLogPage extends StatefulWidget {
 }
 
 class _MealLogPageState extends State<MealLogPage> {
+  static const _mealTypes = [
+    'Meal',
+    'Breakfast',
+    'Lunch',
+    'Dinner',
+    'Snack',
+    'Drink',
+  ];
+  static const _portionLabels = {
+    MealPortion.smaller: 'Smaller',
+    MealPortion.usual: 'Usual',
+    MealPortion.larger: 'Larger',
+  };
+  static const _carbBandLabels = {
+    CarbBand.unknown: 'Not sure',
+    CarbBand.low: 'Low',
+    CarbBand.medium: 'Medium',
+    CarbBand.high: 'High',
+  };
+  static const _orderLabels = {
+    MealOrder.together: 'All together',
+    MealOrder.vegetablesFirst: 'Vegetables first',
+    MealOrder.proteinFirst: 'Protein first',
+    MealOrder.carbohydratesFirst: 'Carbs first',
+    MealOrder.custom: 'Other',
+  };
+  static const _preparationLabels = {
+    MealPreparation.fresh: 'Fresh',
+    MealPreparation.leftover: 'Leftover',
+    MealPreparation.reheated: 'Reheated',
+  };
+
+  String _formatTimestamp(BuildContext context) {
+    final localizations = MaterialLocalizations.of(context);
+    return '${localizations.formatMediumDate(_timestamp)}, '
+        '${localizations.formatTimeOfDay(TimeOfDay.fromDateTime(_timestamp))}';
+  }
+
   final _formKey = GlobalKey<FormState>();
   late final _name = TextEditingController(text: widget.initialName);
   final _restaurant = TextEditingController();
@@ -257,7 +297,7 @@ class _MealLogPageState extends State<MealLogPage> {
       body: Form(
         key: _formKey,
         child: ListView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(Spacing.s16),
           children: [
             StreamBuilder<List<MealTemplate>>(
               stream: _repository.watchTemplates(widget.userId),
@@ -271,9 +311,9 @@ class _MealLogPageState extends State<MealLogPage> {
                       'Quick log',
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: Spacing.s8),
                     Wrap(
-                      spacing: 8,
+                      spacing: Spacing.s8,
                       children: [
                         for (final template in templates.take(6))
                           ActionChip(
@@ -283,11 +323,33 @@ class _MealLogPageState extends State<MealLogPage> {
                           ),
                       ],
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: Spacing.s12),
                   ],
                 );
               },
             ),
+            const _SectionHeader('When'),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.schedule),
+              title: const Text('Meal time'),
+              subtitle: Text(_formatTimestamp(context)),
+              onTap: _chooseTime,
+            ),
+            const _FieldLabel('Meal type'),
+            Wrap(
+              spacing: Spacing.s8,
+              runSpacing: Spacing.s8,
+              children: [
+                for (final type in _mealTypes)
+                  ChoiceChip(
+                    label: Text(type),
+                    selected: _mealType == type,
+                    onSelected: (_) => setState(() => _mealType = type),
+                  ),
+              ],
+            ),
+            const _SectionHeader('What'),
             OutlinedButton.icon(
               onPressed: _pickPhoto,
               icon: const Icon(Icons.add_a_photo),
@@ -296,10 +358,13 @@ class _MealLogPageState extends State<MealLogPage> {
               ),
             ),
             if (_photo != null) ...[
-              const SizedBox(height: 8),
-              Image.memory(_photo!, height: 180, fit: BoxFit.cover),
+              const SizedBox(height: Spacing.s8),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(AppRadius.sm),
+                child: Image.memory(_photo!, height: 180, fit: BoxFit.cover),
+              ),
             ],
-            const SizedBox(height: 16),
+            const SizedBox(height: Spacing.s16),
             TextFormField(
               controller: _name,
               decoration: const InputDecoration(labelText: 'Meal or dish name'),
@@ -307,87 +372,115 @@ class _MealLogPageState extends State<MealLogPage> {
                   ? 'Enter a meal name'
                   : null,
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: Spacing.s12),
             TextFormField(
               controller: _restaurant,
               decoration: const InputDecoration(
                 labelText: 'Restaurant (optional)',
               ),
             ),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.schedule),
-              title: const Text('Meal time'),
-              subtitle: Text(_timestamp.toString()),
-              onTap: _chooseTime,
-            ),
-            DropdownButtonFormField<String>(
-              initialValue: _mealType,
-              decoration: const InputDecoration(labelText: 'Meal type'),
-              items:
-                  const [
-                        'Meal',
-                        'Breakfast',
-                        'Lunch',
-                        'Dinner',
-                        'Snack',
-                        'Drink',
-                      ]
-                      .map(
-                        (value) =>
-                            DropdownMenuItem(value: value, child: Text(value)),
-                      )
-                      .toList(),
-              onChanged: (value) => setState(() => _mealType = value ?? 'Meal'),
-            ),
-            DropdownButtonFormField<MealPortion>(
-              initialValue: _portion,
-              decoration: const InputDecoration(labelText: 'Portion'),
-              items: MealPortion.values
-                  .map(
-                    (value) =>
-                        DropdownMenuItem(value: value, child: Text(value.name)),
-                  )
-                  .toList(),
-              onChanged: (value) =>
-                  setState(() => _portion = value ?? MealPortion.usual),
-            ),
+            const SizedBox(height: Spacing.s12),
             TextFormField(
-              controller: _carbs,
-              keyboardType: TextInputType.number,
+              controller: _components,
               decoration: const InputDecoration(
-                labelText: 'Carbohydrate grams (optional)',
+                labelText: 'Ingredients, sides, accompaniments',
+                hintText: 'fruit, nuts, milk',
               ),
             ),
-            DropdownButtonFormField<CarbBand>(
-              initialValue: _carbBand,
-              decoration: const InputDecoration(labelText: 'Carbohydrate band'),
-              items: CarbBand.values
-                  .map(
-                    (value) =>
-                        DropdownMenuItem(value: value, child: Text(value.name)),
-                  )
-                  .toList(),
-              onChanged: (value) =>
-                  setState(() => _carbBand = value ?? CarbBand.unknown),
+            const _FieldLabel('Contains'),
+            Wrap(
+              spacing: Spacing.s8,
+              runSpacing: Spacing.s8,
+              children: [
+                FilterChip(
+                  label: const Text('Protein'),
+                  selected: _protein,
+                  onSelected: (value) => setState(() => _protein = value),
+                ),
+                FilterChip(
+                  label: const Text('Substantial fat'),
+                  selected: _fat,
+                  onSelected: (value) => setState(() => _fat = value),
+                ),
+                FilterChip(
+                  label: const Text('Fiber'),
+                  selected: _fiber,
+                  onSelected: (value) => setState(() => _fiber = value),
+                ),
+              ],
             ),
-            CheckboxListTile(
-              value: _protein,
-              onChanged: (value) => setState(() => _protein = value ?? false),
-              title: const Text('Contains protein'),
+            const _SectionHeader('How much'),
+            const _FieldLabel('Portion'),
+            SegmentedButton<MealPortion>(
+              showSelectedIcon: false,
+              segments: [
+                for (final value in MealPortion.values)
+                  ButtonSegment(
+                    value: value,
+                    label: Text(_portionLabels[value]!),
+                  ),
+              ],
+              selected: {_portion},
+              onSelectionChanged: (selection) =>
+                  setState(() => _portion = selection.first),
             ),
-            CheckboxListTile(
-              value: _fat,
-              onChanged: (value) => setState(() => _fat = value ?? false),
-              title: const Text('Contains substantial fat'),
+            const _FieldLabel('Carbohydrates'),
+            SegmentedButton<CarbBand>(
+              showSelectedIcon: false,
+              segments: [
+                for (final value in CarbBand.values)
+                  ButtonSegment(
+                    value: value,
+                    label: Text(_carbBandLabels[value]!),
+                  ),
+              ],
+              selected: {_carbBand},
+              onSelectionChanged: (selection) =>
+                  setState(() => _carbBand = selection.first),
             ),
-            CheckboxListTile(
-              value: _fiber,
-              onChanged: (value) => setState(() => _fiber = value ?? false),
-              title: const Text('Contains fiber'),
+            const SizedBox(height: Spacing.s12),
+            TextFormField(
+              controller: _carbs,
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              decoration: const InputDecoration(
+                labelText: 'Exact carbs in grams (optional)',
+                helperText: 'Only if you know it. The band above is enough.',
+                suffixText: 'g',
+              ),
             ),
+            const _SectionHeader('Extras'),
+            const _FieldLabel('Eating order'),
+            Wrap(
+              spacing: Spacing.s8,
+              runSpacing: Spacing.s8,
+              children: [
+                for (final value in MealOrder.values)
+                  ChoiceChip(
+                    label: Text(_orderLabels[value]!),
+                    selected: _order == value,
+                    onSelected: (_) => setState(() => _order = value),
+                  ),
+              ],
+            ),
+            const _FieldLabel('Preparation'),
+            SegmentedButton<MealPreparation>(
+              showSelectedIcon: false,
+              segments: [
+                for (final value in MealPreparation.values)
+                  ButtonSegment(
+                    value: value,
+                    label: Text(_preparationLabels[value]!),
+                  ),
+              ],
+              selected: {_preparation},
+              onSelectionChanged: (selection) =>
+                  setState(() => _preparation = selection.first),
+            ),
+            const SizedBox(height: Spacing.s12),
             Card(
-              margin: const EdgeInsets.symmetric(vertical: 8),
+              margin: const EdgeInsets.symmetric(vertical: Spacing.s8),
               child: ExpansionTile(
                 key: const Key('mealBalanceDetailsTile'),
                 leading: const Icon(Icons.donut_large),
@@ -404,53 +497,23 @@ class _MealLogPageState extends State<MealLogPage> {
               ),
             ),
             TextFormField(
-              controller: _components,
-              decoration: const InputDecoration(
-                labelText: 'Ingredients, sides, accompaniments',
-                hintText: 'fruit, nuts, milk',
-              ),
-            ),
-            DropdownButtonFormField<MealOrder>(
-              initialValue: _order,
-              decoration: const InputDecoration(labelText: 'Meal order'),
-              items: MealOrder.values
-                  .map(
-                    (value) =>
-                        DropdownMenuItem(value: value, child: Text(value.name)),
-                  )
-                  .toList(),
-              onChanged: (value) =>
-                  setState(() => _order = value ?? MealOrder.together),
-            ),
-            DropdownButtonFormField<MealPreparation>(
-              initialValue: _preparation,
-              decoration: const InputDecoration(labelText: 'Preparation'),
-              items: MealPreparation.values
-                  .map(
-                    (value) =>
-                        DropdownMenuItem(value: value, child: Text(value.name)),
-                  )
-                  .toList(),
-              onChanged: (value) =>
-                  setState(() => _preparation = value ?? MealPreparation.fresh),
-            ),
-            TextFormField(
               controller: _movement,
               decoration: const InputDecoration(
                 labelText: 'Nearby movement (optional)',
               ),
             ),
+            const SizedBox(height: Spacing.s12),
             TextFormField(
               controller: _notes,
               minLines: 2,
               maxLines: 4,
               decoration: const InputDecoration(labelText: 'Notes (optional)'),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: Spacing.s24),
             FilledButton.icon(
               onPressed: _saving ? null : _save,
               icon: const Icon(Icons.save),
-              label: Text(_saving ? 'Saving...' : 'Save meal'),
+              label: Text(_saving ? 'Saving…' : 'Save meal'),
             ),
           ],
         ),
@@ -461,3 +524,27 @@ class _MealLogPageState extends State<MealLogPage> {
 
 String? _emptyToNull(String value) =>
     value.trim().isEmpty ? null : value.trim();
+
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader(this.title);
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(top: Spacing.section, bottom: Spacing.s8),
+    child: Text(title, style: Theme.of(context).textTheme.titleMedium),
+  );
+}
+
+class _FieldLabel extends StatelessWidget {
+  const _FieldLabel(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(top: Spacing.s12, bottom: Spacing.s8),
+    child: Text(text, style: Theme.of(context).textTheme.titleSmall),
+  );
+}
