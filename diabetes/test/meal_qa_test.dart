@@ -70,15 +70,13 @@ void main() {
         return _geminiText('Deglazing lifts the browned bits into a sauce.');
       });
 
-      final reply = await MealQaService(
-        apiKey: 'test-token',
-        client: client,
-      ).answer(
-        meal: _meal,
-        scope: _stepScope,
-        history: const [],
-        question: 'What does deglaze mean?',
-      );
+      final reply = await MealQaService(apiKey: 'test-token', client: client)
+          .answer(
+            meal: _meal,
+            scope: _stepScope,
+            history: const [],
+            question: 'What does deglaze mean?',
+          );
 
       expect(reply, 'Deglazing lifts the browned bits into a sauce.');
       expect(captured.url.toString(), MealQaService.endpoint);
@@ -110,26 +108,32 @@ void main() {
       expect(body, contains('lemon chicken'));
     });
 
-    test('surfaces a non-200 as MealQaException including status and body',
-        () async {
-      final client = MockClient(
-        (request) async => http.Response('quota exhausted', 429),
-      );
+    test(
+      'surfaces a non-200 as MealQaException including status and body',
+      () async {
+        final client = MockClient(
+          (request) async => http.Response('quota exhausted', 429),
+        );
 
-      await expectLater(
-        MealQaService(apiKey: 'test-token', client: client).answer(
-          meal: _meal,
-          scope: _stepScope,
-          history: const [],
-          question: 'Why?',
-        ),
-        throwsA(
-          isA<MealQaException>()
-              .having((e) => e.message, 'message', contains('429'))
-              .having((e) => e.message, 'message', contains('quota exhausted')),
-        ),
-      );
-    });
+        await expectLater(
+          MealQaService(apiKey: 'test-token', client: client).answer(
+            meal: _meal,
+            scope: _stepScope,
+            history: const [],
+            question: 'Why?',
+          ),
+          throwsA(
+            isA<MealQaException>()
+                .having((e) => e.message, 'message', contains('429'))
+                .having(
+                  (e) => e.message,
+                  'message',
+                  contains('quota exhausted'),
+                ),
+          ),
+        );
+      },
+    );
 
     test('malformed payloads throw MealQaException, not TypeError', () async {
       final payloads = <String>[
@@ -159,7 +163,9 @@ void main() {
       ];
 
       for (final payload in payloads) {
-        final client = MockClient((request) async => http.Response(payload, 200));
+        final client = MockClient(
+          (request) async => http.Response(payload, 200),
+        );
         await expectLater(
           MealQaService(apiKey: 'test-token', client: client).answer(
             meal: _meal,
@@ -196,86 +202,92 @@ void main() {
         ),
       );
 
-      final reply = await MealQaService(
-        apiKey: 'test-token',
-        client: client,
-      ).answer(
-        meal: _meal,
-        scope: _stepScope,
-        history: const [],
-        question: 'How do I know when the water runs clear?',
-      );
+      final reply = await MealQaService(apiKey: 'test-token', client: client)
+          .answer(
+            meal: _meal,
+            scope: _stepScope,
+            history: const [],
+            question: 'How do I know when the water runs clear?',
+          );
 
-      expect(reply, 'You will see the water run clear after 30 seconds of rinsing.');
+      expect(
+        reply,
+        'You will see the water run clear after 30 seconds of rinsing.',
+      );
       expect(reply, isNot(contains('No background')));
     });
 
-    test('a thinking-only response reports truncation instead of empty', () async {
-      final client = MockClient(
-        (request) async => http.Response(
-          jsonEncode({
-            'candidates': [
-              {
-                'finishReason': 'MAX_TOKENS',
-                'content': {
-                  'parts': [
-                    {'thought': true, 'text': 'thinking...'},
-                  ],
+    test(
+      'a thinking-only response reports truncation instead of empty',
+      () async {
+        final client = MockClient(
+          (request) async => http.Response(
+            jsonEncode({
+              'candidates': [
+                {
+                  'finishReason': 'MAX_TOKENS',
+                  'content': {
+                    'parts': [
+                      {'thought': true, 'text': 'thinking...'},
+                    ],
+                  },
                 },
-              },
-            ],
-          }),
-          200,
-        ),
-      );
+              ],
+            }),
+            200,
+          ),
+        );
 
-      await expectLater(
-        MealQaService(apiKey: 'test-token', client: client).answer(
+        await expectLater(
+          MealQaService(apiKey: 'test-token', client: client).answer(
+            meal: _meal,
+            scope: _stepScope,
+            history: const [],
+            question: 'Why?',
+          ),
+          throwsA(
+            isA<MealQaException>().having(
+              (e) => e.message,
+              'message',
+              contains('ran out of room'),
+            ),
+          ),
+        );
+      },
+    );
+
+    test(
+      'sends the rules as systemInstruction and the recipe as the user turn',
+      () async {
+        late http.Request captured;
+        final client = MockClient((request) async {
+          captured = request;
+          return _geminiText('Sure.');
+        });
+
+        await MealQaService(apiKey: 'test-token', client: client).answer(
           meal: _meal,
           scope: _stepScope,
           history: const [],
           question: 'Why?',
-        ),
-        throwsA(
-          isA<MealQaException>().having(
-            (e) => e.message,
-            'message',
-            contains('ran out of room'),
-          ),
-        ),
-      );
-    });
+        );
 
-    test('sends the rules as systemInstruction and the recipe as the user turn',
-        () async {
-      late http.Request captured;
-      final client = MockClient((request) async {
-        captured = request;
-        return _geminiText('Sure.');
-      });
+        final body = jsonDecode(captured.body) as Map<String, dynamic>;
+        final system =
+            ((body['systemInstruction'] as Map)['parts'] as List).first as Map;
+        expect(system['text'], contains('NO markdown'));
 
-      await MealQaService(apiKey: 'test-token', client: client).answer(
-        meal: _meal,
-        scope: _stepScope,
-        history: const [],
-        question: 'Why?',
-      );
+        final userTurn = (body['contents'] as List).first as Map;
+        final userText = ((userTurn['parts'] as List).first as Map)['text'];
+        expect(userText, contains('1 cup quinoa'));
+        expect(userText, isNot(contains('NO markdown')));
 
-      final body = jsonDecode(captured.body) as Map<String, dynamic>;
-      final system =
-          ((body['systemInstruction'] as Map)['parts'] as List).first as Map;
-      expect(system['text'], contains('NO markdown'));
-
-      final userTurn = (body['contents'] as List).first as Map;
-      final userText = ((userTurn['parts'] as List).first as Map)['text'];
-      expect(userText, contains('1 cup quinoa'));
-      expect(userText, isNot(contains('NO markdown')));
-
-      // Thinking tokens share the output budget, so it must be generous.
-      final config = body['generationConfig'] as Map;
-      expect(config['maxOutputTokens'], greaterThanOrEqualTo(2048));
-      expect((config['thinkingConfig'] as Map)['thinkingLevel'], 'low');
-    });
+        // Thinking tokens share the output budget, so it must be generous.
+        final config = body['generationConfig'] as Map;
+        expect(config['maxOutputTokens'], greaterThanOrEqualTo(2048));
+        expect((config['thinkingConfig'] as Map)['thinkingLevel'], 'low');
+      },
+    );
 
     test('missing api key throws before any network call', () async {
       var called = false;
@@ -310,11 +322,7 @@ void main() {
         client: client,
       ).suggestQuestions(_meal, _stepScope);
 
-      expect(chips, [
-        'What does deglaze mean?',
-        'Can I skip it?',
-        'How hot?',
-      ]);
+      expect(chips, ['What does deglaze mean?', 'Can I skip it?', 'How hot?']);
     });
 
     test('degrades to an empty row instead of throwing', () async {
@@ -464,6 +472,8 @@ void main() {
         onAsk: (value, {String? initialQuestion}) => scope = value,
       );
 
+      await tester.ensureVisible(find.byKey(const Key('mealQaStep_1')));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('mealQaStep_1')));
       await tester.pump();
 
@@ -562,7 +572,8 @@ void main() {
       expect(find.byKey(const Key('mealQaStep_0')), findsNothing);
       expect(find.text('Ask about this meal'), findsNothing);
       // The recipe itself must still render exactly as before.
-      expect(find.text('1. Rinse the quinoa.'), findsOneWidget);
+      expect(find.text('Rinse the quinoa.'), findsOneWidget);
+      expect(find.text('Tap a line to ask'), findsNothing);
     });
   });
 
@@ -752,7 +763,9 @@ void main() {
       expect(tipSeenCalls, 1);
     });
 
-    testWidgets('hides the first-run tip once it has been seen', (tester) async {
+    testWidgets('hides the first-run tip once it has been seen', (
+      tester,
+    ) async {
       final service = MealQaService(
         apiKey: 'test-token',
         client: MockClient((request) async => _geminiText('[]')),

@@ -2826,6 +2826,12 @@ class _AgentPageState extends State<AgentPage> {
             MealRecommendationCard(
               recommendation: recommendation,
               diabetesEnabled: widget.diabetesEnabled,
+              timeLabel:
+                  (_lastRequest?.hasTimeShortage ?? false) &&
+                      (_lastRequest?.timeAvailable?.isNotEmpty ?? false)
+                  ? '≤ ${_lastRequest!.timeAvailable} min'
+                  : null,
+              difficultyLabel: _lastRequest?.cookingExperience.label,
               onStartPostMealWalk: widget.onStartPostMealWalk,
               onMakeBalanced: _isLoadingRecommendation
                   ? null
@@ -2945,6 +2951,8 @@ class MealRecommendationCard extends StatelessWidget {
     this.onLogMeal,
     this.onMakeBalanced,
     this.onAsk,
+    this.timeLabel,
+    this.difficultyLabel,
   });
 
   final MealRecommendation recommendation;
@@ -2952,9 +2960,15 @@ class MealRecommendationCard extends StatelessWidget {
   final VoidCallback? onStartPostMealWalk;
   final VoidCallback? onLogMeal;
 
-  /// F5 · "Make it more balanced?" — keeps this dish but asks for one small,
+  /// F5 · "Add a balancing tweak" — keeps this dish but asks for one small,
   /// optional tweak. Null hides the option.
   final VoidCallback? onMakeBalanced;
+
+  /// Time budget the user asked for, e.g. "≤ 20 min". Null hides it.
+  final String? timeLabel;
+
+  /// Cooking difficulty the user asked for, e.g. "Beginner". Null hides it.
+  final String? difficultyLabel;
 
   /// Opens the Q&A sheet scoped to whatever the user tapped. When null the
   /// card renders exactly as it did before the feature existed — no chip row
@@ -2968,9 +2982,7 @@ class MealRecommendationCard extends StatelessWidget {
 
   /// Wraps a card line in a tap target that asks about that exact line.
   ///
-  /// Intentionally adds no icon or tint: the lines look identical to before
-  /// and only reveal themselves on press. Discoverability is carried by the
-  /// suggested-question chip row instead.
+  /// Section headers carry the visible 'Tap a line to ask' signifier.
   Widget _askable({
     required Widget child,
     required MealQuestionScope scope,
@@ -2981,13 +2993,19 @@ class MealRecommendationCard extends StatelessWidget {
     return InkWell(
       key: key,
       onTap: () => onAsk!(scope),
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(AppRadius.sm),
       child: Semantics(
         button: true,
         label: semanticLabel,
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-          child: child,
+          padding: const EdgeInsets.symmetric(
+            vertical: Spacing.s4,
+            horizontal: Spacing.s4,
+          ),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 48),
+            child: Align(alignment: Alignment.centerLeft, child: child),
+          ),
         ),
       ),
     );
@@ -3001,6 +3019,75 @@ class MealRecommendationCard extends StatelessWidget {
     color: Theme.of(context).colorScheme.onPrimaryContainer,
   );
 
+  Widget _sectionHeader(BuildContext context, String title) {
+    final theme = Theme.of(context);
+    return Row(
+      children: [
+        Expanded(child: Text(title, style: theme.textTheme.titleMedium)),
+        if (onAsk != null) ...[
+          Icon(
+            Icons.chat_bubble_outline,
+            size: 16,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(width: Spacing.s4),
+          Text(
+            'Tap a line to ask',
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _bullet(BuildContext context, String text) {
+    final theme = Theme.of(context);
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 9px top offset centers the dot on bodyLarge's first 24px line.
+        Container(
+          width: 6,
+          height: 6,
+          margin: const EdgeInsets.only(top: 9, right: Spacing.s12),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.primary,
+            shape: BoxShape.circle,
+          ),
+        ),
+        Expanded(child: Text(text, style: theme.textTheme.bodyLarge)),
+      ],
+    );
+  }
+
+  Widget _step(BuildContext context, int number, String text) {
+    final theme = Theme.of(context);
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 24,
+          height: 24,
+          margin: const EdgeInsets.only(right: Spacing.s12),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: theme.colorScheme.primaryContainer,
+            shape: BoxShape.circle,
+          ),
+          child: Text(
+            '$number',
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: theme.colorScheme.onPrimaryContainer,
+            ),
+          ),
+        ),
+        Expanded(child: Text(text, style: theme.textTheme.bodyLarge)),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -3008,36 +3095,68 @@ class MealRecommendationCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Container(
+          SizedBox(
             height: 180,
-            color: Theme.of(context).colorScheme.primaryContainer,
-            child: recommendation.imageUrl == null
-                ? _imagePlaceholder(context)
-                : Image.network(
-                    recommendation.imageUrl!,
-                    fit: BoxFit.cover,
-                    gaplessPlayback: true,
-                    // On web this renders an <img> element instead of
-                    // fetching the bytes, so the browser sends no `Origin`
-                    // header — the header the image host answers with a 403.
-                    webHtmlElementStrategy: WebHtmlElementStrategy.prefer,
-                    loadingBuilder: (context, child, progress) =>
-                        progress == null
-                        ? child
-                        : Center(
-                            child: CircularProgressIndicator(
-                              value: progress.expectedTotalBytes == null
-                                  ? null
-                                  : progress.cumulativeBytesLoaded /
-                                        progress.expectedTotalBytes!,
-                            ),
-                          ),
-                    errorBuilder: (context, error, stackTrace) =>
-                        _imagePlaceholder(context),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                ColoredBox(
+                  color: Theme.of(context).colorScheme.primaryContainer,
+                  child: recommendation.imageUrl == null
+                      ? _imagePlaceholder(context)
+                      : Image.network(
+                          recommendation.imageUrl!,
+                          fit: BoxFit.cover,
+                          gaplessPlayback: true,
+                          semanticLabel: 'Photo of ${recommendation.dishName}',
+                          // On web this renders an <img> element instead of
+                          // fetching the bytes, so the browser sends no
+                          // `Origin` header — the header the image host
+                          // answers with a 403.
+                          webHtmlElementStrategy: WebHtmlElementStrategy.prefer,
+                          loadingBuilder: (context, child, progress) =>
+                              progress == null
+                              ? child
+                              : Center(
+                                  child: CircularProgressIndicator(
+                                    value: progress.expectedTotalBytes == null
+                                        ? null
+                                        : progress.cumulativeBytesLoaded /
+                                              progress.expectedTotalBytes!,
+                                  ),
+                                ),
+                          errorBuilder: (context, error, stackTrace) =>
+                              _imagePlaceholder(context),
+                        ),
+                ),
+                if (recommendation.imageUrl != null)
+                  Positioned(
+                    left: Spacing.s8,
+                    bottom: Spacing.s8,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.6),
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: Spacing.s8,
+                          vertical: Spacing.s4,
+                        ),
+                        child: Text(
+                          'AI-generated image',
+                          style: Theme.of(
+                            context,
+                          ).textTheme.labelSmall?.copyWith(color: Colors.white),
+                        ),
+                      ),
+                    ),
                   ),
+              ],
+            ),
           ),
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(Spacing.s16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -3045,11 +3164,34 @@ class MealRecommendationCard extends StatelessWidget {
                   recommendation.dishName,
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
+                if (timeLabel != null ||
+                    recommendation.estimatedCostPerServing != null ||
+                    difficultyLabel != null) ...[
+                  const SizedBox(height: Spacing.s8),
+                  Wrap(
+                    spacing: Spacing.s8,
+                    runSpacing: Spacing.s8,
+                    children: [
+                      if (timeLabel != null)
+                        _InfoPill(icon: Icons.schedule, label: timeLabel!),
+                      if (recommendation.estimatedCostPerServing != null)
+                        _InfoPill(
+                          icon: Icons.payments_outlined,
+                          label: recommendation.estimatedCostPerServing!,
+                        ),
+                      if (difficultyLabel != null)
+                        _InfoPill(
+                          icon: Icons.signal_cellular_alt,
+                          label: difficultyLabel!,
+                        ),
+                    ],
+                  ),
+                ],
                 if (recommendation.eveningScore != null) ...[
-                  const SizedBox(height: 8),
+                  const SizedBox(height: Spacing.s8),
                   _EveningFitChip(score: recommendation.eveningScore!),
                 ],
-                const SizedBox(height: 8),
+                const SizedBox(height: Spacing.s8),
                 _askable(
                   key: const Key('mealQaReason'),
                   scope: const MealQuestionScope(
@@ -3058,17 +3200,16 @@ class MealRecommendationCard extends StatelessWidget {
                   semanticLabel: 'Ask why this meal was picked',
                   child: Text(recommendation.reason),
                 ),
-                if (recommendation.usedFridgeItems.isNotEmpty ||
-                    recommendation.estimatedCostPerServing != null) ...[
-                  const SizedBox(height: 8),
-                  _FridgeAndCostRow(
-                    usedFridgeItems: recommendation.usedFridgeItems,
-                    estimatedCostPerServing:
-                        recommendation.estimatedCostPerServing,
+                if (recommendation.usedFridgeItems.isNotEmpty) ...[
+                  const SizedBox(height: Spacing.s8),
+                  _InfoPill(
+                    icon: Icons.kitchen_outlined,
+                    label:
+                        'From your fridge: ${recommendation.usedFridgeItems.join(', ')}',
                   ),
                 ],
                 if (diabetesEnabled && recommendation.glucoseNote != null) ...[
-                  const SizedBox(height: 12),
+                  const SizedBox(height: Spacing.s12),
                   _askable(
                     key: const Key('mealQaGlucoseNote'),
                     scope: MealQuestionScope(
@@ -3079,12 +3220,9 @@ class MealRecommendationCard extends StatelessWidget {
                     child: _GlucoseNoteChip(note: recommendation.glucoseNote!),
                   ),
                 ],
-                const SizedBox(height: 16),
-                Text(
-                  'Ingredients',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 4),
+                const SizedBox(height: Spacing.s16),
+                _sectionHeader(context, 'Ingredients'),
+                const SizedBox(height: Spacing.s4),
                 for (
                   var index = 0;
                   index < recommendation.ingredients.length;
@@ -3099,14 +3237,11 @@ class MealRecommendationCard extends StatelessWidget {
                     ),
                     semanticLabel:
                         'Ask about ${recommendation.ingredients[index]}',
-                    child: Text('- ${recommendation.ingredients[index]}'),
+                    child: _bullet(context, recommendation.ingredients[index]),
                   ),
-                const SizedBox(height: 16),
-                Text(
-                  'Instructions',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 4),
+                const SizedBox(height: Spacing.s16),
+                _sectionHeader(context, 'Instructions'),
+                const SizedBox(height: Spacing.s4),
                 for (
                   var index = 0;
                   index < recommendation.instructions.length;
@@ -3120,26 +3255,28 @@ class MealRecommendationCard extends StatelessWidget {
                       ordinal: index + 1,
                     ),
                     semanticLabel: 'Ask about step ${index + 1}',
-                    child: Text(
-                      '${index + 1}. ${recommendation.instructions[index]}',
+                    child: _step(
+                      context,
+                      index + 1,
+                      recommendation.instructions[index],
                     ),
                   ),
                 if (onAsk != null &&
                     recommendation.suggestedQuestions.isNotEmpty) ...[
-                  const SizedBox(height: 16),
+                  const SizedBox(height: Spacing.s16),
                   const Divider(height: 1),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: Spacing.s12),
                   Text(
                     'Ask about this meal',
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: Spacing.s8),
                   // LayoutBuilder so a long question wraps inside its chip
                   // instead of being clipped at the card edge.
                   LayoutBuilder(
                     builder: (context, constraints) => Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
+                      spacing: Spacing.s8,
+                      runSpacing: Spacing.s8,
                       children: [
                         for (
                           var index = 0;
@@ -3172,31 +3309,38 @@ class MealRecommendationCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: Spacing.s12),
                   const Divider(height: 1),
                 ],
-                if (onMakeBalanced != null) ...[
-                  const SizedBox(height: 20),
-                  OutlinedButton.icon(
-                    onPressed: onMakeBalanced,
-                    icon: const Icon(Icons.balance),
-                    label: const Text('Make it more balanced?'),
-                  ),
-                ],
-                if (onStartPostMealWalk != null) ...[
-                  SizedBox(height: onMakeBalanced == null ? 20 : 8),
-                  OutlinedButton.icon(
-                    onPressed: onStartPostMealWalk,
-                    icon: const Icon(Icons.directions_walk),
-                    label: const Text('Start a 10-minute post-meal walk'),
-                  ),
-                ],
-                if (onLogMeal != null) ...[
-                  const SizedBox(height: 8),
-                  FilledButton.icon(
-                    onPressed: onLogMeal,
-                    icon: const Icon(Icons.restaurant),
-                    label: const Text('Log this meal'),
+                if (onStartPostMealWalk != null ||
+                    onMakeBalanced != null ||
+                    onLogMeal != null) ...[
+                  const SizedBox(height: Spacing.s24),
+                  OverflowBar(
+                    alignment: MainAxisAlignment.end,
+                    overflowAlignment: OverflowBarAlignment.end,
+                    spacing: Spacing.s8,
+                    overflowSpacing: Spacing.s8,
+                    children: [
+                      if (onStartPostMealWalk != null)
+                        TextButton.icon(
+                          onPressed: onStartPostMealWalk,
+                          icon: const Icon(Icons.directions_walk),
+                          label: const Text('Start a 10-minute walk'),
+                        ),
+                      if (onMakeBalanced != null)
+                        FilledButton.tonalIcon(
+                          onPressed: onMakeBalanced,
+                          icon: const Icon(Icons.balance),
+                          label: const Text('Add a balancing tweak'),
+                        ),
+                      if (onLogMeal != null)
+                        FilledButton.icon(
+                          onPressed: onLogMeal,
+                          icon: const Icon(Icons.restaurant),
+                          label: const Text('Log this meal'),
+                        ),
+                    ],
                   ),
                 ],
               ],
@@ -3283,41 +3427,6 @@ class _EveningFitChip extends StatelessWidget {
   }
 }
 
-/// Transparency row showing which fridge items this dish uses and a rough
-/// per-serving cost estimate. Purely informational — hidden entirely when
-/// the model provided neither field.
-class _FridgeAndCostRow extends StatelessWidget {
-  const _FridgeAndCostRow({
-    required this.usedFridgeItems,
-    required this.estimatedCostPerServing,
-  });
-
-  final List<String> usedFridgeItems;
-  final String? estimatedCostPerServing;
-
-  @override
-  Widget build(BuildContext context) {
-    final chips = <Widget>[];
-    if (usedFridgeItems.isNotEmpty) {
-      chips.add(
-        _InfoPill(
-          icon: Icons.kitchen_outlined,
-          label: 'From your fridge: ${usedFridgeItems.join(', ')}',
-        ),
-      );
-    }
-    if (estimatedCostPerServing != null) {
-      chips.add(
-        _InfoPill(
-          icon: Icons.payments_outlined,
-          label: estimatedCostPerServing!,
-        ),
-      );
-    }
-    return Wrap(spacing: 8, runSpacing: 8, children: chips);
-  }
-}
-
 class _InfoPill extends StatelessWidget {
   const _InfoPill({required this.icon, required this.label});
 
@@ -3328,23 +3437,26 @@ class _InfoPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(
+        horizontal: Spacing.s12,
+        vertical: Spacing.s4,
+      ),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(10),
+        color: theme.colorScheme.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(AppRadius.md),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: theme.colorScheme.onSurfaceVariant),
-          const SizedBox(width: 4),
+          Icon(icon, size: 16, color: theme.colorScheme.onSurfaceVariant),
+          const SizedBox(width: Spacing.s4),
           // Flexible so a long fridge list wraps inside the pill instead of
           // overflowing the card on narrow phones.
           Flexible(
             child: Text(
               label,
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: theme.colorScheme.onSurface,
               ),
             ),
           ),
