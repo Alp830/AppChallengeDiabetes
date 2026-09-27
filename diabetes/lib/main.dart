@@ -16,6 +16,7 @@ import 'app_features.dart';
 import 'cgm/data/glucose_repository.dart';
 import 'cgm/screens/glucose_settings_page.dart';
 import 'design/app_motion.dart';
+import 'design/app_radius.dart';
 import 'design/app_theme.dart';
 import 'design/friendly_errors.dart';
 import 'design/load_error.dart';
@@ -2191,6 +2192,12 @@ class _AgentPageState extends State<AgentPage> {
   /// load finishes or when there is no user / no signal.
   OvernightPhenotypeSummary? _overnightSummary;
 
+  static const _examplePrompts = [
+    'Quick breakfast',
+    "Use what's expiring",
+    r'Under $5',
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -2287,43 +2294,6 @@ class _AgentPageState extends State<AgentPage> {
     );
 
     await _loadRecommendation(request);
-  }
-
-  Future<void> _showMealTypePicker() async {
-    final selected = await showModalBottomSheet<MealType>(
-      context: context,
-      showDragHandle: true,
-      builder: (context) => SafeArea(
-        child: FractionallySizedBox(
-          heightFactor: 0.65,
-          child: Column(
-            children: [
-              Text('Meal type', style: Theme.of(context).textTheme.titleLarge),
-              const SizedBox(height: Spacing.s8),
-              Expanded(
-                child: ListView(
-                  children: [
-                    for (final mealType in MealType.values)
-                      ListTile(
-                        leading: Icon(
-                          _mealType == mealType
-                              ? Icons.radio_button_checked
-                              : Icons.radio_button_off,
-                        ),
-                        title: Text(mealType.label),
-                        onTap: () => Navigator.pop(context, mealType),
-                      ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-    if (selected != null && mounted) {
-      setState(() => _mealType = selected);
-    }
   }
 
   Future<void> _showPreferences() async {
@@ -2571,20 +2541,15 @@ class _AgentPageState extends State<AgentPage> {
     });
 
     try {
-      final results = await Future.wait([
-        GeminiMealService.generate(request),
-        Future<void>.delayed(const Duration(seconds: 1)),
-      ]);
-      final recommendations = results.first as List<MealRecommendation>;
-
-      setState(() {
-        _recommendations = recommendations;
-      });
+      final recommendations = await GeminiMealService.generate(request);
+      if (!mounted) return;
+      setState(() => _recommendations = recommendations);
     } catch (error) {
-      setState(() {
-        _recommendationError =
-            'Gemini was not available. Check your API key and try again. ($error)';
-      });
+      debugPrint('meal recommendation: $error');
+      if (!mounted) return;
+      setState(
+        () => _recommendationError = "Couldn't get a meal idea right now.",
+      );
     } finally {
       if (mounted) {
         setState(() {
@@ -2610,15 +2575,36 @@ class _AgentPageState extends State<AgentPage> {
             hintText: 'e.g., Something with eggs',
           ),
         ),
-        const SizedBox(height: Spacing.s16),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: ActionChip(
-            key: const Key('agentMealTypeChip'),
-            avatar: const Icon(Icons.schedule, size: 18),
-            label: Text(_mealType.label),
-            onPressed: _showMealTypePicker,
+        if (_lastRequest == null) ...[
+          const SizedBox(height: Spacing.s12),
+          Wrap(
+            spacing: Spacing.s8,
+            runSpacing: Spacing.s8,
+            children: [
+              for (final prompt in _examplePrompts)
+                ActionChip(
+                  label: Text(prompt),
+                  onPressed: () =>
+                      setState(() => _preferencesController.text = prompt),
+                ),
+            ],
           ),
+        ],
+        const SizedBox(height: Spacing.s16),
+        Text('Meal type', style: Theme.of(context).textTheme.titleSmall),
+        const SizedBox(height: Spacing.s8),
+        Wrap(
+          spacing: Spacing.s8,
+          runSpacing: Spacing.s8,
+          children: [
+            for (final mealType in MealType.values)
+              ChoiceChip(
+                key: Key('agentMealType_${mealType.name}'),
+                label: Text(mealType.label),
+                selected: _mealType == mealType,
+                onSelected: (_) => setState(() => _mealType = mealType),
+              ),
+          ],
         ),
         const SizedBox(height: Spacing.s16),
         SizedBox(
@@ -2630,7 +2616,7 @@ class _AgentPageState extends State<AgentPage> {
                 : _generateRecommendation,
             icon: const Icon(Icons.auto_awesome),
             label: Text(
-              _isLoadingRecommendation ? 'Thinking...' : 'Recommend a Meal',
+              _isLoadingRecommendation ? 'Thinking…' : 'Recommend a meal',
             ),
           ),
         ),
@@ -2645,31 +2631,14 @@ class _AgentPageState extends State<AgentPage> {
           ),
         ),
         if (_isLoadingRecommendation) ...[
-          const SizedBox(height: Spacing.s12),
-          Semantics(
-            liveRegion: true,
-            label: 'Finding a meal for you',
-            child: const Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-                SizedBox(width: Spacing.s12),
-                Flexible(child: Text('Finding a meal for you...')),
-              ],
-            ),
-          ),
+          const SizedBox(height: Spacing.s24),
+          const _RecommendationSkeleton(),
         ],
-        if (_recommendationError != null) ...[
-          const SizedBox(height: Spacing.s16),
-          Text(
-            _recommendationError!,
-            style: TextStyle(color: Theme.of(context).colorScheme.error),
+        if (_recommendationError != null && _lastRequest != null)
+          LoadErrorView(
+            message: _recommendationError!,
+            onRetry: () => _loadRecommendation(_lastRequest!),
           ),
-        ],
         if (_recommendations.isNotEmpty) ...[
           const SizedBox(height: Spacing.s24),
           for (final recommendation in _recommendations) ...[
@@ -2730,10 +2699,58 @@ class _AgentPageState extends State<AgentPage> {
           OutlinedButton.icon(
             onPressed: _suggestAnotherMeal,
             icon: const Icon(Icons.refresh),
-            label: const Text('Suggest Something Else'),
+            label: const Text('Suggest something else'),
           ),
         ],
       ],
+    );
+  }
+}
+
+/// Placeholder shaped like a recipe card, shown while Gemini works so the wait
+/// previews the result (NN/g skeleton screens).
+class _RecommendationSkeleton extends StatelessWidget {
+  const _RecommendationSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    final block = Theme.of(context).colorScheme.surfaceContainerHigh;
+    Widget bar(double widthFactor, double height) => FractionallySizedBox(
+      alignment: Alignment.centerLeft,
+      widthFactor: widthFactor,
+      child: Container(
+        height: height,
+        decoration: BoxDecoration(
+          color: block,
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+        ),
+      ),
+    );
+    return Semantics(
+      liveRegion: true,
+      label: 'Finding a meal for you',
+      child: ExcludeSemantics(
+        child: Card(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Container(height: 180, color: block),
+              Padding(
+                padding: const EdgeInsets.all(Spacing.s16),
+                child: Column(
+                  children: [
+                    bar(0.6, 24),
+                    const SizedBox(height: Spacing.s12),
+                    bar(1, 16),
+                    const SizedBox(height: Spacing.s8),
+                    bar(0.8, 16),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

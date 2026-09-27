@@ -74,7 +74,7 @@ void main() {
       find.widgetWithText(TextFormField, 'What do you want to eat?'),
       findsOneWidget,
     );
-    expect(find.text('Recommend a Meal'), findsOneWidget);
+    expect(find.text('Recommend a meal'), findsOneWidget);
     expect(find.text('Preferences'), findsOneWidget);
     expect(find.text('Set a budget'), findsNothing);
     expect(find.text('Cooking difficulty'), findsNothing);
@@ -110,30 +110,50 @@ void main() {
     expect(find.text('15'), findsOneWidget);
   });
 
-  testWidgets('agent meal chip can change the meal type', (tester) async {
+  testWidgets('agent meal type chips change the meal type', (tester) async {
     await tester.pumpWidget(
       const MaterialApp(
         home: Scaffold(body: AgentPage(foodItems: [])),
       ),
     );
-
-    await tester.tap(find.byKey(const Key('agentMealTypeChip')));
-    await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(
-      find.text('Snack'),
-      100,
-      scrollable: find.byType(Scrollable).last,
-    );
-    await tester.tap(find.text('Snack'));
-    await tester.pumpAndSettle();
-
+    await tester.tap(find.byKey(const Key('agentMealType_snack')));
+    await tester.pump();
     expect(
-      find.descendant(
-        of: find.byKey(const Key('agentMealTypeChip')),
-        matching: find.text('Snack'),
-      ),
-      findsOneWidget,
+      tester
+          .widget<ChoiceChip>(find.byKey(const Key('agentMealType_snack')))
+          .selected,
+      isTrue,
     );
+  });
+
+  testWidgets('example prompts fill the prompt field', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(body: AgentPage(foodItems: [])),
+      ),
+    );
+    await tester.tap(find.widgetWithText(ActionChip, 'Quick breakfast'));
+    await tester.pump();
+    final field = tester.widget<TextFormField>(
+      find.byKey(const Key('agentFoodPrompt')),
+    );
+    expect(field.controller!.text, 'Quick breakfast');
+  });
+
+  testWidgets('failed recommendation shows a plain message and retry', (
+    tester,
+  ) async {
+    // No API key in tests, so GeminiMealService.generate throws immediately.
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(body: AgentPage(foodItems: [])),
+      ),
+    );
+    await tester.tap(find.byKey(const Key('recommendMealButton')));
+    await tester.pumpAndSettle();
+    expect(find.text("Couldn't get a meal idea right now."), findsOneWidget);
+    expect(find.textContaining('API key'), findsNothing);
+    expect(find.byKey(const Key('loadErrorRetry')), findsOneWidget);
   });
 }
 
