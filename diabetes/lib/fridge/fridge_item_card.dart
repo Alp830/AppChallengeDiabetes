@@ -7,8 +7,9 @@ import '../design/text_scale.dart';
 import '../main.dart' show FoodItem;
 import 'freshness.dart';
 
-/// Compact inventory tile. Tapping edits the item (delete lives in the edit
-/// sheet), and in selection mode tapping toggles selection.
+/// Compact inventory tile. Tapping edits the item, and a top-right delete
+/// button offers a quick staged delete; in selection mode tapping toggles
+/// selection instead and the delete button is hidden.
 class FridgeItemCard extends StatelessWidget {
   const FridgeItemCard({
     super.key,
@@ -17,6 +18,7 @@ class FridgeItemCard extends StatelessWidget {
     this.selected = false,
     this.selectionMode = false,
     this.onToggleSelection,
+    this.onDelete,
     this.now,
   });
 
@@ -25,6 +27,7 @@ class FridgeItemCard extends StatelessWidget {
   final bool selected;
   final bool selectionMode;
   final VoidCallback? onToggleSelection;
+  final VoidCallback? onDelete;
   final DateTime? now;
 
   @override
@@ -131,6 +134,23 @@ class FridgeItemCard extends StatelessWidget {
                             : scheme.onSurfaceVariant,
                       ),
                     ),
+                  ),
+                ),
+              if (!selectionMode && onDelete != null)
+                Positioned(
+                  top: 0,
+                  right: 0,
+                  child: IconButton(
+                    key: Key('fridgeTileDelete_${foodItem.name}'),
+                    tooltip: 'Delete ${foodItem.name}',
+                    onPressed: onDelete,
+                    iconSize: 18,
+                    color: scheme.onSurfaceVariant,
+                    constraints: const BoxConstraints(
+                      minWidth: 48,
+                      minHeight: 48,
+                    ),
+                    icon: const Icon(Icons.close),
                   ),
                 ),
             ],

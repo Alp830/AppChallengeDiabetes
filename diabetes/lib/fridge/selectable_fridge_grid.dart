@@ -25,6 +25,7 @@ class SelectableFridgeGrid extends StatefulWidget {
     required this.onEdit,
     required this.onRemoveSelected,
     required this.onBulkAction,
+    this.onDelete,
     this.onSelectionCountChanged,
     this.bottomPadding = 144,
   });
@@ -33,6 +34,9 @@ class SelectableFridgeGrid extends StatefulWidget {
   final ValueChanged<int> onEdit;
   final Future<void> Function(Set<int>) onRemoveSelected;
   final Future<void> Function(FoodBulkAction, List<FoodItem>) onBulkAction;
+
+  /// Staged single-item delete from the tile's own delete button.
+  final ValueChanged<int>? onDelete;
 
   /// Reports how many items are currently selected so the host can make room
   /// for the bottom selection toolbar (e.g. lifting its floating buttons).
@@ -350,6 +354,9 @@ class _SelectableFridgeGridState extends State<SelectableFridgeGrid> {
                               widget.onEdit(entry.key);
                             }
                           },
+                          onDelete: widget.onDelete == null
+                              ? null
+                              : () => widget.onDelete!(entry.key),
                         ),
                       );
                     }, childCount: groups[groupIndex].value.length),

@@ -381,4 +381,39 @@ void main() {
     await tester.pumpAndSettle();
     expect(deleted, {0, 1});
   });
+
+  testWidgets('per-tile onDelete reports the tapped item index', (
+    tester,
+  ) async {
+    int? deletedIndex;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SelectableFridgeGrid(
+            items: const [
+              MapEntry(
+                0,
+                FoodItem(
+                  name: 'Eggs',
+                  amount: '12',
+                  foodType: FoodType.protein,
+                ),
+              ),
+              MapEntry(
+                1,
+                FoodItem(name: 'Milk', amount: '1', foodType: FoodType.dairy),
+              ),
+            ],
+            onEdit: (_) {},
+            onRemoveSelected: (_) async {},
+            onBulkAction: (_, _) async {},
+            onDelete: (index) => deletedIndex = index,
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.byKey(const Key('fridgeTileDelete_Milk')));
+    expect(deletedIndex, 1);
+  });
 }

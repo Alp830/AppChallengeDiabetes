@@ -415,6 +415,50 @@ void main() {
     expect(find.byKey(const Key('fridgeSaveBar')), findsOneWidget);
   });
 
+  testWidgets('the per-tile delete button stages a deletion with undo', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(360, 780);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    final key = GlobalKey<FridgePageState>();
+    final committed = <FridgeChangeSet>[];
+    await tester.pumpWidget(wrap(key, [stored('a', 'Milk')], committed));
+
+    await tester.tap(find.byKey(const Key('fridgeTileDelete_Milk')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Milk'), findsNothing);
+    expect(find.text('1 unsaved change'), findsOneWidget);
+    expect(committed, isEmpty);
+    expect(find.text('Removed Milk. Save to make it final.'), findsOneWidget);
+
+    await tester.tap(find.text('Undo'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Milk'), findsOneWidget);
+    expect(key.currentState!.isDirty, isFalse);
+    expect(committed, isEmpty);
+  });
+
+  testWidgets('the per-tile delete button is hidden in selection mode', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(360, 780);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      wrap(GlobalKey<FridgePageState>(), [stored('a', 'Milk')], []),
+    );
+
+    await tester.longPress(find.text('Milk'));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('fridgeTileDelete_Milk')), findsNothing);
+  });
+
   testWidgets('bulk delete across groups stages until save', (tester) async {
     tester.view.physicalSize = const Size(360, 780);
     tester.view.devicePixelRatio = 1;
