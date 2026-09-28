@@ -13,7 +13,14 @@ import '../models/meal_qa_models.dart';
 /// `http.post` style of `GeminiMealService`, which cannot be tested.
 class MealQaService {
   MealQaService({required this.apiKey, http.Client? client})
-    : _client = client ?? http.Client();
+    : _client = client ?? httpClient;
+
+  /// The client used when none is injected. `showMealQaSheet` builds the
+  /// service itself, so a test that opens the sheet from a real screen (the
+  /// Meals tab, a saved recipe) has no constructor to pass a client to;
+  /// replacing this is the only seam those tests have.
+  @visibleForTesting
+  static http.Client httpClient = http.Client();
 
   final String apiKey;
   final http.Client _client;
