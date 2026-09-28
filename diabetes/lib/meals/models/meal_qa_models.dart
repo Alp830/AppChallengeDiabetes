@@ -158,6 +158,7 @@ class MealQaException implements Exception, RetryableAiError {
   const MealQaException(this.message, {this.statusCode, this.retryable = true});
 
   final String message;
+  @override
   final int? statusCode;
   @override
   final bool retryable;

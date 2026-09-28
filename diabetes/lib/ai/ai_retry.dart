@@ -15,6 +15,9 @@ import 'dart:async';
 /// [isRetryableAiError] from having to import every feature's error type.
 abstract interface class RetryableAiError {
   bool get retryable;
+
+  /// The HTTP status behind the failure, when there was one.
+  int? get statusCode;
 }
 
 /// Typed failure for Gemini calls so the retry rule can tell a temporary
@@ -36,6 +39,7 @@ class AiRequestException implements Exception, RetryableAiError {
       );
 
   final String message;
+  @override
   final int? statusCode;
   @override
   final bool retryable;

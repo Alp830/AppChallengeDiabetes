@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 
+import '../ai/ai_retry.dart';
+
 /// Plain-language messages for errors shown to users. Raw errors go to the
 /// debug log only, never on screen (NN/g error-message guidelines).
 abstract final class FriendlyErrors {
@@ -31,6 +33,23 @@ abstract final class FriendlyErrors {
       return network;
     }
     return generic;
+  }
+
+  /// Plain copy for a failed Gemini call, after `runWithAiRetry` has already
+  /// used up its attempts. [action] names what the user was waiting for, e.g.
+  /// `'a meal idea'` or `'an answer'`.
+  static String ai(Object error, {required String action}) {
+    debugPrint('ai ($action): $error');
+    if (error.toString().contains('GEMINI_API_KEY')) {
+      return "Meal ideas aren't set up on this device yet.";
+    }
+    // Not retryable and not a setup problem: a 4xx or a refusal. Waiting
+    // longer will not help, so point at the request itself.
+    if (error is RetryableAiError && !error.retryable) {
+      return "That request didn't work. Try changing it and try again.";
+    }
+    return "Couldn't get $action after a few tries. "
+        'Check your connection and try again.';
   }
 
   /// Maps Firebase Auth codes to plain sign-in messages.
