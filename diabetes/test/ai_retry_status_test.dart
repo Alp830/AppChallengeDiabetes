@@ -20,7 +20,7 @@ void main() {
   testWidgets('later attempts count themselves out loud', (tester) async {
     await pumpStatus(tester, 3);
     expect(find.byKey(const Key('aiRetryStatus')), findsOneWidget);
-    expect(find.text('Retrying 3/5'), findsOneWidget);
+    expect(find.text('AI request failed. Retrying 3/5'), findsOneWidget);
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
   });
 
@@ -32,7 +32,10 @@ void main() {
 
     expect(
       tester.getSemantics(find.byKey(const Key('aiRetryStatus'))),
-      matchesSemantics(label: 'Retrying, attempt 2 of 5', isLiveRegion: true),
+      matchesSemantics(
+        label: 'AI request failed. Retrying, attempt 2 of 5',
+        isLiveRegion: true,
+      ),
     );
     handle.dispose();
   });

@@ -99,10 +99,10 @@ void main() {
     expect(find.byKey(const Key('aiRetryStatus')), findsNothing);
 
     await settleAttempt(tester, http.Response('busy', 503));
-    expect(find.text('Retrying 2/5'), findsOneWidget);
+    expect(find.text('AI request failed. Retrying 2/5'), findsOneWidget);
 
     await settleAttempt(tester, http.Response('busy', 503));
-    expect(find.text('Retrying 3/5'), findsOneWidget);
+    expect(find.text('AI request failed. Retrying 3/5'), findsOneWidget);
 
     await settleAttempt(tester, _recipeResponse());
     await tester.pumpAndSettle();
@@ -161,7 +161,7 @@ void main() {
     expect(find.textContaining('Retrying'), findsNothing);
 
     await settleAttempt(tester, http.Response('busy', 503));
-    expect(find.text('Retrying 2/5'), findsOneWidget);
+    expect(find.text('AI request failed. Retrying 2/5'), findsOneWidget);
     expect(bodies, hasLength(7));
   });
 
@@ -185,7 +185,7 @@ void main() {
     await pumpAgent(tester);
     await requestMeal(tester);
     await settleAttempt(tester, http.Response('busy', 503));
-    expect(find.text('Retrying 2/5'), findsOneWidget);
+    expect(find.text('AI request failed. Retrying 2/5'), findsOneWidget);
     expect(bodies, hasLength(2));
 
     await tester.pumpWidget(

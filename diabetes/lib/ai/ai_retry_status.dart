@@ -25,7 +25,7 @@ class AiRetryStatus extends StatelessWidget {
     return Semantics(
       key: const Key('aiRetryStatus'),
       liveRegion: true,
-      label: 'Retrying, attempt $attempt of $maxAttempts',
+      label: 'AI request failed. Retrying, attempt $attempt of $maxAttempts',
       // The row's own text would otherwise be read as "Retrying 2/5", which a
       // screen reader pronounces as a fraction.
       excludeSemantics: true,
@@ -40,11 +40,11 @@ class AiRetryStatus extends StatelessWidget {
               child: CircularProgressIndicator(strokeWidth: 2),
             ),
             const SizedBox(width: Spacing.s8),
-            // Flexible, not fixed: at 2x text "Retrying 3/5" is wider than a
+            // Flexible, not fixed: at 2x text the status line is wider than a
             // 360 px phone leaves beside the spinner.
             Flexible(
               child: Text(
-                'Retrying $attempt/$maxAttempts',
+                'AI request failed. Retrying $attempt/$maxAttempts',
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),

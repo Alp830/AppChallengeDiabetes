@@ -848,7 +848,7 @@ void main() {
       pending.removeAt(0).complete(http.Response('busy', 503));
       await tester.pump();
       await tester.pump(Duration.zero);
-      expect(find.text('Retrying 2/5'), findsOneWidget);
+      expect(find.text('AI request failed. Retrying 2/5'), findsOneWidget);
 
       pending.removeAt(0).complete(_geminiText('Because it tastes good.'));
       await tester.pumpAndSettle();
@@ -908,7 +908,7 @@ void main() {
       pending.removeAt(0).complete(http.Response('busy', 503));
       await tester.pump();
       await tester.pump(Duration.zero);
-      expect(find.text('Retrying 2/5'), findsOneWidget);
+      expect(find.text('AI request failed. Retrying 2/5'), findsOneWidget);
       expect(answerCalls, 2);
 
       Navigator.of(tester.element(find.byKey(const Key('mealQaInput')))).pop();

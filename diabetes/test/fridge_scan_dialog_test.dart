@@ -195,9 +195,9 @@ void main() {
       expect(find.byKey(const Key('aiRetryStatus')), findsNothing);
 
       await failAttempt(tester);
-      expect(find.text('Retrying 2/5'), findsOneWidget);
+      expect(find.text('AI request failed. Retrying 2/5'), findsOneWidget);
       await failAttempt(tester);
-      expect(find.text('Retrying 3/5'), findsOneWidget);
+      expect(find.text('AI request failed. Retrying 3/5'), findsOneWidget);
 
       pending.removeAt(0).complete(const [
         FoodItem(name: 'Eggs', amount: '12', foodType: FoodType.protein),
@@ -254,7 +254,7 @@ void main() {
     testWidgets('cancelling mid-retry stops the attempts', (tester) async {
       await openRetrying(tester);
       await failAttempt(tester);
-      expect(find.text('Retrying 2/5'), findsOneWidget);
+      expect(find.text('AI request failed. Retrying 2/5'), findsOneWidget);
       expect(pending, hasLength(1));
 
       await tester.tap(find.byKey(const Key('fridgeScanCancel')));

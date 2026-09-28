@@ -123,7 +123,7 @@ void main() {
       const Column(children: [AiRetryStatus(attempt: 3, maxAttempts: 5)]),
     );
     expect(tester.takeException(), isNull);
-    expect(find.text('Retrying 3/5'), findsOneWidget);
+    expect(find.text('AI request failed. Retrying 3/5'), findsOneWidget);
   });
 
   testWidgets('Fridge scan dialog, running and failed', (tester) async {
