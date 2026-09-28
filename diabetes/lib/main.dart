@@ -32,6 +32,8 @@ import 'meals/models/meal_qa_models.dart';
 import 'meals/screens/meal_lab_page.dart';
 import 'meals/screens/meal_log_page.dart';
 import 'meals/screens/meal_qa_sheet.dart';
+import 'meals/saved/saved_recipe.dart';
+import 'meals/saved/saved_recipes_repository.dart';
 import 'navigation/app_feature_navigation.dart';
 import 'sleep/data/sleep_repository.dart';
 import 'sleep/services/evening_food_context_service.dart';
@@ -63,6 +65,12 @@ class AppEnvironment {
       // Keep --dart-define support for builds that do not bundle a .env file.
     }
   }
+
+  /// Lets widget tests drive the meal agent with a `MockClient` without a
+  /// bundled `.env` file. Pass an empty string to clear it again.
+  @visibleForTesting
+  static void setGeminiApiKeyForTesting(String value) =>
+      _values['GEMINI_API_KEY'] = value;
 
   static String get geminiApiKey {
     final envApiKey = (_values['GEMINI_API_KEY'] ?? '').trim();
@@ -2243,6 +2251,7 @@ class AgentPage extends StatefulWidget {
     this.mealRepository,
     this.diabetesEnabled = AppFeatures.diabetesEnabled,
     this.preferencesRepository,
+    this.savedRecipesStore,
   });
 
   final List<FoodItem> foodItems;
@@ -2257,6 +2266,9 @@ class AgentPage extends StatefulWidget {
   final MealRepository? mealRepository;
   final bool diabetesEnabled;
   final AppPreferencesStore? preferencesRepository;
+
+  /// Where "Save recipe" writes. Defaults to Firestore when signed in.
+  final SavedRecipesStore? savedRecipesStore;
 
   @override
   State<AgentPage> createState() => _AgentPageState();
@@ -2282,6 +2294,12 @@ class _AgentPageState extends State<AgentPage> {
   String? _recommendationError;
   AppPreferencesStore? _preferencesRepository;
   StreamSubscription<bool>? _balancePreferenceSubscription;
+  SavedRecipesStore? _savedRecipesStore;
+  StreamSubscription<List<SavedRecipe>>? _savedRecipesSubscription;
+
+  /// Fingerprints of the recipes already saved, so each card knows whether to
+  /// show "Save recipe" or "Saved".
+  Set<String> _savedFingerprints = const {};
 
   /// Ephemeral Q&A transcripts, keyed by dish name. Wiped whenever a new
   /// recommendation is generated, since the conversation no longer applies.
@@ -2325,6 +2343,25 @@ class _AgentPageState extends State<AgentPage> {
               setState(() => _qaTipSeen = seen);
             }
           });
+      // Without an injected store and without an initialized Firebase app
+      // (widget tests), saving is simply unavailable and the button hides.
+      _savedRecipesStore =
+          widget.savedRecipesStore ??
+          (Firebase.apps.isEmpty ? null : SavedRecipesRepository());
+      _savedRecipesSubscription = _savedRecipesStore?.watchAll(userId).listen(
+        (saved) {
+          if (!mounted) return;
+          setState(
+            () => _savedFingerprints = {
+              for (final recipe in saved) recipe.id,
+            },
+          );
+        },
+        // Saving is a bonus on this screen: if the list can't load, the card
+        // simply shows "Save recipe" and the write still works.
+        onError: (Object error) =>
+            debugPrint('saved recipes stream: $error'),
+      );
     }
     if (widget.diabetesEnabled && userId != null) {
       _loadOvernightSummary(userId);
@@ -2362,6 +2399,7 @@ class _AgentPageState extends State<AgentPage> {
     _feedbackController.dispose();
     _balancePreferenceSubscription?.cancel();
     _qaTipSubscription?.cancel();
+    _savedRecipesSubscription?.cancel();
     super.dispose();
   }
 
@@ -2628,6 +2666,74 @@ class _AgentPageState extends State<AgentPage> {
     );
   }
 
+  /// Saves or removes [recommendation]. Writes are never retried
+  /// automatically (that could duplicate data); the snackbar offers a manual
+  /// `Try again` instead.
+  Future<void> _toggleSavedRecipe(MealRecommendation recommendation) async {
+    final store = _savedRecipesStore;
+    final userId = widget.userId;
+    if (store == null || userId == null) return;
+
+    final id = recipeFingerprint(recommendation);
+    final wasSaved = _savedFingerprints.contains(id);
+    // Optimistic: the stream confirms a moment later.
+    setState(
+      () => _savedFingerprints = {
+        for (final saved in _savedFingerprints)
+          if (saved != id) saved,
+        if (!wasSaved) id,
+      },
+    );
+
+    try {
+      if (wasSaved) {
+        await store.remove(userId, id);
+      } else {
+        await store.save(userId, recommendation);
+      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(
+              wasSaved
+                  ? 'Removed from saved recipes'
+                  : 'Saved. Find it on Home under Saved recipes.',
+            ),
+            action: wasSaved
+                ? SnackBarAction(
+                    label: 'Undo',
+                    onPressed: () => _toggleSavedRecipe(recommendation),
+                  )
+                : null,
+          ),
+        );
+    } catch (error) {
+      if (!mounted) return;
+      setState(
+        () => _savedFingerprints = {
+          for (final saved in _savedFingerprints)
+            if (saved != id) saved,
+          if (wasSaved) id,
+        },
+      );
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(
+              FriendlyErrors.describe(error, context: 'saved recipes'),
+            ),
+            action: SnackBarAction(
+              label: 'Try again',
+              onPressed: () => _toggleSavedRecipe(recommendation),
+            ),
+          ),
+        );
+    }
+  }
+
   void _markQaTipSeen() {
     if (_qaTipSeen) return;
     setState(() => _qaTipSeen = true);
@@ -2762,6 +2868,12 @@ class _AgentPageState extends State<AgentPage> {
               onMakeBalanced: _isLoadingRecommendation
                   ? null
                   : () => _makeMoreBalanced(recommendation),
+              isSaved: _savedFingerprints.contains(
+                recipeFingerprint(recommendation),
+              ),
+              onToggleSaved: _savedRecipesStore == null
+                  ? null
+                  : () => _toggleSavedRecipe(recommendation),
               onAsk: (scope, {String? initialQuestion}) => _openQa(
                 recommendation,
                 scope,
@@ -2879,12 +2991,26 @@ class MealRecommendationCard extends StatelessWidget {
     this.onAsk,
     this.timeLabel,
     this.difficultyLabel,
+    this.isSaved = false,
+    this.onToggleSaved,
+    this.showBalancingTweak = true,
   });
 
   final MealRecommendation recommendation;
   final bool diabetesEnabled;
   final VoidCallback? onStartPostMealWalk;
   final VoidCallback? onLogMeal;
+
+  /// Whether this recipe is already in the user's saved recipes.
+  final bool isSaved;
+
+  /// Saves or un-saves the recipe. Null hides the control entirely (for
+  /// example when nobody is signed in).
+  final VoidCallback? onToggleSaved;
+
+  /// A saved recipe is opened from Home without a request behind it, so it
+  /// hides "Add a balancing tweak" (which would need one).
+  final bool showBalancingTweak;
 
   /// F5 · "Add a balancing tweak" — keeps this dish but asks for one small,
   /// optional tweak. Null hides the option.
@@ -3248,7 +3374,8 @@ class MealRecommendationCard extends StatelessWidget {
                   const Divider(height: 1),
                 ],
                 if (onStartPostMealWalk != null ||
-                    onMakeBalanced != null ||
+                    (onMakeBalanced != null && showBalancingTweak) ||
+                    onToggleSaved != null ||
                     onLogMeal != null) ...[
                   const SizedBox(height: Spacing.s24),
                   OverflowBar(
@@ -3263,7 +3390,12 @@ class MealRecommendationCard extends StatelessWidget {
                           icon: const Icon(Icons.directions_walk),
                           label: const Text('Start a 10-minute walk'),
                         ),
-                      if (onMakeBalanced != null)
+                      if (onToggleSaved != null)
+                        _SaveRecipeButton(
+                          isSaved: isSaved,
+                          onPressed: onToggleSaved!,
+                        ),
+                      if (onMakeBalanced != null && showBalancingTweak)
                         FilledButton.tonalIcon(
                           onPressed: onMakeBalanced,
                           icon: const Icon(Icons.balance),
@@ -3282,6 +3414,34 @@ class MealRecommendationCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Outlined toggle that keeps a recipe on Home so the user never has to ask
+/// the agent for it again. Outlined, because the card already has one filled
+/// action ("Log this meal").
+class _SaveRecipeButton extends StatelessWidget {
+  const _SaveRecipeButton({required this.isSaved, required this.onPressed});
+
+  final bool isSaved;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: isSaved
+          ? 'Saved. Tap to remove from saved recipes'
+          : 'Save recipe',
+      child: ExcludeSemantics(
+        child: OutlinedButton.icon(
+          key: Key(isSaved ? 'recipeUnsaveButton' : 'recipeSaveButton'),
+          onPressed: onPressed,
+          icon: Icon(isSaved ? Icons.bookmark : Icons.bookmark_border),
+          label: Text(isSaved ? 'Saved' : 'Save recipe'),
+        ),
       ),
     );
   }
