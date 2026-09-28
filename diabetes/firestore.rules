@@ -57,6 +57,10 @@ service cloud.firestore {
         allow read, create, update, delete: if isOwner(userId);
       }
 
+      match /savedRecipes/{recipeId} {
+        allow read, create, update, delete: if isOwner(userId);
+      }
+
       match /sleepLogs/{logId} {
         allow read, create, update, delete: if isOwner(userId);
       }

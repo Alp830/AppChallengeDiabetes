@@ -14,7 +14,13 @@ const _meal = MealRecommendation(
   imageUrl: 'https://example.com/omelette.png',
 );
 
-Future<void> pumpCard(WidgetTester tester, {bool withAsk = true}) async {
+Future<void> pumpCard(
+  WidgetTester tester, {
+  bool withAsk = true,
+  bool isSaved = false,
+  VoidCallback? onToggleSaved,
+  bool showBalancingTweak = true,
+}) async {
   await tester.pumpWidget(
     MaterialApp(
       theme: AppTheme.light(),
@@ -28,6 +34,9 @@ Future<void> pumpCard(WidgetTester tester, {bool withAsk = true}) async {
               difficultyLabel: 'Beginner',
               onLogMeal: () {},
               onMakeBalanced: () {},
+              isSaved: isSaved,
+              onToggleSaved: onToggleSaved,
+              showBalancingTweak: showBalancingTweak,
               onAsk: withAsk ? (scope, {String? initialQuestion}) {} : null,
             ),
           ],
@@ -69,5 +78,62 @@ void main() {
     expect(find.widgetWithText(FilledButton, 'Log this meal'), findsOneWidget);
     expect(find.text('Add a balancing tweak'), findsOneWidget);
     expect(find.text('Make it more balanced?'), findsNothing);
+  });
+
+  testWidgets('save control is hidden until a save handler is given', (
+    tester,
+  ) async {
+    await pumpCard(tester);
+    expect(find.byKey(const Key('recipeSaveButton')), findsNothing);
+    expect(find.byKey(const Key('recipeUnsaveButton')), findsNothing);
+  });
+
+  testWidgets('unsaved card offers Save recipe and stays one filled action', (
+    tester,
+  ) async {
+    var taps = 0;
+    await pumpCard(tester, onToggleSaved: () => taps++);
+
+    final save = find.byKey(const Key('recipeSaveButton'));
+    expect(save, findsOneWidget);
+    expect(find.text('Save recipe'), findsOneWidget);
+    expect(find.widgetWithText(FilledButton, 'Log this meal'), findsOneWidget);
+    expect(find.widgetWithText(OutlinedButton, 'Save recipe'), findsOneWidget);
+
+    // The actions sit below the fold on a card this long, so scroll first.
+    await tester.drag(find.byType(ListView), const Offset(0, -2000));
+    await tester.pump();
+    await tester.tap(save);
+    expect(taps, 1);
+  });
+
+  testWidgets('saved card reads Saved and announces how to remove it', (
+    tester,
+  ) async {
+    final handle = tester.ensureSemantics();
+    await pumpCard(tester, isSaved: true, onToggleSaved: () {});
+
+    expect(find.byKey(const Key('recipeUnsaveButton')), findsOneWidget);
+    expect(find.text('Saved'), findsOneWidget);
+    expect(find.text('Save recipe'), findsNothing);
+    expect(
+      find.bySemanticsLabel('Saved. Tap to remove from saved recipes'),
+      findsOneWidget,
+    );
+    handle.dispose();
+  });
+
+  testWidgets('a saved recipe view can hide the balancing tweak', (
+    tester,
+  ) async {
+    await pumpCard(
+      tester,
+      isSaved: true,
+      onToggleSaved: () {},
+      showBalancingTweak: false,
+    );
+
+    expect(find.text('Add a balancing tweak'), findsNothing);
+    expect(find.byKey(const Key('recipeUnsaveButton')), findsOneWidget);
   });
 }
