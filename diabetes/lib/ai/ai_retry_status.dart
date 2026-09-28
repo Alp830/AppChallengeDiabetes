@@ -40,10 +40,14 @@ class AiRetryStatus extends StatelessWidget {
               child: CircularProgressIndicator(strokeWidth: 2),
             ),
             const SizedBox(width: Spacing.s8),
-            Text(
-              'Retrying $attempt/$maxAttempts',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+            // Flexible, not fixed: at 2x text "Retrying 3/5" is wider than a
+            // 360 px phone leaves beside the spinner.
+            Flexible(
+              child: Text(
+                'Retrying $attempt/$maxAttempts',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
             ),
           ],

@@ -102,6 +102,8 @@ class _FridgeScanDialogState extends State<FridgeScanDialog> {
       // is nothing left to protect.
       canPop: error != null,
       child: AlertDialog(
+        // The photo plus the message runs past a 360x780 phone at 2x text.
+        scrollable: true,
         title: Text(
           error == null ? 'Finding foods…' : "Couldn't read the photo",
         ),
