@@ -32,6 +32,55 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  /// Opens [name]'s edit sheet, switches its food type to [typeLabel] and
+  /// saves the sheet.
+  Future<void> changeTypeViaEditSheet(
+    WidgetTester tester,
+    String name,
+    String typeLabel,
+  ) async {
+    await tester.tap(find.text(name));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(DropdownButtonFormField<FoodType>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(typeLabel).last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save changes'));
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('changing an item type moves it to that group straight away', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(360, 780);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    final key = GlobalKey<FridgePageState>();
+    final committed = <FridgeChangeSet>[];
+    await tester.pumpWidget(wrap(key, [stored('a', 'Rice')], committed));
+
+    expect(find.byKey(const Key('fridgeGroupHeader_other')), findsOneWidget);
+
+    await changeTypeViaEditSheet(tester, 'Rice', 'Grain');
+
+    expect(find.byKey(const Key('fridgeGroupHeader_grain')), findsOneWidget);
+    // Other is now empty, so its header goes away.
+    expect(find.byKey(const Key('fridgeGroupHeader_other')), findsNothing);
+    expect(find.text('Rice'), findsOneWidget);
+    expect(find.text('1 unsaved change'), findsOneWidget);
+    expect(committed, isEmpty);
+
+    // Discard puts it back under its saved type.
+    await tester.tap(find.byKey(const Key('fridgeDiscardBar')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('fridgeGroupHeader_other')), findsOneWidget);
+    expect(find.byKey(const Key('fridgeGroupHeader_grain')), findsNothing);
+    expect(key.currentState!.isDirty, isFalse);
+    expect(committed, isEmpty);
+  });
+
   testWidgets('edits stage locally and only commit when saved', (tester) async {
     final key = GlobalKey<FridgePageState>();
     final committed = <FridgeChangeSet>[];
