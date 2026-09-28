@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:diabetes/ai/ai_retry.dart';
 import 'package:diabetes/fridge/fridge_scan_dialog.dart';
 import 'package:diabetes/main.dart';
 import 'package:flutter/material.dart';
@@ -138,10 +139,151 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('a failed scan returns the error', (tester) async {
-    await open(tester);
-    scan.completeError(Exception('boom'));
-    await tester.pumpAndSettle();
-    expect(result!.error, isNotNull);
+  group('retries', () {
+    late List<Completer<List<FoodItem>>> pending;
+    late bool dialogClosed;
+    FridgeScanResult? scanResult;
+
+    Future<void> openRetrying(WidgetTester tester) async {
+      pending = [];
+      dialogClosed = false;
+      scanResult = null;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (context) => TextButton(
+              onPressed: () async {
+                scanResult = await showDialog<FridgeScanResult>(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (_) => FridgeScanDialog(
+                    imageBytes: _png,
+                    // Zero spacing keeps the test instant; ai_retry_test
+                    // already covers the real 2 s wait.
+                    retryPolicy: const AiRetryPolicy(delay: Duration.zero),
+                    detect: (_) {
+                      final completer = Completer<List<FoodItem>>();
+                      pending.add(completer);
+                      return completer.future;
+                    },
+                  ),
+                );
+                dialogClosed = true;
+              },
+              child: const Text('open'),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('open'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+    }
+
+    Future<void> failAttempt(WidgetTester tester) async {
+      pending
+          .removeAt(0)
+          .completeError(AiRequestException.fromStatus(503, 'busy'));
+      await tester.pump();
+      await tester.pump(Duration.zero);
+    }
+
+    testWidgets('two hiccups then the foods, counting the tries', (
+      tester,
+    ) async {
+      await openRetrying(tester);
+      expect(find.byKey(const Key('aiRetryStatus')), findsNothing);
+
+      await failAttempt(tester);
+      expect(find.text('AI request failed. Retrying 2/5'), findsOneWidget);
+      await failAttempt(tester);
+      expect(find.text('AI request failed. Retrying 3/5'), findsOneWidget);
+
+      pending.removeAt(0).complete(const [
+        FoodItem(name: 'Eggs', amount: '12', foodType: FoodType.protein),
+      ]);
+      await tester.pumpAndSettle();
+
+      expect(dialogClosed, isTrue);
+      expect(scanResult!.foods.single.name, 'Eggs');
+    });
+
+    testWidgets('five failures keep the photo and offer Try again', (
+      tester,
+    ) async {
+      await openRetrying(tester);
+      for (var i = 0; i < 5; i++) {
+        await failAttempt(tester);
+      }
+      await tester.pumpAndSettle();
+
+      expect(dialogClosed, isFalse, reason: 'the error stays in the dialog');
+      expect(find.text("Couldn't read the photo"), findsOneWidget);
+      expect(find.byType(Image), findsOneWidget, reason: 'photo kept');
+      expect(find.byType(LinearProgressIndicator), findsNothing);
+      expect(find.textContaining('Retrying'), findsNothing);
+      expect(find.byKey(const Key('fridgeScanTryAgain')), findsOneWidget);
+      expect(find.text('Close'), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('fridgeScanTryAgain')));
+      await tester.pump();
+      expect(pending, hasLength(1), reason: 'a fresh run on the same bytes');
+      expect(find.byType(LinearProgressIndicator), findsOneWidget);
+      expect(find.textContaining('Retrying'), findsNothing);
+
+      pending.removeAt(0).complete(const [
+        FoodItem(name: 'Eggs', amount: '12', foodType: FoodType.protein),
+      ]);
+      await tester.pumpAndSettle();
+      expect(scanResult!.foods.single.name, 'Eggs');
+    });
+
+    testWidgets('Close leaves without a result', (tester) async {
+      await openRetrying(tester);
+      for (var i = 0; i < 5; i++) {
+        await failAttempt(tester);
+      }
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Close'));
+      await tester.pumpAndSettle();
+      expect(dialogClosed, isTrue);
+      expect(scanResult, isNull);
+    });
+
+    testWidgets('cancelling mid-retry stops the attempts', (tester) async {
+      await openRetrying(tester);
+      await failAttempt(tester);
+      expect(find.text('AI request failed. Retrying 2/5'), findsOneWidget);
+      expect(pending, hasLength(1));
+
+      await tester.tap(find.byKey(const Key('fridgeScanCancel')));
+      await tester.pumpAndSettle();
+      expect(scanResult, isNull);
+
+      pending
+          .removeAt(0)
+          .completeError(AiRequestException.fromStatus(503, 'busy'));
+      await tester.pump(Duration.zero);
+      await tester.pump(Duration.zero);
+
+      expect(pending, isEmpty, reason: 'no attempt after cancel');
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('a rejected photo fails after one call', (tester) async {
+      await openRetrying(tester);
+      pending
+          .removeAt(0)
+          .completeError(AiRequestException.fromStatus(400, 'bad image'));
+      await tester.pumpAndSettle();
+
+      expect(pending, isEmpty);
+      expect(find.text("Couldn't read the photo"), findsOneWidget);
+      expect(
+        find.text("That request didn't work. Try changing it and try again."),
+        findsOneWidget,
+      );
+    });
   });
 }

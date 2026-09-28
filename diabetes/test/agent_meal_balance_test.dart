@@ -1,9 +1,12 @@
 import 'dart:async';
 
+import 'package:diabetes/ai/ai_retry.dart';
 import 'package:diabetes/main.dart';
 import 'package:diabetes/settings/data/app_preferences_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 
 void main() {
   test('balance targets are only added to the Agent prompt when selected', () {
@@ -146,6 +149,93 @@ void main() {
     await tester.tap(find.byKey(const Key('agentMealBalanceCheckbox')));
     await tester.pump();
     expect(preferences.saved, [false]);
+  });
+
+  group('GeminiMealService throws typed errors', () {
+    late http.Client originalClient;
+
+    setUp(() {
+      originalClient = GeminiMealService.httpClient;
+      GeminiMealService.debugApiKey = 'test-token';
+    });
+
+    tearDown(() {
+      GeminiMealService.httpClient = originalClient;
+      GeminiMealService.debugApiKey = null;
+    });
+
+    Future<void> expectGenerateError(
+      http.Response response,
+      Matcher matcher,
+    ) async {
+      GeminiMealService.httpClient = MockClient((_) async => response);
+      await expectLater(
+        GeminiMealService.generate(_request(false)),
+        throwsA(matcher),
+      );
+    }
+
+    test('a 503 is retryable, a 400 is not', () async {
+      await expectGenerateError(
+        http.Response('busy', 503),
+        isA<AiRequestException>()
+            .having((e) => e.statusCode, 'statusCode', 503)
+            .having((e) => e.retryable, 'retryable', isTrue),
+      );
+      await expectGenerateError(
+        http.Response('bad', 400),
+        isA<AiRequestException>().having(
+          (e) => e.retryable,
+          'retryable',
+          isFalse,
+        ),
+      );
+    });
+
+    test('an empty or unparseable reply is a FormatException', () async {
+      for (final body in const [
+        '{"candidates": []}',
+        '{"candidates": [{"content": {"parts": []}}]}',
+        '{"candidates": [{"content": {"parts": [{"text": "{oops"}]}}]}',
+        '{"candidates": [{"content": 7}]}',
+      ]) {
+        await expectGenerateError(
+          http.Response(body, 200),
+          isA<FormatException>(),
+        );
+      }
+    });
+
+    test('a safety block is not retryable', () async {
+      await expectGenerateError(
+        http.Response('{"promptFeedback": {"blockReason": "SAFETY"}}', 200),
+        isA<AiRequestException>().having(
+          (e) => e.retryable,
+          'retryable',
+          isFalse,
+        ),
+      );
+    });
+
+    test('a missing key fails with a non-retryable error', () async {
+      GeminiMealService.debugApiKey = null;
+      var called = false;
+      GeminiMealService.httpClient = MockClient((_) async {
+        called = true;
+        return http.Response('{}', 200);
+      });
+      await expectLater(
+        GeminiMealService.generate(_request(false)),
+        throwsA(
+          isA<AiRequestException>().having(
+            (e) => e.retryable,
+            'retryable',
+            isFalse,
+          ),
+        ),
+      );
+      expect(called, isFalse);
+    });
   });
 }
 

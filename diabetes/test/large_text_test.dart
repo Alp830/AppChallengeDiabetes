@@ -1,4 +1,9 @@
+import 'dart:typed_data';
+
+import 'package:diabetes/ai/ai_retry.dart';
+import 'package:diabetes/ai/ai_retry_status.dart';
 import 'package:diabetes/design/app_theme.dart';
+import 'package:diabetes/fridge/fridge_scan_dialog.dart';
 import 'package:diabetes/exercise/data/today_todo_repository.dart';
 import 'package:diabetes/home/mvp_home_page.dart';
 import 'package:diabetes/main.dart';
@@ -120,6 +125,46 @@ void main() {
         ],
       ),
     );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Retry status row', (tester) async {
+    await pumpAt200(
+      tester,
+      const Column(children: [AiRetryStatus(attempt: 3, maxAttempts: 5)]),
+    );
+    expect(tester.takeException(), isNull);
+    expect(find.text('AI request failed. Retrying 3/5'), findsOneWidget);
+  });
+
+  testWidgets('Fridge scan dialog, running and failed', (tester) async {
+    await pumpAt200(
+      tester,
+      Builder(
+        builder: (context) => TextButton(
+          onPressed: () => showDialog<FridgeScanResult>(
+            context: context,
+            barrierDismissible: false,
+            builder: (_) => FridgeScanDialog(
+              imageBytes: Uint8List(0),
+              retryPolicy: const AiRetryPolicy(
+                maxAttempts: 1,
+                delay: Duration.zero,
+              ),
+              detect: (_) async =>
+                  throw AiRequestException.fromStatus(503, 'busy'),
+            ),
+          ),
+          child: const Text('open'),
+        ),
+      ),
+    );
+    await tester.tap(find.text('open'));
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+
+    await tester.pumpAndSettle();
+    expect(find.text("Couldn't read the photo"), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }

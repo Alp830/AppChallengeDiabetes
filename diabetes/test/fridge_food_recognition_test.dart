@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:diabetes/ai/ai_retry.dart';
 import 'package:diabetes/main.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -133,5 +134,98 @@ void main() {
       ),
       throwsA(isA<Exception>()),
     );
+  });
+
+  group('typed errors feed the retry rule', () {
+    Future<void> expectScanError(
+      http.Response response,
+      Matcher matcher,
+    ) async {
+      await expectLater(
+        FridgePhotoFoodAgent.detectFoods(
+          Uint8List.fromList(const [0xff, 0xd8]),
+          client: MockClient((_) async => response),
+          apiKey: 'test-token',
+        ),
+        throwsA(matcher),
+      );
+    }
+
+    test('a 503 is a retryable AiRequestException', () async {
+      await expectScanError(
+        http.Response('busy', 503),
+        isA<AiRequestException>()
+            .having((e) => e.statusCode, 'statusCode', 503)
+            .having((e) => e.retryable, 'retryable', isTrue),
+      );
+    });
+
+    test('400 and 403 are not retryable', () async {
+      for (final status in const [400, 403]) {
+        await expectScanError(
+          http.Response('nope', status),
+          isA<AiRequestException>().having(
+            (e) => e.retryable,
+            'retryable',
+            isFalse,
+          ),
+        );
+      }
+    });
+
+    test('an empty reply is a retryable FormatException', () async {
+      for (final body in const [
+        '{"candidates": []}',
+        '{"candidates": [{"content": {"parts": []}}]}',
+        '{"candidates": [{"content": {"parts": [{"text": ""}]}}]}',
+        'not json at all',
+      ]) {
+        await expectScanError(http.Response(body, 200), isA<FormatException>());
+        expect(isRetryableAiError(const FormatException('x')), isTrue);
+      }
+    });
+
+    test('a malformed candidate shape becomes a FormatException', () async {
+      await expectScanError(
+        http.Response('{"candidates": [{"content": 7}]}', 200),
+        isA<FormatException>(),
+      );
+    });
+
+    test('a safety block is not retryable', () async {
+      await expectScanError(
+        http.Response('{"promptFeedback": {"blockReason": "SAFETY"}}', 200),
+        isA<AiRequestException>().having(
+          (e) => e.retryable,
+          'retryable',
+          isFalse,
+        ),
+      );
+      await expectScanError(
+        http.Response(
+          '{"candidates": [{"finishReason": "SAFETY", "content": {"parts": []}}]}',
+          200,
+        ),
+        isA<AiRequestException>().having(
+          (e) => e.retryable,
+          'retryable',
+          isFalse,
+        ),
+      );
+    });
+
+    test('a missing key is a non-retryable AiRequestException', () async {
+      await expectLater(
+        FridgePhotoFoodAgent.detectFoods(
+          Uint8List.fromList(const [1]),
+          apiKey: '',
+        ),
+        throwsA(
+          isA<AiRequestException>()
+              .having((e) => e.retryable, 'retryable', isFalse)
+              .having((e) => e.message, 'message', contains('GEMINI_API_KEY')),
+        ),
+      );
+    });
   });
 }

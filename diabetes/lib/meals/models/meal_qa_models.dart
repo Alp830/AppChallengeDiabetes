@@ -6,6 +6,8 @@
 /// — see the privacy note there.
 library;
 
+import '../../ai/ai_retry.dart';
+
 /// Which part of the recommendation card the user tapped.
 enum MealQuestionScopeKind {
   /// The whole dish (chip row, or the card as a whole).
@@ -26,11 +28,7 @@ enum MealQuestionScopeKind {
 
 /// What the user tapped, and the exact text to quote back at them.
 class MealQuestionScope {
-  const MealQuestionScope({
-    required this.kind,
-    this.quote = '',
-    this.ordinal,
-  });
+  const MealQuestionScope({required this.kind, this.quote = '', this.ordinal});
 
   /// Convenience for the whole-dish scope, which has nothing to quote.
   const MealQuestionScope.meal()
@@ -54,9 +52,8 @@ class MealQuestionScope {
     MealQuestionScopeKind.glucoseNote => 'this blood sugar tip',
     MealQuestionScopeKind.ingredient =>
       ordinal == null ? 'this ingredient' : 'ingredient $ordinal',
-    MealQuestionScopeKind.step => ordinal == null
-        ? 'this step'
-        : 'step $ordinal',
+    MealQuestionScopeKind.step =>
+      ordinal == null ? 'this step' : 'step $ordinal',
   };
 
   bool get hasQuote => quote.trim().isNotEmpty;
@@ -153,9 +150,18 @@ class MealQaContext {
 
 /// Typed failure so the sheet can show a retryable error instead of crashing
 /// on an unchecked cast the way `GeminiMealService` does.
-class MealQaException implements Exception {
-  const MealQaException(this.message);
+///
+/// [retryable] defaults to true because most Q&A failures (a 503, a dropped
+/// connection, an empty reply) clear up on the next attempt. The service sets
+/// it to false for the ones that never will: a missing key, a 4xx, a block.
+class MealQaException implements Exception, RetryableAiError {
+  const MealQaException(this.message, {this.statusCode, this.retryable = true});
+
   final String message;
+  @override
+  final int? statusCode;
+  @override
+  final bool retryable;
 
   @override
   String toString() => message;
