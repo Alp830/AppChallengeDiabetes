@@ -192,4 +192,13 @@ class _FakePreferencesStore implements AppPreferencesStore {
 
   @override
   Stream<bool> watchMealQaTipSeen(String userId) => Stream<bool>.value(false);
+
+  @override
+  Future<void> completeFirstMealGuide(String userId) async =>
+      firstMealGuideCompleted = true;
+  bool firstMealGuideCompleted = false;
+
+  @override
+  Stream<bool> watchFirstMealGuidePending(String userId) =>
+      Stream<bool>.value(false);
 }

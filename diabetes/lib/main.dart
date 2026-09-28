@@ -460,6 +460,9 @@ class _AuthPageState extends State<AuthPage> {
       'email': email,
       'createdAt': FieldValue.serverTimestamp(),
       'lastSignInAt': FieldValue.serverTimestamp(),
+      // Only brand-new accounts get the first-meal guide; existing users have
+      // no such field, so their Home page is unchanged.
+      'firstMealGuide': firstMealGuidePendingValue,
     }, SetOptions(merge: true));
   }
 
@@ -4187,6 +4190,26 @@ class MealRecommendation {
       usedFridgeItems: usedItems,
       estimatedCostPerServing: cost == null || cost.isEmpty ? null : cost,
       suggestedQuestions: questions,
+      imageUrl: (json['imageUrl'] as String?)?.trim().isEmpty ?? true
+          ? null
+          : (json['imageUrl'] as String).trim(),
     );
   }
+
+  /// The inverse of [MealRecommendation.fromJson], plus [imageUrl], so a saved
+  /// recipe can be reopened later without asking the model again.
+  Map<String, dynamic> toJson() => {
+    'dishName': dishName,
+    'imagePrompt': imagePrompt,
+    'reason': reason,
+    'ingredients': ingredients,
+    'instructions': instructions,
+    if (glucoseNote != null) 'glucoseNote': glucoseNote,
+    if (eveningScore != null) 'eveningScore': eveningScore,
+    'usedFridgeItems': usedFridgeItems,
+    if (estimatedCostPerServing != null)
+      'estimatedCostPerServing': estimatedCostPerServing,
+    'suggestedQuestions': suggestedQuestions,
+    if (imageUrl != null) 'imageUrl': imageUrl,
+  };
 }
