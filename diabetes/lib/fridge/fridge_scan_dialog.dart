@@ -143,7 +143,7 @@ class _FridgeScanDialogState extends State<FridgeScanDialog> {
                 ),
               ] else
                 Text(
-                  FriendlyErrors.ai(error, action: 'a read of your photo'),
+                  FriendlyErrors.ai(error, action: 'the foods from your photo'),
                   style: theme.textTheme.bodyMedium,
                 ),
             ],
