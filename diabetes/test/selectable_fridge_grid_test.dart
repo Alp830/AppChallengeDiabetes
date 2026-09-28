@@ -175,6 +175,44 @@ void main() {
     expect(deleted, {0, 1});
   });
 
+  testWidgets('Add to meal collects foods from every group', (tester) async {
+    tester.view.physicalSize = const Size(360, 780);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    List<FoodItem>? sent;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SelectableFridgeGrid(
+            items: const [
+              MapEntry(
+                0,
+                FoodItem(name: 'Kale', amount: '1', foodType: FoodType.produce),
+              ),
+              MapEntry(
+                1,
+                FoodItem(name: 'Rice', amount: '1', foodType: FoodType.grain),
+              ),
+            ],
+            onEdit: (_) {},
+            onRemoveSelected: (_) async {},
+            onBulkAction: (_, foods) async => sent = foods,
+          ),
+        ),
+      ),
+    );
+
+    await tester.longPress(find.text('Kale'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Rice'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('addSelectedToMeal')));
+    await tester.pumpAndSettle();
+    expect(sent?.map((food) => food.name), ['Kale', 'Rice']);
+  });
+
   testWidgets('group headers are announced with their type and count', (
     tester,
   ) async {

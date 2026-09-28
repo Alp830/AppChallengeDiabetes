@@ -33,12 +33,52 @@ void main() {
                 foodType: FoodType.dairy,
               ),
             ),
+            StoredFoodItem(
+              id: 'b',
+              foodItem: FoodItem(
+                name: 'Rice',
+                amount: '1',
+                foodType: FoodType.grain,
+              ),
+            ),
           ],
           onCommit: (_) async {},
         ),
       ),
     ),
   );
+
+  testWidgets('Fridge edit sheet', (tester) async {
+    final semantics = tester.ensureSemantics();
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: Scaffold(
+          body: FridgePage(
+            initialItems: const [
+              StoredFoodItem(
+                id: 'a',
+                foodItem: FoodItem(
+                  name: 'Milk',
+                  amount: '1',
+                  foodType: FoodType.dairy,
+                ),
+              ),
+            ],
+            onCommit: (_) async {},
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('Milk'));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('fridgeEditDelete')), findsOneWidget);
+    await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
+    await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
+    await expectLater(tester, meetsGuideline(textContrastGuideline));
+    semantics.dispose();
+  });
 
   testWidgets(
     'Fridge empty',
