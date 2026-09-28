@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
+import '../../ai/ai_retry.dart';
 import '../models/meal_qa_models.dart';
 
 /// Answers the user's questions about one meal recommendation.
@@ -70,7 +71,7 @@ class MealQaService {
     required String question,
   }) async {
     if (apiKey.isEmpty) {
-      throw const MealQaException('Missing GEMINI_API_KEY');
+      throw const MealQaException('Missing GEMINI_API_KEY', retryable: false);
     }
     final text = await _generate(
       systemInstruction: answerSystemInstruction,
@@ -125,6 +126,8 @@ class MealQaService {
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw MealQaException(
         'Gemini request failed: ${response.statusCode} ${response.body}',
+        statusCode: response.statusCode,
+        retryable: isRetryableStatus(response.statusCode),
       );
     }
 
@@ -139,11 +142,24 @@ class MealQaService {
     if (decoded is! Map<String, dynamic>) {
       throw const MealQaException('Gemini returned an unexpected response');
     }
+    final blockReason = _blockReason(decoded);
+    if (blockReason != null) {
+      throw MealQaException(
+        'Gemini blocked the request: $blockReason',
+        retryable: false,
+      );
+    }
     final candidates = decoded['candidates'];
     if (candidates is! List || candidates.isEmpty) {
       throw const MealQaException('Gemini returned no candidates');
     }
     final first = candidates.first;
+    if (first is Map<String, dynamic> && first['finishReason'] == 'SAFETY') {
+      throw const MealQaException(
+        'Gemini blocked the answer: SAFETY',
+        retryable: false,
+      );
+    }
     final content = first is Map<String, dynamic> ? first['content'] : null;
     final parts = content is Map<String, dynamic> ? content['parts'] : null;
     if (parts is! List || parts.isEmpty) {
@@ -162,10 +178,15 @@ class MealQaService {
     }
     final answer = buffer.toString();
     if (answer.trim().isEmpty) {
-      final reason = first is Map<String, dynamic> ? first['finishReason'] : null;
+      final reason = first is Map<String, dynamic>
+          ? first['finishReason']
+          : null;
       if (reason == 'MAX_TOKENS') {
+        // Deterministic: the same question truncates the same way, so retrying
+        // would just burn five attempts. The user has to shorten it.
         throw const MealQaException(
           'The answer ran out of room before it started. Try a shorter question.',
+          retryable: false,
         );
       }
       throw const MealQaException('Gemini returned no text');
@@ -273,6 +294,15 @@ ${meal.toPromptBlock()}
 
 $focus
 ''';
+  }
+
+  /// `promptFeedback.blockReason` means the prompt itself was refused; another
+  /// attempt would be refused the same way.
+  static String? _blockReason(Map<String, dynamic> decoded) {
+    final feedback = decoded['promptFeedback'];
+    if (feedback is! Map<String, dynamic>) return null;
+    final reason = feedback['blockReason'];
+    return reason is String && reason.isNotEmpty ? reason : null;
   }
 
   static String _stripJsonFence(String text) {

@@ -10,9 +10,16 @@ library;
 
 import 'dart:async';
 
+/// Implemented by any feature-specific failure that already knows whether it
+/// is worth another attempt (`AiRequestException`, `MealQaException`). Keeps
+/// [isRetryableAiError] from having to import every feature's error type.
+abstract interface class RetryableAiError {
+  bool get retryable;
+}
+
 /// Typed failure for Gemini calls so the retry rule can tell a temporary
 /// hiccup from a request that will never succeed.
-class AiRequestException implements Exception {
+class AiRequestException implements Exception, RetryableAiError {
   const AiRequestException(
     this.message, {
     this.statusCode,
@@ -25,11 +32,12 @@ class AiRequestException implements Exception {
       AiRequestException(
         'Gemini request failed: $status',
         statusCode: status,
-        retryable: const {408, 429, 500, 502, 503, 504}.contains(status),
+        retryable: isRetryableStatus(status),
       );
 
   final String message;
   final int? statusCode;
+  @override
   final bool retryable;
 
   @override
@@ -66,10 +74,15 @@ class AiRetryPolicy {
   final Duration? attemptTimeout;
 }
 
+/// The HTTP statuses that mean "busy or broken right now", as opposed to
+/// "this request is wrong".
+bool isRetryableStatus(int status) =>
+    const {408, 429, 500, 502, 503, 504}.contains(status);
+
 /// True when trying the very same request again could plausibly work.
 bool isRetryableAiError(Object error) {
   if (error is AiCancelledException) return false;
-  if (error is AiRequestException) return error.retryable;
+  if (error is RetryableAiError) return error.retryable;
   if (error is TimeoutException) return true;
   // An empty or unparseable model reply: the next roll of the dice may be fine.
   if (error is FormatException) return true;

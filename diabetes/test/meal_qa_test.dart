@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:diabetes/ai/ai_retry.dart';
 import 'package:diabetes/main.dart';
 import 'package:diabetes/meals/models/meal_qa_models.dart';
 import 'package:diabetes/meals/screens/meal_qa_sheet.dart';
@@ -306,6 +307,49 @@ void main() {
         throwsA(isA<MealQaException>()),
       );
       expect(called, isFalse);
+    });
+
+    test('carries a retry verdict the shared rule understands', () async {
+      Future<MealQaException> failWith(http.Response response) async {
+        try {
+          await MealQaService(
+            apiKey: 'test-token',
+            client: MockClient((_) async => response),
+          ).answer(
+            meal: _meal,
+            scope: _stepScope,
+            history: const [],
+            question: 'Why?',
+          );
+        } on MealQaException catch (error) {
+          return error;
+        }
+        fail('expected a MealQaException');
+      }
+
+      final busy = await failWith(http.Response('busy', 503));
+      expect(busy.statusCode, 503);
+      expect(isRetryableAiError(busy), isTrue);
+
+      final forbidden = await failWith(http.Response('nope', 403));
+      expect(forbidden.statusCode, 403);
+      expect(isRetryableAiError(forbidden), isFalse);
+
+      final empty = await failWith(http.Response('{"candidates": []}', 200));
+      expect(isRetryableAiError(empty), isTrue, reason: 'empty model reply');
+
+      MealQaException? missingKey;
+      try {
+        await MealQaService(apiKey: '').answer(
+          meal: _meal,
+          scope: _stepScope,
+          history: const [],
+          question: 'Why?',
+        );
+      } on MealQaException catch (error) {
+        missingKey = error;
+      }
+      expect(isRetryableAiError(missingKey!), isFalse);
     });
   });
 

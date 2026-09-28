@@ -12,6 +12,7 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 
+import 'ai/ai_retry.dart';
 import 'app_features.dart';
 import 'cgm/data/glucose_repository.dart';
 import 'cgm/screens/glucose_settings_page.dart';
@@ -3609,7 +3610,10 @@ class FridgePhotoFoodAgent {
   }) async {
     final token = apiKey ?? _apiKey;
     if (token.isEmpty) {
-      throw Exception('Missing GEMINI_API_KEY');
+      throw const AiRequestException(
+        'Missing GEMINI_API_KEY',
+        retryable: false,
+      );
     }
 
     final response = await (client ?? http.Client()).post(
@@ -3647,42 +3651,69 @@ class FridgePhotoFoodAgent {
     );
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw Exception(
-        'Gemini food scan failed: ${response.statusCode} ${response.body}',
-      );
+      throw AiRequestException.fromStatus(response.statusCode, response.body);
     }
 
-    final data = jsonDecode(response.body) as Map<String, dynamic>;
-    final candidates = data['candidates'] as List<dynamic>? ?? const [];
-    if (candidates.isEmpty) {
-      throw Exception('Gemini food scan returned no candidates');
-    }
-    final content =
-        (candidates.first as Map<String, dynamic>)['content']
-            as Map<String, dynamic>?;
-    final parts = content?['parts'] as List<dynamic>? ?? const [];
-    if (parts.isEmpty) {
-      throw Exception('Gemini food scan returned no content');
-    }
-    final text = (parts.first as Map<String, dynamic>)['text'] as String?;
-    if (text == null || text.trim().isEmpty) {
-      throw Exception('Gemini food scan returned no text');
-    }
+    // Everything below is either "the model gave us nothing usable" (a
+    // FormatException, worth another attempt) or a refusal (never worth one).
+    // A TypeError from an unexpected shape is mapped to FormatException too,
+    // so the retry rule never sees a raw cast failure.
+    try {
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      final blockReason = _blockReason(data);
+      if (blockReason != null) {
+        throw AiRequestException(
+          'Gemini food scan was blocked: $blockReason',
+          retryable: false,
+        );
+      }
+      final candidates = data['candidates'] as List<dynamic>? ?? const [];
+      if (candidates.isEmpty) {
+        throw const FormatException('Gemini food scan returned no candidates');
+      }
+      final first = candidates.first as Map<String, dynamic>;
+      if (first['finishReason'] == 'SAFETY') {
+        throw const AiRequestException(
+          'Gemini food scan was blocked: SAFETY',
+          retryable: false,
+        );
+      }
+      final content = first['content'] as Map<String, dynamic>?;
+      final parts = content?['parts'] as List<dynamic>? ?? const [];
+      if (parts.isEmpty) {
+        throw const FormatException('Gemini food scan returned no content');
+      }
+      final text = (parts.first as Map<String, dynamic>)['text'] as String?;
+      if (text == null || text.trim().isEmpty) {
+        throw const FormatException('Gemini food scan returned no text');
+      }
 
-    final decodedJson = jsonDecode(_stripJsonFence(text));
-    final foodJson = decodedJson is List<dynamic>
-        ? decodedJson
-        : (decodedJson as Map<String, dynamic>)['foods'] as List<dynamic>? ??
-              const [];
+      final decodedJson = jsonDecode(_stripJsonFence(text));
+      final foodJson = decodedJson is List<dynamic>
+          ? decodedJson
+          : (decodedJson as Map<String, dynamic>)['foods'] as List<dynamic>? ??
+                const [];
 
-    return foodJson
-        .whereType<Map<String, dynamic>>()
-        .map(_foodItemFromJson)
-        .where(
-          (foodItem) =>
-              foodItem.name.isNotEmpty && !_isPlaceholderName(foodItem.name),
-        )
-        .toList();
+      return foodJson
+          .whereType<Map<String, dynamic>>()
+          .map(_foodItemFromJson)
+          .where(
+            (foodItem) =>
+                foodItem.name.isNotEmpty && !_isPlaceholderName(foodItem.name),
+          )
+          .toList();
+    } on TypeError catch (error) {
+      throw FormatException('Gemini food scan returned an odd shape: $error');
+    }
+  }
+
+  /// `promptFeedback.blockReason` means the photo or prompt was refused, so
+  /// sending the very same bytes again would be refused the same way.
+  static String? _blockReason(Map<String, dynamic> data) {
+    final feedback = data['promptFeedback'];
+    if (feedback is! Map<String, dynamic>) return null;
+    final reason = feedback['blockReason'];
+    return reason is String && reason.isNotEmpty ? reason : null;
   }
 
   /// The prompt forbids placeholder items, but guard in code too so an
@@ -3810,17 +3841,25 @@ Return only valid JSON as an array, with no Markdown or explanation. Each object
 }
 
 class GeminiMealService {
-  static String get _apiKey => AppEnvironment.geminiApiKey;
+  static String get _apiKey => debugApiKey ?? AppEnvironment.geminiApiKey;
   static const _textModel = 'gemini-3-flash-preview';
 
   @visibleForTesting
   static http.Client httpClient = http.Client();
 
+  /// Tests set this so `generate` gets past the key check and reaches the
+  /// MockClient. Null in production, where the key comes from `.env`.
+  @visibleForTesting
+  static String? debugApiKey;
+
   static const _imageHost = 'image.pollinations.ai';
 
   static Future<List<MealRecommendation>> generate(AgentRequest request) async {
     if (_apiKey.isEmpty) {
-      throw Exception('Missing GEMINI_API_KEY');
+      throw const AiRequestException(
+        'Missing GEMINI_API_KEY',
+        retryable: false,
+      );
     }
 
     final response = await httpClient.post(
@@ -3844,39 +3883,75 @@ class GeminiMealService {
     );
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw Exception('Gemini request failed: ${response.statusCode}');
+      throw AiRequestException.fromStatus(response.statusCode, response.body);
     }
 
-    final data = jsonDecode(response.body) as Map<String, dynamic>;
-    final candidates = data['candidates'] as List<dynamic>? ?? [];
-    if (candidates.isEmpty) {
-      throw Exception('Gemini returned no candidates');
+    // A missing field or an odd shape is the model misbehaving, not a broken
+    // request: it comes back as a FormatException so the retry loop tries
+    // again. A refusal is typed non-retryable instead.
+    try {
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      final blockReason = _blockReason(data);
+      if (blockReason != null) {
+        throw AiRequestException(
+          'Gemini blocked the request: $blockReason',
+          retryable: false,
+        );
+      }
+      final candidates = data['candidates'] as List<dynamic>? ?? [];
+      if (candidates.isEmpty) {
+        throw const FormatException('Gemini returned no candidates');
+      }
+
+      final content = candidates.first as Map<String, dynamic>;
+      if (content['finishReason'] == 'SAFETY') {
+        throw const AiRequestException(
+          'Gemini blocked the answer: SAFETY',
+          retryable: false,
+        );
+      }
+      final parts =
+          (content['content'] as Map<String, dynamic>)['parts']
+              as List<dynamic>;
+      if (parts.isEmpty) {
+        throw const FormatException('Gemini returned no content');
+      }
+      final text = (parts.first as Map<String, dynamic>)['text'] as String;
+      if (text.trim().isEmpty) {
+        throw const FormatException('Gemini returned no text');
+      }
+      final jsonText = _stripJsonFence(text);
+
+      final decodedJson = jsonDecode(jsonText);
+      final recommendations = <MealRecommendation>[];
+      if (decodedJson is List<dynamic>) {
+        recommendations.addAll(
+          decodedJson
+              .map(
+                (item) =>
+                    MealRecommendation.fromJson(item as Map<String, dynamic>),
+              )
+              .take(request.recommendationCount),
+        );
+      } else {
+        recommendations.add(
+          MealRecommendation.fromJson(decodedJson as Map<String, dynamic>),
+        );
+      }
+
+      return _attachImages(recommendations);
+    } on TypeError catch (error) {
+      throw FormatException('Gemini returned an odd shape: $error');
     }
+  }
 
-    final content = candidates.first as Map<String, dynamic>;
-    final parts =
-        (content['content'] as Map<String, dynamic>)['parts'] as List<dynamic>;
-    final text = (parts.first as Map<String, dynamic>)['text'] as String;
-    final jsonText = _stripJsonFence(text);
-
-    final decodedJson = jsonDecode(jsonText);
-    final recommendations = <MealRecommendation>[];
-    if (decodedJson is List<dynamic>) {
-      recommendations.addAll(
-        decodedJson
-            .map(
-              (item) =>
-                  MealRecommendation.fromJson(item as Map<String, dynamic>),
-            )
-            .take(request.recommendationCount),
-      );
-    } else {
-      recommendations.add(
-        MealRecommendation.fromJson(decodedJson as Map<String, dynamic>),
-      );
-    }
-
-    return _attachImages(recommendations);
+  /// `promptFeedback.blockReason` means the prompt was refused outright;
+  /// resending it would be refused again.
+  static String? _blockReason(Map<String, dynamic> data) {
+    final feedback = data['promptFeedback'];
+    if (feedback is! Map<String, dynamic>) return null;
+    final reason = feedback['blockReason'];
+    return reason is String && reason.isNotEmpty ? reason : null;
   }
 
   @visibleForTesting
