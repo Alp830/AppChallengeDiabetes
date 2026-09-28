@@ -81,6 +81,101 @@ void main() {
     expect(committed, isEmpty);
   });
 
+  testWidgets('the edit sheet keeps Delete in its top area', (tester) async {
+    tester.view.physicalSize = const Size(360, 780);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    final handle = tester.ensureSemantics();
+    await tester.pumpWidget(
+      wrap(GlobalKey<FridgePageState>(), [stored('a', 'Milk')], []),
+    );
+
+    await tester.tap(find.text('Milk'));
+    await tester.pumpAndSettle();
+
+    final delete = find.byKey(const Key('fridgeEditDelete'));
+    expect(delete, findsOneWidget);
+    // Top right: above the first field, right of the sheet title.
+    final nameField = find.widgetWithText(TextFormField, 'Food name');
+    expect(
+      tester.getTopLeft(delete).dy,
+      lessThan(tester.getTopLeft(nameField).dy),
+    );
+    expect(
+      tester.getCenter(delete).dx,
+      greaterThan(tester.getCenter(find.text('Edit food')).dx),
+    );
+    // Still reads as a delete to a screen reader, and stays tappable.
+    expect(find.bySemanticsLabel('Delete item'), findsOneWidget);
+    expect(tester.getSize(delete).height, greaterThanOrEqualTo(48));
+    handle.dispose();
+  });
+
+  testWidgets('adding a food shows no delete control', (tester) async {
+    await tester.pumpWidget(wrap(GlobalKey<FridgePageState>(), const [], []));
+    await tester.tap(find.byKey(const Key('fridgeEmptyAdd')));
+    await tester.pumpAndSettle();
+    expect(find.text('Add food'), findsWidgets);
+    expect(find.byKey(const Key('fridgeEditDelete')), findsNothing);
+  });
+
+  testWidgets('deleting from the edit sheet is staged and can be undone', (
+    tester,
+  ) async {
+    final key = GlobalKey<FridgePageState>();
+    final committed = <FridgeChangeSet>[];
+    await tester.pumpWidget(wrap(key, [stored('a', 'Milk')], committed));
+
+    await deleteViaEditSheet(tester, 'Milk');
+
+    expect(find.text('Milk'), findsNothing);
+    expect(find.text('1 unsaved change'), findsOneWidget);
+    expect(committed, isEmpty);
+    expect(find.text('Removed Milk. Save to make it final.'), findsOneWidget);
+
+    await tester.tap(find.text('Undo'));
+    await tester.pumpAndSettle();
+
+    // The item is back and the fridge matches what is stored again.
+    expect(find.text('Milk'), findsOneWidget);
+    expect(key.currentState!.isDirty, isFalse);
+    expect(find.byKey(const Key('fridgeSaveBar')), findsNothing);
+    expect(committed, isEmpty);
+  });
+
+  testWidgets('undo puts the item back in its original position', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(360, 780);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    final key = GlobalKey<FridgePageState>();
+    final committed = <FridgeChangeSet>[];
+    await tester.pumpWidget(
+      wrap(key, [
+        stored('a', 'Milk'),
+        stored('b', 'Rice'),
+        stored('c', 'Kale'),
+      ], committed),
+    );
+
+    await deleteViaEditSheet(tester, 'Rice');
+    await tester.tap(find.text('Undo'));
+    await tester.pumpAndSettle();
+
+    // Editing Rice still addresses Rice's draft, so the indices lined up again.
+    await changeTypeViaEditSheet(tester, 'Rice', 'Grain');
+    await tester.tap(find.byKey(const Key('fridgeSaveBar')));
+    await tester.pumpAndSettle();
+
+    expect(committed.single.deletions, isEmpty);
+    expect(committed.single.additions, isEmpty);
+    expect(committed.single.updates.keys.single, 'b');
+    expect(committed.single.updates['b']!.foodType, FoodType.grain);
+  });
+
   testWidgets('edits stage locally and only commit when saved', (tester) async {
     final key = GlobalKey<FridgePageState>();
     final committed = <FridgeChangeSet>[];

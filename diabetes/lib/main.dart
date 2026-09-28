@@ -1195,6 +1195,29 @@ class FridgePageState extends State<FridgePage> {
     return entries;
   }
 
+  /// Shows a fridge message clear of the unsaved-changes bar, so Save and
+  /// Discard stay reachable while the message is on screen.
+  void _showFridgeSnackBar(
+    ScaffoldMessengerState messenger, {
+    required Widget content,
+    SnackBarAction? action,
+  }) {
+    final liftAboveSaveBar = _isDirty;
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(
+      SnackBar(
+        content: content,
+        action: action,
+        behavior: liftAboveSaveBar
+            ? SnackBarBehavior.floating
+            : SnackBarBehavior.fixed,
+        margin: liftAboveSaveBar
+            ? const EdgeInsets.fromLTRB(Spacing.s8, 0, Spacing.s8, 72)
+            : null,
+      ),
+    );
+  }
+
   void _mutate(VoidCallback change) {
     setState(() {
       change();
@@ -1290,11 +1313,10 @@ class FridgePageState extends State<FridgePage> {
         return false;
       }
       setState(() => _isSaving = false);
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(FriendlyErrors.describe(error, context: 'fridge save')),
-          action: SnackBarAction(label: 'Retry', onPressed: save),
-        ),
+      _showFridgeSnackBar(
+        messenger,
+        content: Text(FriendlyErrors.describe(error, context: 'fridge save')),
+        action: SnackBarAction(label: 'Retry', onPressed: save),
       );
       return false;
     }
@@ -1469,34 +1491,31 @@ class FridgePageState extends State<FridgePage> {
 
     final error = result.error;
     if (error != null) {
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(FriendlyErrors.describe(error, context: 'fridge scan')),
-          action: SnackBarAction(
-            label: 'Retry',
-            onPressed: () => _takeFridgePhoto(context),
-          ),
+      _showFridgeSnackBar(
+        messenger,
+        content: Text(FriendlyErrors.describe(error, context: 'fridge scan')),
+        action: SnackBarAction(
+          label: 'Retry',
+          onPressed: () => _takeFridgePhoto(context),
         ),
       );
       return;
     }
     if (result.foods.isEmpty) {
-      messenger.showSnackBar(
-        const SnackBar(
-          content: Text('No foods found. Try a closer, well-lit photo.'),
-        ),
+      _showFridgeSnackBar(
+        messenger,
+        content: const Text('No foods found. Try a closer, well-lit photo.'),
       );
       return;
     }
 
     _addDrafts(result.foods);
-    messenger.showSnackBar(
-      SnackBar(
-        content: Text(
-          result.foods.length == 1
-              ? 'Added 1 item — remember to save.'
-              : 'Added ${result.foods.length} items — remember to save.',
-        ),
+    _showFridgeSnackBar(
+      messenger,
+      content: Text(
+        result.foods.length == 1
+            ? 'Added 1 item — remember to save.'
+            : 'Added ${result.foods.length} items — remember to save.',
       ),
     );
   }
@@ -1514,14 +1533,37 @@ class FridgePageState extends State<FridgePage> {
     }
   }
 
+  /// Stages the deletion of the draft at [index] and offers an Undo that puts
+  /// the very same draft back where it was, so an undone delete leaves no
+  /// pending change behind.
+  void _stageDraftDeletion(ScaffoldMessengerState messenger, int index) {
+    final draft = _drafts[index];
+    _removeDrafts([index]);
+    _showFridgeSnackBar(
+      messenger,
+      content: Text('Removed ${draft.item.name}. Save to make it final.'),
+      action: SnackBarAction(
+        label: 'Undo',
+        onPressed: () {
+          if (!mounted) return;
+          setState(() {
+            _drafts.insert(index.clamp(0, _drafts.length), draft);
+            _isDirty = !_buildChangeSet().isEmpty;
+          });
+        },
+      ),
+    );
+  }
+
   Future<void> _showEditFoodSheet(BuildContext context, int index) async {
+    final messenger = ScaffoldMessenger.of(context);
     final foodItem = await showModalBottomSheet<FoodItem>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
       builder: (context) => AddFoodSheet(
         foodItem: _drafts[index].item,
-        onDelete: () => _removeDrafts([index]),
+        onDelete: () => _stageDraftDeletion(messenger, index),
       ),
     );
 
@@ -2081,9 +2123,35 @@ class _AddFoodSheetState extends State<AddFoodSheet> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
-                _isEditing ? 'Edit food' : 'Add food',
-                style: Theme.of(context).textTheme.titleLarge,
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      _isEditing ? 'Edit food' : 'Add food',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                  ),
+                  // Top-right delete, spelled out in the error colour so it
+                  // never reads as a close button.
+                  if (_isEditing && widget.onDelete != null)
+                    TextButton.icon(
+                      key: const Key('fridgeEditDelete'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: Theme.of(context).colorScheme.error,
+                        minimumSize: const Size(0, 48),
+                      ),
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        widget.onDelete!();
+                      },
+                      icon: const Icon(Icons.delete_outline),
+                      label: Semantics(
+                        label: 'Delete item',
+                        excludeSemantics: true,
+                        child: const Text('Delete'),
+                      ),
+                    ),
+                ],
               ),
               const SizedBox(height: Spacing.s16),
               OutlinedButton.icon(
@@ -2204,22 +2272,6 @@ class _AddFoodSheetState extends State<AddFoodSheet> {
                 onPressed: _saveFoodItem,
                 child: Text(_isEditing ? 'Save changes' : 'Save food'),
               ),
-              if (_isEditing && widget.onDelete != null) ...[
-                const SizedBox(height: Spacing.s8),
-                TextButton.icon(
-                  key: const Key('fridgeEditDelete'),
-                  style: TextButton.styleFrom(
-                    foregroundColor: Theme.of(context).colorScheme.error,
-                    minimumSize: const Size(0, 48),
-                  ),
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    widget.onDelete!();
-                  },
-                  icon: const Icon(Icons.delete_outline),
-                  label: const Text('Delete item'),
-                ),
-              ],
             ],
           ),
         ),
