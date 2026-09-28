@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:diabetes/ai/ai_retry.dart';
@@ -633,6 +634,8 @@ void main() {
       ValueChanged<List<MealQaTurn>>? onHistoryChanged,
       bool showFirstRunTip = false,
       String? initialQuestion,
+      // Zero spacing keeps these instant; ai_retry_test covers the real 2 s.
+      AiRetryPolicy retryPolicy = const AiRetryPolicy(delay: Duration.zero),
     }) async {
       await tester.pumpWidget(
         MaterialApp(
@@ -650,6 +653,7 @@ void main() {
                   onTipSeen: () => tipSeenCalls += 1,
                   initialQuestion: initialQuestion,
                   service: service,
+                  retryPolicy: retryPolicy,
                 ),
                 child: const Text('open'),
               ),
@@ -765,14 +769,17 @@ void main() {
       expect(find.text('Earlier answer.'), findsOneWidget);
     });
 
-    testWidgets('shows a retryable error and recovers', (tester) async {
+    testWidgets('shows a final error and recovers on Try again', (
+      tester,
+    ) async {
       var attempt = 0;
       final service = MealQaService(
         apiKey: 'test-token',
         client: MockClient((request) async {
           if (_isChipsRequest(request)) return _geminiText('[]');
           attempt += 1;
-          if (attempt == 1) return http.Response('boom', 500);
+          // 403 is never retried, so the first failure is the final one.
+          if (attempt == 1) return http.Response('boom', 403);
           return _geminiText('Recovered answer.');
         }),
       );
@@ -782,6 +789,7 @@ void main() {
       await tester.tap(find.byKey(const Key('mealQaSend')));
       await tester.pumpAndSettle();
 
+      expect(attempt, 1, reason: 'a 403 is not retried');
       expect(find.byKey(const Key('mealQaError')), findsOneWidget);
 
       await tester.tap(find.byKey(const Key('mealQaRetry')));
@@ -791,6 +799,148 @@ void main() {
       expect(find.text('Recovered answer.'), findsOneWidget);
       // Retry must not duplicate the question in the transcript.
       expect(find.text('Why?'), findsOneWidget);
+    });
+
+    testWidgets('a hiccup is retried and the answer still arrives', (
+      tester,
+    ) async {
+      var answerCalls = 0;
+      final service = MealQaService(
+        apiKey: 'test-token',
+        client: MockClient((request) async {
+          if (_isChipsRequest(request)) return _geminiText('[]');
+          answerCalls += 1;
+          if (answerCalls == 1) return http.Response('busy', 503);
+          return _geminiText('Deglazing lifts the browned bits.');
+        }),
+      );
+      await openSheet(tester, service: service);
+
+      await tester.enterText(find.byKey(const Key('mealQaInput')), 'Why?');
+      await tester.tap(find.byKey(const Key('mealQaSend')));
+      await tester.pumpAndSettle();
+
+      expect(answerCalls, 2);
+      expect(find.byKey(const Key('mealQaError')), findsNothing);
+      expect(find.text('Deglazing lifts the browned bits.'), findsOneWidget);
+    });
+
+    testWidgets('the thinking bubble counts the tries', (tester) async {
+      final pending = <Completer<http.Response>>[];
+      final service = MealQaService(
+        apiKey: 'test-token',
+        client: MockClient((request) {
+          if (_isChipsRequest(request)) {
+            return Future.value(_geminiText('[]'));
+          }
+          final completer = Completer<http.Response>();
+          pending.add(completer);
+          return completer.future;
+        }),
+      );
+      await openSheet(tester, service: service);
+
+      await tester.enterText(find.byKey(const Key('mealQaInput')), 'Why?');
+      await tester.tap(find.byKey(const Key('mealQaSend')));
+      await tester.pump();
+      expect(find.textContaining('Retrying'), findsNothing);
+
+      pending.removeAt(0).complete(http.Response('busy', 503));
+      await tester.pump();
+      await tester.pump(Duration.zero);
+      expect(find.text('Retrying 2/5'), findsOneWidget);
+
+      pending.removeAt(0).complete(_geminiText('Because it tastes good.'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Retrying'), findsNothing);
+      expect(find.text('Because it tastes good.'), findsOneWidget);
+    });
+
+    testWidgets('five failures end in a friendly error', (tester) async {
+      var answerCalls = 0;
+      final service = MealQaService(
+        apiKey: 'test-token',
+        client: MockClient((request) async {
+          if (_isChipsRequest(request)) return _geminiText('[]');
+          answerCalls += 1;
+          return http.Response('busy', 503);
+        }),
+      );
+      await openSheet(tester, service: service);
+
+      await tester.enterText(find.byKey(const Key('mealQaInput')), 'Why?');
+      await tester.tap(find.byKey(const Key('mealQaSend')));
+      await tester.pumpAndSettle();
+
+      expect(answerCalls, 5);
+      expect(
+        find.text(
+          "Couldn't get an answer after a few tries. "
+          'Check your connection and try again.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.byKey(const Key('mealQaRetry')), findsOneWidget);
+    });
+
+    testWidgets('closing the sheet during a retry stops the attempts', (
+      tester,
+    ) async {
+      final pending = <Completer<http.Response>>[];
+      var answerCalls = 0;
+      final service = MealQaService(
+        apiKey: 'test-token',
+        client: MockClient((request) {
+          if (_isChipsRequest(request)) {
+            return Future.value(_geminiText('[]'));
+          }
+          answerCalls += 1;
+          final completer = Completer<http.Response>();
+          pending.add(completer);
+          return completer.future;
+        }),
+      );
+      await openSheet(tester, service: service);
+
+      await tester.enterText(find.byKey(const Key('mealQaInput')), 'Why?');
+      await tester.tap(find.byKey(const Key('mealQaSend')));
+      await tester.pump();
+      pending.removeAt(0).complete(http.Response('busy', 503));
+      await tester.pump();
+      await tester.pump(Duration.zero);
+      expect(find.text('Retrying 2/5'), findsOneWidget);
+      expect(answerCalls, 2);
+
+      Navigator.of(tester.element(find.byKey(const Key('mealQaInput')))).pop();
+      await tester.pumpAndSettle();
+
+      pending.removeAt(0).complete(http.Response('busy', 503));
+      await tester.pump(Duration.zero);
+      await tester.pump(Duration.zero);
+
+      expect(answerCalls, 2, reason: 'the closed sheet stops asking');
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('suggested-question chips stay single-attempt and silent', (
+      tester,
+    ) async {
+      var chipCalls = 0;
+      final service = MealQaService(
+        apiKey: 'test-token',
+        client: MockClient((request) async {
+          if (_isChipsRequest(request)) {
+            chipCalls += 1;
+            return http.Response('busy', 503);
+          }
+          return _geminiText('unused');
+        }),
+      );
+      await openSheet(tester, service: service);
+
+      expect(chipCalls, 1);
+      expect(find.byKey(const Key('mealQaError')), findsNothing);
+      expect(find.textContaining('Retrying'), findsNothing);
     });
 
     testWidgets('shows the first-run tip once and reports it was seen', (

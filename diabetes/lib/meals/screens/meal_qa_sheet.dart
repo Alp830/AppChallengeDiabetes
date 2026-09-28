@@ -2,7 +2,10 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../../ai/ai_retry.dart';
+import '../../ai/ai_retry_status.dart';
 import '../../design/app_radius.dart';
+import '../../design/friendly_errors.dart';
 import '../../design/spacing.dart';
 import '../models/meal_qa_models.dart';
 import '../services/meal_qa_service.dart';
@@ -23,6 +26,9 @@ Future<void> showMealQaSheet(
   VoidCallback? onTipSeen,
   String? initialQuestion,
   MealQaService? service,
+  AiRetryPolicy retryPolicy = const AiRetryPolicy(
+    attemptTimeout: Duration(seconds: 30),
+  ),
 }) {
   return showModalBottomSheet<void>(
     context: context,
@@ -37,6 +43,7 @@ Future<void> showMealQaSheet(
       onTipSeen: onTipSeen,
       initialQuestion: initialQuestion,
       service: service ?? MealQaService(apiKey: apiKey),
+      retryPolicy: retryPolicy,
     ),
   );
 }
@@ -51,6 +58,7 @@ class _MealQaSheet extends StatefulWidget {
     required this.onTipSeen,
     required this.initialQuestion,
     required this.service,
+    required this.retryPolicy,
   });
 
   final MealQaContext meal;
@@ -61,6 +69,7 @@ class _MealQaSheet extends StatefulWidget {
   final VoidCallback? onTipSeen;
   final String? initialQuestion;
   final MealQaService service;
+  final AiRetryPolicy retryPolicy;
 
   @override
   State<_MealQaSheet> createState() => _MealQaSheetState();
@@ -74,6 +83,10 @@ class _MealQaSheetState extends State<_MealQaSheet> {
   List<String> _chips = const [];
   bool _loadingChips = false;
   bool _thinking = false;
+
+  /// 1-based attempt number of the answer in flight; 1 is plain thinking.
+  int _attempt = 1;
+  final _cancellation = AiCancellation();
   String? _error;
 
   /// Kept so the Retry button can resend the question that failed.
@@ -106,6 +119,8 @@ class _MealQaSheetState extends State<_MealQaSheet> {
 
   @override
   void dispose() {
+    // Closing the sheet is the user saying they no longer want the answer.
+    _cancellation.cancel();
     _input.dispose();
     _scroll.dispose();
     super.dispose();
@@ -135,6 +150,7 @@ class _MealQaSheetState extends State<_MealQaSheet> {
       _turns = [..._turns, MealQaTurn.user(trimmed, scope: widget.scope)];
       _chips = const [];
       _thinking = true;
+      _attempt = 1;
       _error = null;
       _failedQuestion = null;
       _input.clear();
@@ -143,26 +159,37 @@ class _MealQaSheetState extends State<_MealQaSheet> {
     _scrollToBottom();
 
     try {
-      final reply = await widget.service.answer(
-        meal: widget.meal,
-        scope: widget.scope,
-        history: priorTurns,
-        question: trimmed,
+      final reply = await runWithAiRetry(
+        () => widget.service.answer(
+          meal: widget.meal,
+          scope: widget.scope,
+          history: priorTurns,
+          question: trimmed,
+        ),
+        policy: widget.retryPolicy,
+        cancellation: _cancellation,
+        onAttempt: (attempt, _) {
+          if (!mounted || attempt == _attempt) return;
+          setState(() => _attempt = attempt);
+        },
       );
       if (!mounted) return;
       setState(() {
         _turns = [..._turns, MealQaTurn.agent(reply)];
         _thinking = false;
+        _attempt = 1;
       });
       widget.onHistoryChanged(List.of(_turns));
-    } on MealQaException catch (error) {
+    } on AiCancelledException {
+      return; // The sheet is gone; there is nothing to show the answer on.
+    } catch (error) {
       if (!mounted) return;
       setState(() {
         // Drop the unanswered user turn so Retry does not duplicate it.
         _turns = _turns.sublist(0, _turns.length - 1);
         _thinking = false;
-        debugPrint('meal Q&A: ${error.message}');
-        _error = "Couldn't get an answer right now.";
+        _attempt = 1;
+        _error = FriendlyErrors.ai(error, action: 'an answer');
         _failedQuestion = trimmed;
       });
       widget.onHistoryChanged(List.of(_turns));
@@ -229,7 +256,11 @@ class _MealQaSheetState extends State<_MealQaSheet> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           for (final turn in _turns) _TurnBubble(turn: turn),
-                          if (_thinking) const _ThinkingBubble(),
+                          if (_thinking)
+                            _ThinkingBubble(
+                              attempt: _attempt,
+                              maxAttempts: widget.retryPolicy.maxAttempts,
+                            ),
                           if (_error != null)
                             _ErrorBubble(
                               message: _error!,
@@ -351,7 +382,10 @@ class _TurnBubble extends StatelessWidget {
 }
 
 class _ThinkingBubble extends StatelessWidget {
-  const _ThinkingBubble();
+  const _ThinkingBubble({required this.attempt, required this.maxAttempts});
+
+  final int attempt;
+  final int maxAttempts;
 
   @override
   Widget build(BuildContext context) {
@@ -359,15 +393,19 @@ class _ThinkingBubble extends StatelessWidget {
       alignment: Alignment.centerLeft,
       child: Padding(
         padding: EdgeInsets.only(bottom: Spacing.s8, left: Spacing.s4),
-        child: Semantics(
-          liveRegion: true,
-          label: 'Thinking',
-          child: const SizedBox(
-            height: 20,
-            width: 20,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          ),
-        ),
+        // From attempt 2 the counter replaces the bare spinner, so a long
+        // wait reads as "still working" rather than "stuck".
+        child: attempt < 2
+            ? Semantics(
+                liveRegion: true,
+                label: 'Thinking',
+                child: const SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              )
+            : AiRetryStatus(attempt: attempt, maxAttempts: maxAttempts),
       ),
     );
   }
@@ -394,10 +432,7 @@ class _ErrorBubble extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              "That didn't go through. $message",
-              style: TextStyle(color: scheme.onErrorContainer),
-            ),
+            Text(message, style: TextStyle(color: scheme.onErrorContainer)),
             if (onRetry != null)
               TextButton(
                 key: const Key('mealQaRetry'),
