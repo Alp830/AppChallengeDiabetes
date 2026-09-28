@@ -2,8 +2,12 @@ import 'package:diabetes/design/app_theme.dart';
 import 'package:diabetes/exercise/data/today_todo_repository.dart';
 import 'package:diabetes/home/mvp_home_page.dart';
 import 'package:diabetes/main.dart';
+import 'package:diabetes/meals/saved/saved_recipe.dart';
+import 'package:diabetes/meals/saved/saved_recipes_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import 'support/in_memory_saved_recipes_store.dart';
 
 Future<void> pumpAt200(WidgetTester tester, Widget body) async {
   tester.view.physicalSize = const Size(360, 780);
@@ -22,6 +26,21 @@ Future<void> pumpAt200(WidgetTester tester, Widget body) async {
     ),
   );
   await tester.pump();
+}
+
+SavedRecipe _savedRecipe() {
+  const recipe = MealRecommendation(
+    dishName: 'Spinach and feta omelette with roasted tomatoes',
+    imagePrompt: '',
+    reason: 'Uses the spinach before it expires.',
+    ingredients: ['2 eggs', '1 cup spinach'],
+    instructions: ['Whisk the eggs.', 'Cook with spinach.'],
+  );
+  return SavedRecipe(
+    id: recipeFingerprint(recipe),
+    recipe: recipe,
+    savedAt: DateTime(2026, 9, 28),
+  );
 }
 
 StoredFoodItem _stored(String id, String name, int days) => StoredFoodItem(
@@ -56,6 +75,61 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('Home with the first-meal and saved recipes cards', (
+    tester,
+  ) async {
+    await pumpAt200(
+      tester,
+      MvpHomePage(
+        userId: 'u',
+        userName: 'Alexandria',
+        todoStateStream: Stream.value(
+          const TodayTodoState(isInitialized: true, items: []),
+        ),
+        onSaveTodos: (_) async {},
+        onOpenFridge: () {},
+        fridgeItemCount: 12,
+        expiringCount: 3,
+        showFirstMealGuide: true,
+        onStartFirstMeal: () {},
+        onSkipFirstMeal: () {},
+        savedRecipesStore: InMemorySavedRecipesStore(initial: [_savedRecipe()]),
+        onOpenSavedRecipes: () {},
+      ),
+    );
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+    expect(find.text("Let's get started"), findsOneWidget);
+  });
+
+  testWidgets('Saved recipes list', (tester) async {
+    await pumpAt200(
+      tester,
+      SavedRecipesPage(
+        userId: 'u',
+        diabetesEnabled: false,
+        store: InMemorySavedRecipesStore(initial: [_savedRecipe()]),
+        onOpenMeals: () {},
+      ),
+    );
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Saved recipes empty state', (tester) async {
+    await pumpAt200(
+      tester,
+      SavedRecipesPage(
+        userId: 'u',
+        diabetesEnabled: false,
+        store: InMemorySavedRecipesStore(),
+        onOpenMeals: () {},
+      ),
+    );
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('Fridge grid', (tester) async {
     await pumpAt200(
       tester,
@@ -83,6 +157,15 @@ void main() {
   testWidgets('Agent', (tester) async {
     await pumpAt200(tester, const AgentPage(foodItems: []));
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Agent with the first-meal coach', (tester) async {
+    await pumpAt200(
+      tester,
+      const AgentPage(foodItems: [], firstMealGuide: true),
+    );
+    expect(tester.takeException(), isNull);
+    expect(find.text('Your first meal idea'), findsOneWidget);
   });
 
   testWidgets('Recipe card', (tester) async {

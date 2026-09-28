@@ -2,8 +2,27 @@ import 'package:diabetes/design/app_theme.dart';
 import 'package:diabetes/exercise/data/today_todo_repository.dart';
 import 'package:diabetes/home/mvp_home_page.dart';
 import 'package:diabetes/main.dart';
+import 'package:diabetes/meals/saved/saved_recipe.dart';
+import 'package:diabetes/meals/saved/saved_recipes_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import 'support/in_memory_saved_recipes_store.dart';
+
+SavedRecipe _savedRecipe() {
+  const recipe = MealRecommendation(
+    dishName: 'Lemon chicken bowl',
+    imagePrompt: '',
+    reason: 'Quick and uses pantry basics.',
+    ingredients: ['1 lemon', 'Rice'],
+    instructions: ['Cook the rice.'],
+  );
+  return SavedRecipe(
+    id: recipeFingerprint(recipe),
+    recipe: recipe,
+    savedAt: DateTime(2026, 9, 28),
+  );
+}
 
 Future<void> check(WidgetTester tester, Widget home) async {
   final semantics = tester.ensureSemantics();
@@ -72,7 +91,66 @@ void main() {
   );
 
   testWidgets(
+    'Home with the first-meal and saved recipes cards',
+    (tester) => check(
+      tester,
+      Scaffold(
+        body: MvpHomePage(
+          userId: 'u',
+          todoStateStream: Stream.value(
+            const TodayTodoState(isInitialized: true, items: []),
+          ),
+          onSaveTodos: (_) async {},
+          onOpenFridge: () {},
+          fridgeItemCount: 0,
+          showFirstMealGuide: true,
+          onStartFirstMeal: () {},
+          onSkipFirstMeal: () {},
+          savedRecipesStore: InMemorySavedRecipesStore(
+            initial: [_savedRecipe()],
+          ),
+          onOpenSavedRecipes: () {},
+        ),
+      ),
+    ),
+  );
+
+  testWidgets(
+    'Saved recipes',
+    (tester) => check(
+      tester,
+      SavedRecipesPage(
+        userId: 'u',
+        diabetesEnabled: false,
+        store: InMemorySavedRecipesStore(initial: [_savedRecipe()]),
+        onOpenMeals: () {},
+      ),
+    ),
+  );
+
+  testWidgets(
+    'Saved recipes empty',
+    (tester) => check(
+      tester,
+      SavedRecipesPage(
+        userId: 'u',
+        diabetesEnabled: false,
+        store: InMemorySavedRecipesStore(),
+        onOpenMeals: () {},
+      ),
+    ),
+  );
+
+  testWidgets(
     'Agent',
     (tester) => check(tester, const Scaffold(body: AgentPage(foodItems: []))),
+  );
+
+  testWidgets(
+    'Agent with the first-meal coach',
+    (tester) => check(
+      tester,
+      const Scaffold(body: AgentPage(foodItems: [], firstMealGuide: true)),
+    ),
   );
 }

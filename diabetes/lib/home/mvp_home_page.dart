@@ -5,6 +5,9 @@ import '../design/app_theme.dart';
 import '../design/load_error.dart';
 import '../design/spacing.dart';
 import '../exercise/data/today_todo_repository.dart';
+import '../meals/saved/saved_recipe.dart';
+import '../meals/saved/saved_recipes_repository.dart';
+import '../onboarding/first_meal_card.dart';
 
 class MvpHomePage extends StatefulWidget {
   const MvpHomePage({
@@ -18,6 +21,11 @@ class MvpHomePage extends StatefulWidget {
     this.onSaveTodos,
     this.fridgeItemCount,
     this.expiringCount = 0,
+    this.showFirstMealGuide = false,
+    this.onStartFirstMeal,
+    this.onSkipFirstMeal,
+    this.savedRecipesStore,
+    this.onOpenSavedRecipes,
   });
 
   final String userId;
@@ -33,6 +41,23 @@ class MvpHomePage extends StatefulWidget {
 
   /// Items expired or expiring within `kExpiringSoonThresholdDays`.
   final int expiringCount;
+
+  /// Whether this account still has its first-meal guide waiting. New
+  /// accounts only; it disappears for good once used or skipped.
+  final bool showFirstMealGuide;
+
+  /// Opens Meals with the first-meal guide switched on.
+  final VoidCallback? onStartFirstMeal;
+
+  /// Dismisses the guide for good.
+  final VoidCallback? onSkipFirstMeal;
+
+  /// Feeds the "Saved recipes" card's count and preview. Null hides nothing:
+  /// the card still appears when [onOpenSavedRecipes] is set.
+  final SavedRecipesStore? savedRecipesStore;
+
+  /// Opens the saved recipes list. Null hides the card.
+  final VoidCallback? onOpenSavedRecipes;
 
   @override
   State<MvpHomePage> createState() => _MvpHomePageState();
@@ -76,6 +101,12 @@ class _MvpHomePageState extends State<MvpHomePage> {
           onSaveTodos: _saveTodos,
           fridgeItemCount: widget.fridgeItemCount,
           expiringCount: widget.expiringCount,
+          showFirstMealGuide: widget.showFirstMealGuide,
+          onStartFirstMeal: widget.onStartFirstMeal,
+          onSkipFirstMeal: widget.onSkipFirstMeal,
+          userId: widget.userId,
+          savedRecipesStore: widget.savedRecipesStore,
+          onOpenSavedRecipes: widget.onOpenSavedRecipes,
         );
       },
     );
@@ -91,6 +122,12 @@ class _HomeContent extends StatefulWidget {
     required this.onSaveTodos,
     required this.fridgeItemCount,
     required this.expiringCount,
+    required this.showFirstMealGuide,
+    required this.onStartFirstMeal,
+    required this.onSkipFirstMeal,
+    required this.userId,
+    required this.savedRecipesStore,
+    required this.onOpenSavedRecipes,
   });
 
   final String? userName;
@@ -100,6 +137,12 @@ class _HomeContent extends StatefulWidget {
   final Future<void> Function(List<TodayTodo>) onSaveTodos;
   final int? fridgeItemCount;
   final int expiringCount;
+  final bool showFirstMealGuide;
+  final VoidCallback? onStartFirstMeal;
+  final VoidCallback? onSkipFirstMeal;
+  final String userId;
+  final SavedRecipesStore? savedRecipesStore;
+  final VoidCallback? onOpenSavedRecipes;
 
   @override
   State<_HomeContent> createState() => _HomeContentState();
@@ -240,11 +283,28 @@ class _HomeContentState extends State<_HomeContent> {
           ),
         ),
         const SizedBox(height: Spacing.s16),
+        if (widget.showFirstMealGuide &&
+            widget.onStartFirstMeal != null &&
+            widget.onSkipFirstMeal != null) ...[
+          FirstMealCard(
+            onStart: widget.onStartFirstMeal!,
+            onSkip: widget.onSkipFirstMeal!,
+          ),
+          const SizedBox(height: Spacing.s12),
+        ],
         _FridgeBanner(
           onOpenFridge: widget.onOpenFridge,
           itemCount: widget.fridgeItemCount,
           expiringCount: widget.expiringCount,
         ),
+        if (widget.onOpenSavedRecipes != null) ...[
+          const SizedBox(height: Spacing.s12),
+          _SavedRecipesCard(
+            userId: widget.userId,
+            store: widget.savedRecipesStore,
+            onOpen: widget.onOpenSavedRecipes!,
+          ),
+        ],
         const SizedBox(height: Spacing.section),
         Row(
           children: [
@@ -400,6 +460,81 @@ class _FridgeBanner extends StatelessWidget {
                   ),
                 ),
                 Icon(Icons.arrow_forward, color: onBanner),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Entry point to the recipes the user kept, with a preview so the card says
+/// something even before it is tapped.
+class _SavedRecipesCard extends StatelessWidget {
+  const _SavedRecipesCard({
+    required this.userId,
+    required this.store,
+    required this.onOpen,
+  });
+
+  final String userId;
+  final SavedRecipesStore? store;
+  final VoidCallback onOpen;
+
+  String _subtitle(List<SavedRecipe>? saved) {
+    if (saved == null || saved.isEmpty) {
+      return 'Save recipes from Meals to cook them again';
+    }
+    final count = saved.length == 1 ? '1 saved' : '${saved.length} saved';
+    final names = saved.take(2).map((item) => item.recipe.dishName).join(', ');
+    return saved.length > 2 ? '$count · $names, …' : '$count · $names';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    return Card(
+      child: InkWell(
+        key: const Key('homeSavedRecipes'),
+        onTap: onOpen,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        child: Padding(
+          padding: const EdgeInsets.all(Spacing.s16),
+          child: StreamBuilder<List<SavedRecipe>>(
+            stream: store?.watchAll(userId),
+            builder: (context, snapshot) => Row(
+              children: [
+                Container(
+                  height: 48,
+                  width: 48,
+                  decoration: BoxDecoration(
+                    color: scheme.secondaryContainer,
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                  ),
+                  child: Icon(
+                    Icons.bookmark_outline,
+                    color: scheme.onSecondaryContainer,
+                  ),
+                ),
+                const SizedBox(width: Spacing.s16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Saved recipes', style: theme.textTheme.titleMedium),
+                      const SizedBox(height: Spacing.s4),
+                      Text(
+                        _subtitle(snapshot.data),
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: scheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(Icons.arrow_forward, color: scheme.onSurfaceVariant),
               ],
             ),
           ),
