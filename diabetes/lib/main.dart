@@ -1335,13 +1335,17 @@ class FridgePageState extends State<FridgePage> {
       return true;
     }
 
+    final pendingCount = _buildChangeSet().count;
     final choice = await showDialog<_UnsavedChoice>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Save fridge changes?'),
-        content: const Text(
-          'You have unsaved changes to your fridge. Do you want to save them '
-          'before leaving?',
+        content: Text(
+          pendingCount == 1
+              ? 'You have 1 unsaved change to your fridge. Save it before '
+                    'leaving?'
+              : 'You have $pendingCount unsaved changes to your fridge. Save '
+                    'them before leaving?',
         ),
         actions: [
           TextButton(
@@ -1396,7 +1400,15 @@ class FridgePageState extends State<FridgePage> {
           SelectableFridgeGrid(
             items: ranked,
             onEdit: (index) => _showEditFoodSheet(context, index),
-            onRemoveSelected: (indices) async => _removeDrafts(indices),
+            onRemoveSelected: (indices) async {
+              _removeDrafts(indices);
+              // The grid clears its own selection first, and it unmounts
+              // entirely when the last item goes, so it can never report the
+              // count back down to zero itself.
+              if (_selectionCount != 0) {
+                setState(() => _selectionCount = 0);
+              }
+            },
             onBulkAction: (action, foods) =>
                 _handleBulkAction(context, action, foods),
             onSelectionCountChanged: (selectedCount) {

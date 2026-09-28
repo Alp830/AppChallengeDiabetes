@@ -282,6 +282,171 @@ void main() {
     expect(key.currentState!.isDirty, isTrue);
   });
 
+  testWidgets('the leave dialog counts the pending changes', (tester) async {
+    final key = GlobalKey<FridgePageState>();
+    await tester.pumpWidget(
+      wrap(key, [stored('a', 'Milk'), stored('b', 'Rice')], []),
+    );
+
+    await deleteViaEditSheet(tester, 'Milk');
+    final one = key.currentState!.confirmLeave();
+    await tester.pumpAndSettle();
+    expect(
+      find.text(
+        'You have 1 unsaved change to your fridge. Save it before leaving?',
+      ),
+      findsOneWidget,
+    );
+    await tester.tap(find.text('Keep editing'));
+    await tester.pumpAndSettle();
+    expect(await one, isFalse);
+
+    await changeTypeViaEditSheet(tester, 'Rice', 'Grain');
+    final two = key.currentState!.confirmLeave();
+    await tester.pumpAndSettle();
+    expect(
+      find.text(
+        'You have 2 unsaved changes to your fridge. Save them before leaving?',
+      ),
+      findsOneWidget,
+    );
+    // The three choices keep their keys.
+    expect(find.text('Keep editing'), findsOneWidget);
+    expect(find.byKey(const Key('fridgeDiscardChanges')), findsOneWidget);
+    expect(find.byKey(const Key('fridgeSaveChanges')), findsOneWidget);
+    await tester.tap(find.text('Keep editing'));
+    await tester.pumpAndSettle();
+    expect(await two, isFalse);
+  });
+
+  testWidgets('an add, an edit and a delete across groups commit as one set', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(360, 780);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    final key = GlobalKey<FridgePageState>();
+    final committed = <FridgeChangeSet>[];
+    await tester.pumpWidget(
+      wrap(key, [stored('a', 'Milk'), stored('b', 'Rice')], committed),
+    );
+
+    // Add Eggs (new group), move Rice to Grain, delete Milk.
+    await tester.tap(find.byTooltip('Add food'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Food name'),
+      'Eggs',
+    );
+    await tester.enterText(find.widgetWithText(TextFormField, 'Amount'), '12');
+    await tester.tap(find.text('Save food'));
+    await tester.pumpAndSettle();
+
+    await changeTypeViaEditSheet(tester, 'Rice', 'Grain');
+    await deleteViaEditSheet(tester, 'Milk');
+
+    final leaving = key.currentState!.confirmLeave();
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('fridgeSaveChanges')));
+    await tester.pumpAndSettle();
+
+    expect(await leaving, isTrue);
+    expect(committed, hasLength(1));
+    expect(committed.single.additions.single.name, 'Eggs');
+    expect(committed.single.updates.keys.single, 'b');
+    expect(committed.single.deletions, ['a']);
+    expect(key.currentState!.isDirty, isFalse);
+  });
+
+  testWidgets('discard restores every group', (tester) async {
+    tester.view.physicalSize = const Size(360, 780);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    final key = GlobalKey<FridgePageState>();
+    final committed = <FridgeChangeSet>[];
+    await tester.pumpWidget(
+      wrap(key, [stored('a', 'Milk'), stored('b', 'Rice')], committed),
+    );
+
+    await changeTypeViaEditSheet(tester, 'Rice', 'Grain');
+    await deleteViaEditSheet(tester, 'Milk');
+
+    final leaving = key.currentState!.confirmLeave();
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('fridgeDiscardChanges')));
+    await tester.pumpAndSettle();
+
+    expect(await leaving, isTrue);
+    expect(committed, isEmpty);
+    expect(find.text('Milk'), findsOneWidget);
+    expect(find.text('Rice'), findsOneWidget);
+    expect(find.byKey(const Key('fridgeGroupHeader_other')), findsOneWidget);
+    expect(find.byKey(const Key('fridgeGroupHeader_grain')), findsNothing);
+    expect(key.currentState!.isDirty, isFalse);
+  });
+
+  testWidgets('a failed save keeps the drafts and stays on the fridge', (
+    tester,
+  ) async {
+    final key = GlobalKey<FridgePageState>();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: FridgePage(
+            key: key,
+            initialItems: [stored('a', 'Milk')],
+            onCommit: (_) async => throw Exception('offline'),
+          ),
+        ),
+      ),
+    );
+
+    await deleteViaEditSheet(tester, 'Milk');
+
+    final leaving = key.currentState!.confirmLeave();
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('fridgeSaveChanges')));
+    await tester.pumpAndSettle();
+
+    expect(await leaving, isFalse);
+    expect(key.currentState!.isDirty, isTrue);
+    expect(find.byKey(const Key('fridgeSaveBar')), findsOneWidget);
+  });
+
+  testWidgets('bulk delete across groups stages until save', (tester) async {
+    tester.view.physicalSize = const Size(360, 780);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    final key = GlobalKey<FridgePageState>();
+    final committed = <FridgeChangeSet>[];
+    await tester.pumpWidget(
+      wrap(key, [stored('a', 'Milk'), stored('b', 'Rice')], committed),
+    );
+    await changeTypeViaEditSheet(tester, 'Rice', 'Grain');
+
+    await tester.longPress(find.text('Milk'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Rice'));
+    await tester.pumpAndSettle();
+    expect(find.text('2 selected'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('deleteSelectedFridgeItems')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Delete 2 items'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Your fridge is empty'), findsOneWidget);
+    expect(committed, isEmpty);
+
+    await tester.tap(find.byKey(const Key('fridgeSaveBar')));
+    await tester.pumpAndSettle();
+    expect(committed.single.deletions, unorderedEquals(['a', 'b']));
+    expect(committed.single.updates, isEmpty);
+  });
+
   testWidgets('empty fridge explains itself and offers scan and add', (
     tester,
   ) async {
