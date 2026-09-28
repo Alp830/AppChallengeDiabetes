@@ -1512,6 +1512,8 @@ class FridgePageState extends State<FridgePage> {
           SelectableFridgeGrid(
             items: ranked,
             onEdit: (index) => _showEditFoodSheet(context, index),
+            onDelete: (index) =>
+                _stageDraftDeletion(ScaffoldMessenger.of(context), index),
             onRemoveSelected: (indices) async {
               _removeDrafts(indices);
               // The grid clears its own selection first, and it unmounts

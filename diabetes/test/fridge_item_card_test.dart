@@ -52,10 +52,61 @@ void main() {
     expect(edited, isTrue);
   });
 
-  testWidgets('no per-tile delete; selection mode shows a check slot', (
+  testWidgets(
+    'delete button hidden in selection mode; check slot shows instead',
+    (tester) async {
+      var toggled = false;
+      await tester.pumpWidget(
+        wrap(
+          FridgeItemCard(
+            foodItem: const FoodItem(
+              name: 'Eggs',
+              amount: '12 eggs',
+              foodType: FoodType.protein,
+            ),
+            onEdit: () {},
+            onDelete: () {},
+            selectionMode: true,
+            onToggleSelection: () => toggled = true,
+            now: now,
+          ),
+        ),
+      );
+
+      expect(find.byTooltip('Delete Eggs'), findsNothing);
+      expect(find.bySemanticsLabel('Not selected'), findsOneWidget);
+      await tester.tap(find.text('Eggs'));
+      expect(toggled, isTrue);
+    },
+  );
+
+  testWidgets('shows a per-tile delete button that does not open edit', (
     tester,
   ) async {
-    var toggled = false;
+    var edited = false;
+    var deleted = false;
+    await tester.pumpWidget(
+      wrap(
+        FridgeItemCard(
+          foodItem: const FoodItem(
+            name: 'Eggs',
+            amount: '12 eggs',
+            foodType: FoodType.protein,
+          ),
+          onEdit: () => edited = true,
+          onDelete: () => deleted = true,
+          now: now,
+        ),
+      ),
+    );
+
+    expect(find.byKey(const Key('fridgeTileDelete_Eggs')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('fridgeTileDelete_Eggs')));
+    expect(deleted, isTrue);
+    expect(edited, isFalse);
+  });
+
+  testWidgets('delete button is absent when onDelete is null', (tester) async {
     await tester.pumpWidget(
       wrap(
         FridgeItemCard(
@@ -65,17 +116,12 @@ void main() {
             foodType: FoodType.protein,
           ),
           onEdit: () {},
-          selectionMode: true,
-          onToggleSelection: () => toggled = true,
           now: now,
         ),
       ),
     );
 
-    expect(find.byTooltip('Delete item'), findsNothing);
-    expect(find.bySemanticsLabel('Not selected'), findsOneWidget);
-    await tester.tap(find.text('Eggs'));
-    expect(toggled, isTrue);
+    expect(find.byKey(const Key('fridgeTileDelete_Eggs')), findsNothing);
   });
 
   testWidgets('no expiry shows unknown status and "No date"', (tester) async {
