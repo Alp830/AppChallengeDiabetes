@@ -146,7 +146,9 @@ void main() {
   testWidgets('failed recommendation shows a plain message and retry', (
     tester,
   ) async {
-    // No API key in tests, so GeminiMealService.generate throws immediately.
+    // No API key in tests, so GeminiMealService.generate throws immediately —
+    // and a missing key is not retryable, so it fails on the first attempt
+    // with the setup message rather than the connection one.
     await tester.pumpWidget(
       const MaterialApp(
         home: Scaffold(body: AgentPage(foodItems: [])),
@@ -154,8 +156,12 @@ void main() {
     );
     await tester.tap(find.byKey(const Key('recommendMealButton')));
     await tester.pumpAndSettle();
-    expect(find.text("Couldn't get a meal idea right now."), findsOneWidget);
+    expect(
+      find.text("Meal ideas aren't set up on this device yet."),
+      findsOneWidget,
+    );
     expect(find.textContaining('API key'), findsNothing);
+    expect(find.textContaining('Retrying'), findsNothing);
     expect(find.byKey(const Key('loadErrorRetry')), findsOneWidget);
   });
 }

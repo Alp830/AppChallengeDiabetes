@@ -13,6 +13,7 @@ import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 
 import 'ai/ai_retry.dart';
+import 'ai/ai_retry_status.dart';
 import 'app_features.dart';
 import 'cgm/data/glucose_repository.dart';
 import 'cgm/screens/glucose_settings_page.dart';
@@ -2243,6 +2244,13 @@ class AgentPage extends StatefulWidget {
     this.preferencesRepository,
   });
 
+  /// How hard the meal request tries before giving up. Tests replace it with
+  /// a zero-delay policy so they don't sit through four 2 s waits.
+  @visibleForTesting
+  static AiRetryPolicy retryPolicy = const AiRetryPolicy(
+    attemptTimeout: Duration(seconds: 45),
+  );
+
   final List<FoodItem> foodItems;
   final VoidCallback? onStartPostMealWalk;
   final String? userId;
@@ -2257,10 +2265,12 @@ class AgentPage extends StatefulWidget {
   final AppPreferencesStore? preferencesRepository;
 
   @override
-  State<AgentPage> createState() => _AgentPageState();
+  State<AgentPage> createState() => AgentPageState();
 }
 
-class _AgentPageState extends State<AgentPage> {
+/// Public so the shell can ask whether a recommendation is still in flight
+/// (and stop it) before the user leaves the tab.
+class AgentPageState extends State<AgentPage> {
   final _budgetController = TextEditingController();
   final _timeController = TextEditingController();
   final _preferencesController = TextEditingController();
@@ -2278,6 +2288,15 @@ class _AgentPageState extends State<AgentPage> {
   final List<String> _feedbackHistory = [];
   bool _isLoadingRecommendation = false;
   String? _recommendationError;
+
+  /// Bumped on every new request and on cancel, so a result that arrives from
+  /// an abandoned run can be recognised and dropped.
+  int _requestGeneration = 0;
+
+  /// 1-based attempt number of the run in flight. 1 looks like plain loading.
+  int _retryAttempt = 1;
+  AiCancellation? _cancellation;
+
   AppPreferencesStore? _preferencesRepository;
   StreamSubscription<bool>? _balancePreferenceSubscription;
 
@@ -2360,6 +2379,7 @@ class _AgentPageState extends State<AgentPage> {
     _feedbackController.dispose();
     _balancePreferenceSubscription?.cancel();
     _qaTipSubscription?.cancel();
+    _cancellation?.cancel();
     super.dispose();
   }
 
@@ -2636,29 +2656,69 @@ class _AgentPageState extends State<AgentPage> {
     unawaited(repository.saveMealQaTipSeen(userId).catchError((_) {}));
   }
 
+  /// Whether a recommendation is still on its way. The shell asks this before
+  /// letting the user leave the tab.
+  bool get isLoadingRecommendation => _isLoadingRecommendation;
+
+  /// Stops the run in flight: no more attempts, and whatever the last one
+  /// eventually returns is ignored.
+  void cancelRecommendation() {
+    _requestGeneration++;
+    _cancellation?.cancel();
+    _cancellation = null;
+    if (!_isLoadingRecommendation) return;
+    setState(() {
+      _isLoadingRecommendation = false;
+      _retryAttempt = 1;
+    });
+  }
+
   Future<void> _loadRecommendation(AgentRequest request) async {
+    // Anything that comes back tagged with an older generation belongs to a
+    // request the user has already replaced or cancelled.
+    final generation = ++_requestGeneration;
+    final cancellation = AiCancellation();
+    _cancellation = cancellation;
     setState(() {
       _lastRequest = request;
       _isLoadingRecommendation = true;
+      _retryAttempt = 1;
       _recommendationError = null;
       _recommendations = const [];
       _qaHistory.clear();
     });
 
+    var stale = false;
     try {
-      final recommendations = await GeminiMealService.generate(request);
-      if (!mounted) return;
+      final recommendations = await runWithAiRetry(
+        () => GeminiMealService.generate(request),
+        policy: AgentPage.retryPolicy,
+        cancellation: cancellation,
+        onAttempt: (attempt, _) {
+          if (!mounted || generation != _requestGeneration) return;
+          if (attempt == _retryAttempt) return;
+          setState(() => _retryAttempt = attempt);
+        },
+      );
+      stale = !mounted || generation != _requestGeneration;
+      if (stale) return;
       setState(() => _recommendations = recommendations);
+    } on AiCancelledException {
+      stale = true;
     } catch (error) {
-      debugPrint('meal recommendation: $error');
-      if (!mounted) return;
+      stale = !mounted || generation != _requestGeneration;
+      if (stale) return;
       setState(
-        () => _recommendationError = "Couldn't get a meal idea right now.",
+        () => _recommendationError = FriendlyErrors.ai(
+          error,
+          action: 'a meal idea',
+        ),
       );
     } finally {
-      if (mounted) {
+      if (!stale && mounted && generation == _requestGeneration) {
         setState(() {
           _isLoadingRecommendation = false;
+          _retryAttempt = 1;
         });
       }
     }
@@ -2737,6 +2797,10 @@ class _AgentPageState extends State<AgentPage> {
         ),
         if (_isLoadingRecommendation) ...[
           const SizedBox(height: Spacing.s24),
+          AiRetryStatus(
+            attempt: _retryAttempt,
+            maxAttempts: AgentPage.retryPolicy.maxAttempts,
+          ),
           const _RecommendationSkeleton(),
         ],
         if (_recommendationError != null && _lastRequest != null)
