@@ -1469,6 +1469,8 @@ class FridgePageState extends State<FridgePage> {
     );
     if (result == null) return; // Cancelled.
 
+    // The dialog now retries and reports its own failure in place, so it
+    // stops returning a failure result. Kept as a safety net.
     final error = result.error;
     if (error != null) {
       messenger.showSnackBar(
