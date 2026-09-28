@@ -24,12 +24,17 @@ Future<void> pumpAt200(WidgetTester tester, Widget body) async {
   await tester.pump();
 }
 
-StoredFoodItem _stored(String id, String name, int days) => StoredFoodItem(
+StoredFoodItem _stored(
+  String id,
+  String name,
+  int days, [
+  FoodType foodType = FoodType.dairy,
+]) => StoredFoodItem(
   id: id,
   foodItem: FoodItem(
     name: name,
     amount: '1',
-    foodType: FoodType.dairy,
+    foodType: foodType,
     expiryDate: DateTime.now().add(Duration(days: days)),
   ),
 );
@@ -62,14 +67,20 @@ void main() {
       FridgePage(
         initialItems: [
           _stored('a', 'Greek yogurt', 1),
-          _stored('b', 'Chicken thighs', 5),
-          _stored('c', 'Spinach', -1),
+          _stored('b', 'Chicken thighs', 5, FoodType.protein),
+          _stored('c', 'Spinach', -1, FoodType.produce),
+          _stored('d', 'Wholegrain sourdough', 3, FoodType.grain),
         ],
         onCommit: (_) async {},
       ),
     );
     expect(tester.takeException(), isNull);
     expect(find.text('Greek yogurt'), findsOneWidget);
+    // Type headers survive 2x text too. Groups further down the list are only
+    // built once scrolled to, so this checks the ones on screen.
+    expect(find.byKey(const Key('fridgeGroupHeader_produce')), findsOneWidget);
+    expect(find.byKey(const Key('fridgeGroupHeader_protein')), findsOneWidget);
+    expect(find.byKey(const Key('fridgeGroupHeader_dairy')), findsOneWidget);
   });
 
   testWidgets('Fridge empty state', (tester) async {

@@ -6,7 +6,7 @@ import '../design/drag_selection_surface.dart';
 import '../design/app_radius.dart';
 import '../design/spacing.dart';
 import '../design/text_scale.dart';
-import '../main.dart' show FoodItem;
+import '../main.dart' show FoodItem, FoodType;
 import 'fridge_item_card.dart';
 
 enum FoodBulkAction {
@@ -171,6 +171,53 @@ class _SelectableFridgeGridState extends State<SelectableFridgeGrid> {
         Spacing.s4; // pill text + its padding
   }
 
+  /// Buckets the (already expiry-sorted) items by food type, in `FoodType`
+  /// declaration order. Empty types are skipped and the incoming order is
+  /// kept inside each bucket, so expiry ranking still reads top to bottom.
+  List<MapEntry<FoodType, List<MapEntry<int, FoodItem>>>> get _groups {
+    final buckets = <FoodType, List<MapEntry<int, FoodItem>>>{};
+    for (final entry in widget.items) {
+      buckets.putIfAbsent(entry.value.foodType, () => []).add(entry);
+    }
+    return [
+      for (final foodType in FoodType.values)
+        if (buckets[foodType] case final group?) MapEntry(foodType, group),
+    ];
+  }
+
+  Widget _groupHeader(BuildContext context, FoodType foodType, int count) {
+    final theme = Theme.of(context);
+    return Semantics(
+      key: Key('fridgeGroupHeader_${foodType.name}'),
+      header: true,
+      label: count == 1
+          ? '${foodType.label}, 1 item'
+          : '${foodType.label}, $count items',
+      child: ExcludeSemantics(
+        child: Row(
+          children: [
+            Icon(foodType.icon, size: 18, color: theme.colorScheme.primary),
+            const SizedBox(width: Spacing.s8),
+            Flexible(
+              child: Text(
+                foodType.label,
+                style: theme.textTheme.titleSmall,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(width: Spacing.s8),
+            Text(
+              '$count',
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final largeText = useLargeTextLayout(context);
@@ -178,6 +225,7 @@ class _SelectableFridgeGridState extends State<SelectableFridgeGrid> {
       for (final entry in widget.items)
         entry.key: _itemKeys.putIfAbsent(entry.key, GlobalKey.new),
     };
+    final groups = _groups;
 
     _emitSelectionCount();
 
@@ -252,41 +300,62 @@ class _SelectableFridgeGridState extends State<SelectableFridgeGrid> {
                   ),
                 ),
               ),
-              SliverPadding(
-                padding: EdgeInsets.fromLTRB(
-                  Spacing.margin,
-                  0,
-                  Spacing.margin,
-                  widget.bottomPadding,
-                ),
-                sliver: SliverGrid(
-                  gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                    maxCrossAxisExtent: largeText ? 180 : 125,
-                    mainAxisSpacing: Spacing.s12,
-                    crossAxisSpacing: Spacing.s12,
-                    mainAxisExtent: _tileExtent(context, largeText),
+              for (
+                var groupIndex = 0;
+                groupIndex < groups.length;
+                groupIndex++
+              ) ...[
+                SliverPadding(
+                  padding: EdgeInsets.fromLTRB(
+                    Spacing.margin,
+                    groupIndex == 0 ? Spacing.s8 : Spacing.s16,
+                    Spacing.margin,
+                    Spacing.s8,
                   ),
-                  delegate: SliverChildBuilderDelegate((context, position) {
-                    final entry = widget.items[position];
-                    return KeyedSubtree(
-                      key: keys[entry.key],
-                      child: FridgeItemCard(
-                        foodItem: entry.value,
-                        selected: _selected.contains(entry.key),
-                        selectionMode: _selectionMode,
-                        onToggleSelection: () => _toggle(entry.key),
-                        onEdit: () {
-                          if (_addModifierPressed) {
-                            _toggle(entry.key);
-                          } else {
-                            widget.onEdit(entry.key);
-                          }
-                        },
-                      ),
-                    );
-                  }, childCount: widget.items.length),
+                  sliver: SliverToBoxAdapter(
+                    child: _groupHeader(
+                      context,
+                      groups[groupIndex].key,
+                      groups[groupIndex].value.length,
+                    ),
+                  ),
                 ),
-              ),
+                SliverPadding(
+                  padding: EdgeInsets.fromLTRB(
+                    Spacing.margin,
+                    0,
+                    Spacing.margin,
+                    groupIndex == groups.length - 1 ? widget.bottomPadding : 0,
+                  ),
+                  sliver: SliverGrid(
+                    gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                      maxCrossAxisExtent: largeText ? 180 : 125,
+                      mainAxisSpacing: Spacing.s12,
+                      crossAxisSpacing: Spacing.s12,
+                      mainAxisExtent: _tileExtent(context, largeText),
+                    ),
+                    delegate: SliverChildBuilderDelegate((context, position) {
+                      final entry = groups[groupIndex].value[position];
+                      return KeyedSubtree(
+                        key: keys[entry.key],
+                        child: FridgeItemCard(
+                          foodItem: entry.value,
+                          selected: _selected.contains(entry.key),
+                          selectionMode: _selectionMode,
+                          onToggleSelection: () => _toggle(entry.key),
+                          onEdit: () {
+                            if (_addModifierPressed) {
+                              _toggle(entry.key);
+                            } else {
+                              widget.onEdit(entry.key);
+                            }
+                          },
+                        ),
+                      );
+                    }, childCount: groups[groupIndex].value.length),
+                  ),
+                ),
+              ],
             ],
           ),
           // Full-width selection toolbar pinned to the bottom of the screen.
