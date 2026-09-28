@@ -152,6 +152,11 @@ class _HomeContentState extends State<_HomeContent> {
   late List<TodayTodo> _items = List.of(widget.initialItems);
   bool _saving = false;
 
+  /// Subscribed once, not per build: a fresh Firestore stream on every
+  /// checklist edit would mean a new query and a flicker.
+  late final Stream<List<SavedRecipe>>? _savedRecipes = widget.savedRecipesStore
+      ?.watchAll(widget.userId);
+
   @override
   void didUpdateWidget(covariant _HomeContent oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -300,8 +305,7 @@ class _HomeContentState extends State<_HomeContent> {
         if (widget.onOpenSavedRecipes != null) ...[
           const SizedBox(height: Spacing.s12),
           _SavedRecipesCard(
-            userId: widget.userId,
-            store: widget.savedRecipesStore,
+            savedRecipes: _savedRecipes,
             onOpen: widget.onOpenSavedRecipes!,
           ),
         ],
@@ -472,14 +476,9 @@ class _FridgeBanner extends StatelessWidget {
 /// Entry point to the recipes the user kept, with a preview so the card says
 /// something even before it is tapped.
 class _SavedRecipesCard extends StatelessWidget {
-  const _SavedRecipesCard({
-    required this.userId,
-    required this.store,
-    required this.onOpen,
-  });
+  const _SavedRecipesCard({required this.savedRecipes, required this.onOpen});
 
-  final String userId;
-  final SavedRecipesStore? store;
+  final Stream<List<SavedRecipe>>? savedRecipes;
   final VoidCallback onOpen;
 
   String _subtitle(List<SavedRecipe>? saved) {
@@ -503,7 +502,7 @@ class _SavedRecipesCard extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.all(Spacing.s16),
           child: StreamBuilder<List<SavedRecipe>>(
-            stream: store?.watchAll(userId),
+            stream: savedRecipes,
             builder: (context, snapshot) => Row(
               children: [
                 Container(
