@@ -1,0 +1,659 @@
+{
+ "version": 1,
+ "status": "confirmed by owner 2026-10-25 (Kirkland green boxes = butter; top-right door shelf = medicine/supplements); names refined from native-resolution crops",
+ "photos": {
+  "blurry": {
+   "file": "photos/blurry_webcam.jpg"
+  },
+  "clear": {
+   "file": "photos/clear_phone.jpg"
+  }
+ },
+ "items": [
+  {
+   "id": "knik_cheese",
+   "names": [
+    "piknik white cheese",
+    "knik white cheese",
+    "white cheese in brine",
+    "white cheese",
+    "brined cheese",
+    "feta",
+    "bryndza",
+    "cheese"
+   ],
+   "zone": "top shelf",
+   "isFood": true,
+   "tier": "readable",
+   "visibleInBlurryPhoto": true
+  },
+  {
+   "id": "white_eggs",
+   "names": [
+    "eggs",
+    "white eggs",
+    "egg carton"
+   ],
+   "zone": "top shelf",
+   "isFood": true,
+   "tier": "recognizable",
+   "visibleInBlurryPhoto": true
+  },
+  {
+   "id": "sparkling_water",
+   "names": [
+    "sparkling water",
+    "mineral water",
+    "water",
+    "glass bottle"
+   ],
+   "zone": "top shelf",
+   "isFood": true,
+   "tier": "recognizable",
+   "visibleInBlurryPhoto": true
+  },
+  {
+   "id": "dark_sauce",
+   "names": [
+    "dark sauce",
+    "soy sauce",
+    "balsamic vinegar",
+    "vinegar",
+    "pomegranate molasses",
+    "syrup",
+    "sauce"
+   ],
+   "zone": "top shelf",
+   "isFood": true,
+   "tier": "recognizable",
+   "visibleInBlurryPhoto": true
+  },
+  {
+   "id": "orange_food_strainer",
+   "names": [
+    "apricots",
+    "dried apricots",
+    "carrots",
+    "orange food"
+   ],
+   "zone": "top shelf",
+   "isFood": true,
+   "tier": "hidden",
+   "visibleInBlurryPhoto": false
+  },
+  {
+   "id": "greek_yogurt",
+   "names": [
+    "stonyfield greek yogurt",
+    "greek yogurt",
+    "yogurt"
+   ],
+   "zone": "shelf 2",
+   "isFood": true,
+   "tier": "readable",
+   "visibleInBlurryPhoto": true
+  },
+  {
+   "id": "tuna",
+   "names": [
+    "tuna",
+    "canned tuna",
+    "tuna can"
+   ],
+   "zone": "shelf 2",
+   "isFood": true,
+   "tier": "readable",
+   "visibleInBlurryPhoto": true
+  },
+  {
+   "id": "orange_lid_tub",
+   "names": [
+    "cottage cheese",
+    "labneh",
+    "cream cheese",
+    "farmer cheese",
+    "ricotta",
+    "quark",
+    "tvorog"
+   ],
+   "zone": "shelf 2",
+   "isFood": true,
+   "tier": "recognizable",
+   "visibleInBlurryPhoto": true
+  },
+  {
+   "id": "hummus",
+   "names": [
+    "hummus",
+    "spread",
+    "dip",
+    "baba ganoush"
+   ],
+   "zone": "shelf 2",
+   "isFood": true,
+   "tier": "recognizable",
+   "visibleInBlurryPhoto": true
+  },
+  {
+   "id": "tomato_stew",
+   "names": [
+    "tomato stew",
+    "stew",
+    "tomato sauce",
+    "lecho",
+    "shakshuka",
+    "leftovers"
+   ],
+   "zone": "shelf 2",
+   "isFood": true,
+   "tier": "recognizable",
+   "visibleInBlurryPhoto": true
+  },
+  {
+   "id": "butter",
+   "names": [
+    "kirkland butter",
+    "butter",
+    "butter sticks"
+   ],
+   "zone": "shelf 3",
+   "isFood": true,
+   "tier": "readable",
+   "visibleInBlurryPhoto": true
+  },
+  {
+   "id": "black_pot_dish",
+   "names": [
+    "cooked dish",
+    "soup",
+    "stew",
+    "leftovers",
+    "pot"
+   ],
+   "zone": "shelf 3",
+   "isFood": true,
+   "tier": "recognizable",
+   "visibleInBlurryPhoto": true
+  },
+  {
+   "id": "red_jam",
+   "names": [
+    "jam",
+    "strawberry jam",
+    "cherry jam",
+    "raspberry jam",
+    "preserves",
+    "red jam"
+   ],
+   "zone": "shelf 3",
+   "isFood": true,
+   "tier": "recognizable",
+   "visibleInBlurryPhoto": true
+  },
+  {
+   "id": "brown_jar",
+   "names": [
+    "date syrup",
+    "jam",
+    "honey",
+    "apricot jam",
+    "preserves",
+    "molasses"
+   ],
+   "zone": "shelf 3",
+   "isFood": true,
+   "tier": "recognizable",
+   "visibleInBlurryPhoto": true
+  },
+  {
+   "id": "yellow_item_behind",
+   "names": [
+    "lemon",
+    "yellow item",
+    "mustard",
+    "cheese"
+   ],
+   "zone": "shelf 3",
+   "isFood": true,
+   "tier": "hidden",
+   "visibleInBlurryPhoto": false
+  },
+  {
+   "id": "chopped_salad",
+   "names": [
+    "chopped salad",
+    "salad",
+    "vegetable salad",
+    "chickpea salad",
+    "chickpeas"
+   ],
+   "zone": "shelf 4",
+   "isFood": true,
+   "tier": "recognizable",
+   "visibleInBlurryPhoto": true
+  },
+  {
+   "id": "brown_eggs",
+   "names": [
+    "brown eggs",
+    "eggs",
+    "egg carton"
+   ],
+   "zone": "shelf 4",
+   "isFood": true,
+   "tier": "recognizable",
+   "visibleInBlurryPhoto": true
+  },
+  {
+   "id": "garlic_onions",
+   "names": [
+    "garlic",
+    "garlic bulbs",
+    "onions",
+    "onion",
+    "shallots"
+   ],
+   "zone": "shelf 4",
+   "isFood": true,
+   "tier": "recognizable",
+   "visibleInBlurryPhoto": true
+  },
+  {
+   "id": "corn",
+   "names": [
+    "lupini beans",
+    "corn",
+    "sweet corn",
+    "chickpeas",
+    "beans",
+    "pickled vegetables"
+   ],
+   "zone": "lower shelf",
+   "isFood": true,
+   "tier": "recognizable",
+   "visibleInBlurryPhoto": false
+  },
+  {
+   "id": "soup_pot",
+   "names": [
+    "soup",
+    "cooked dish",
+    "stew",
+    "leftovers",
+    "pot"
+   ],
+   "zone": "lower shelf",
+   "isFood": true,
+   "tier": "recognizable",
+   "visibleInBlurryPhoto": false
+  },
+  {
+   "id": "dill",
+   "names": [
+    "dill",
+    "fresh dill",
+    "herbs",
+    "fresh herbs"
+   ],
+   "zone": "drawers",
+   "isFood": true,
+   "tier": "recognizable",
+   "visibleInBlurryPhoto": false
+  },
+  {
+   "id": "melon",
+   "names": [
+    "melon",
+    "cantaloupe",
+    "honeydew",
+    "squash"
+   ],
+   "zone": "drawers",
+   "isFood": true,
+   "tier": "recognizable",
+   "visibleInBlurryPhoto": false
+  },
+  {
+   "id": "cheese_block",
+   "names": [
+    "cheese block",
+    "cheese",
+    "mozzarella",
+    "suluguni"
+   ],
+   "zone": "drawers",
+   "isFood": true,
+   "tier": "hidden",
+   "visibleInBlurryPhoto": false
+  },
+  {
+   "id": "eggplant",
+   "names": [
+    "eggplant",
+    "aubergine"
+   ],
+   "zone": "drawers",
+   "isFood": true,
+   "tier": "hidden",
+   "visibleInBlurryPhoto": false
+  },
+  {
+   "id": "bread",
+   "names": [
+    "bread",
+    "flatbread",
+    "lavash",
+    "pita"
+   ],
+   "zone": "drawers",
+   "isFood": true,
+   "tier": "hidden",
+   "visibleInBlurryPhoto": false
+  },
+  {
+   "id": "bulgur",
+   "names": [
+    "bulgur",
+    "semolina",
+    "couscous",
+    "grain",
+    "rice"
+   ],
+   "zone": "drawers",
+   "isFood": true,
+   "tier": "hidden",
+   "visibleInBlurryPhoto": false
+  },
+  {
+   "id": "cucumbers",
+   "names": [
+    "cucumbers",
+    "cucumber",
+    "zucchini"
+   ],
+   "zone": "drawers",
+   "isFood": true,
+   "tier": "hidden",
+   "visibleInBlurryPhoto": false
+  },
+  {
+   "id": "avocado",
+   "names": [
+    "avocado",
+    "beet",
+    "beetroot",
+    "red onion"
+   ],
+   "zone": "drawers",
+   "isFood": true,
+   "tier": "hidden",
+   "visibleInBlurryPhoto": false
+  },
+  {
+   "id": "kvass",
+   "names": [
+    "kvass",
+    "fermented tonic",
+    "tonic",
+    "kombucha"
+   ],
+   "zone": "door",
+   "isFood": true,
+   "tier": "readable",
+   "visibleInBlurryPhoto": true
+  },
+  {
+   "id": "peppercorn_dressing",
+   "names": [
+    "fontana farms peppercorn dressing",
+    "peppercorn dressing",
+    "salad dressing",
+    "dressing",
+    "vinaigrette"
+   ],
+   "zone": "door",
+   "isFood": true,
+   "tier": "readable",
+   "visibleInBlurryPhoto": true
+  },
+  {
+   "id": "ketchup",
+   "names": [
+    "organic ketchup",
+    "ketchup"
+   ],
+   "zone": "door",
+   "isFood": true,
+   "tier": "readable",
+   "visibleInBlurryPhoto": false
+  },
+  {
+   "id": "philadelphia",
+   "names": [
+    "philadelphia cream cheese",
+    "cream cheese",
+    "philadelphia"
+   ],
+   "zone": "door",
+   "isFood": true,
+   "tier": "readable",
+   "visibleInBlurryPhoto": false
+  },
+  {
+   "id": "ranch",
+   "names": [
+    "hidden valley ranch",
+    "ranch dressing",
+    "ranch"
+   ],
+   "zone": "door",
+   "isFood": true,
+   "tier": "readable",
+   "visibleInBlurryPhoto": false
+  },
+  {
+   "id": "lactose_free_milk",
+   "names": [
+    "organic lactose-free milk",
+    "lactose-free milk",
+    "lactose free milk",
+    "milk"
+   ],
+   "zone": "door",
+   "isFood": true,
+   "tier": "readable",
+   "visibleInBlurryPhoto": false
+  },
+  {
+   "id": "milk_2pct",
+   "names": [
+    "2% milk",
+    "reduced fat milk",
+    "milk"
+   ],
+   "zone": "door",
+   "isFood": true,
+   "tier": "readable",
+   "visibleInBlurryPhoto": false
+  },
+  {
+   "id": "honey",
+   "names": [
+    "honey",
+    "honey jar"
+   ],
+   "zone": "door",
+   "isFood": true,
+   "tier": "recognizable",
+   "visibleInBlurryPhoto": true
+  },
+  {
+   "id": "flax_seeds",
+   "names": [
+    "flax seeds",
+    "flaxseed",
+    "ground flaxseed",
+    "hemp seeds",
+    "hemp hearts",
+    "chia seeds",
+    "seeds"
+   ],
+   "zone": "door",
+   "isFood": true,
+   "tier": "recognizable",
+   "visibleInBlurryPhoto": false
+  },
+  {
+   "id": "spices",
+   "names": [
+    "spices",
+    "spice shakers",
+    "seasoning",
+    "spice",
+    "salt",
+    "pepper"
+   ],
+   "zone": "door",
+   "isFood": true,
+   "tier": "recognizable",
+   "visibleInBlurryPhoto": false
+  },
+  {
+   "id": "nf_liquid_iron",
+   "names": [
+    "mother's promise liquid iron",
+    "liquid iron",
+    "iron supplement"
+   ],
+   "zone": "top shelf",
+   "isFood": false,
+   "tier": "readable",
+   "visibleInBlurryPhoto": true
+  },
+  {
+   "id": "nf_thorne",
+   "names": [
+    "thorne",
+    "thorne supplement"
+   ],
+   "zone": "door",
+   "isFood": false,
+   "tier": "readable",
+   "visibleInBlurryPhoto": false
+  },
+  {
+   "id": "nf_magnesium",
+   "names": [
+    "nature's bounty magnesium",
+    "magnesium",
+    "magnesium citrate"
+   ],
+   "zone": "door",
+   "isFood": false,
+   "tier": "readable",
+   "visibleInBlurryPhoto": false
+  },
+  {
+   "id": "nf_pure_encapsulations",
+   "names": [
+    "pure encapsulations",
+    "supplement bottle",
+    "vitamins",
+    "supplements"
+   ],
+   "zone": "door",
+   "isFood": false,
+   "tier": "readable",
+   "visibleInBlurryPhoto": false
+  },
+  {
+   "id": "nf_protein_tubs",
+   "names": [
+    "protein powder",
+    "supplement tub",
+    "protein",
+    "collagen"
+   ],
+   "zone": "door",
+   "isFood": false,
+   "tier": "recognizable",
+   "visibleInBlurryPhoto": true
+  },
+  {
+   "id": "nf_amoxicillin",
+   "names": [
+    "amoxicillin",
+    "antibiotic",
+    "medicine",
+    "medication"
+   ],
+   "zone": "door",
+   "isFood": false,
+   "tier": "readable",
+   "visibleInBlurryPhoto": false
+  },
+  {
+   "id": "nf_serum",
+   "names": [
+    "innisfree serum",
+    "serum",
+    "skincare"
+   ],
+   "zone": "door",
+   "isFood": false,
+   "tier": "readable",
+   "visibleInBlurryPhoto": false
+  },
+  {
+   "id": "nf_plastic_wrap",
+   "names": [
+    "kirkland stretch-tite plastic wrap",
+    "plastic wrap",
+    "cling film",
+    "stretch-tite"
+   ],
+   "zone": "top",
+   "isFood": false,
+   "tier": "readable",
+   "visibleInBlurryPhoto": true
+  },
+  {
+   "id": "nf_basil_plant",
+   "names": [
+    "basil plant",
+    "potted basil"
+   ],
+   "zone": "top",
+   "isFood": false,
+   "tier": "recognizable",
+   "visibleInBlurryPhoto": true
+  },
+  {
+   "id": "nf_liquid_medicine",
+   "names": [
+    "liquid medicine",
+    "cough syrup",
+    "cold medicine",
+    "vicks",
+    "dayquil",
+    "nyquil"
+   ],
+   "zone": "door",
+   "isFood": false,
+   "tier": "readable",
+   "visibleInBlurryPhoto": true
+  },
+  {
+   "id": "nf_liquid_supplement",
+   "names": [
+    "liquid supplement",
+    "sports research",
+    "supplement"
+   ],
+   "zone": "door",
+   "isFood": false,
+   "tier": "recognizable",
+   "visibleInBlurryPhoto": false
+  }
+ ]
+}

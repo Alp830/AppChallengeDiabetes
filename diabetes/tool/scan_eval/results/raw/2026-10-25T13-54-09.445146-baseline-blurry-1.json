@@ -1,0 +1,51 @@
+{
+ "variant": "baseline",
+ "photo": "blurry",
+ "run": 1,
+ "latencyMs": 9518,
+ "promptTokens": 1887,
+ "candidatesTokens": 512,
+ "thoughtsTokens": 0,
+ "items": [
+  {
+   "name": "Eggs",
+   "alternatives": [],
+   "confidence": null
+  },
+  {
+   "name": "Cauliflower",
+   "alternatives": [],
+   "confidence": null
+  },
+  {
+   "name": "Cinnamon Rolls Dough",
+   "alternatives": [],
+   "confidence": null
+  },
+  {
+   "name": "Butter",
+   "alternatives": [],
+   "confidence": null
+  },
+  {
+   "name": "Yogurt or Sour Cream",
+   "alternatives": [],
+   "confidence": null
+  },
+  {
+   "name": "Jam or Preserves",
+   "alternatives": [],
+   "confidence": null
+  },
+  {
+   "name": "Hot Sauce or Tomato Sauce",
+   "alternatives": [],
+   "confidence": null
+  },
+  {
+   "name": "Liquid Iron Supplement",
+   "alternatives": [],
+   "confidence": null
+  }
+ ]
+}

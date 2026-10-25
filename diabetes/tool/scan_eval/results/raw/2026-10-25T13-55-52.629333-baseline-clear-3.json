@@ -1,0 +1,111 @@
+{
+ "variant": "baseline",
+ "photo": "clear",
+ "run": 3,
+ "latencyMs": 21473,
+ "promptTokens": 1851,
+ "candidatesTokens": 1229,
+ "thoughtsTokens": 0,
+ "items": [
+  {
+   "name": "White Cheese (Feta/Brindza)",
+   "alternatives": [],
+   "confidence": null
+  },
+  {
+   "name": "Eggs",
+   "alternatives": [],
+   "confidence": null
+  },
+  {
+   "name": "Greek Yogurt",
+   "alternatives": [],
+   "confidence": null
+  },
+  {
+   "name": "Butter",
+   "alternatives": [],
+   "confidence": null
+  },
+  {
+   "name": "Pita Bread",
+   "alternatives": [],
+   "confidence": null
+  },
+  {
+   "name": "Fresh Cheese",
+   "alternatives": [],
+   "confidence": null
+  },
+  {
+   "name": "Pickled Peppers",
+   "alternatives": [],
+   "confidence": null
+  },
+  {
+   "name": "Fresh Dill",
+   "alternatives": [],
+   "confidence": null
+  },
+  {
+   "name": "Fresh White Cheese",
+   "alternatives": [],
+   "confidence": null
+  },
+  {
+   "name": "Grated Cheese",
+   "alternatives": [],
+   "confidence": null
+  },
+  {
+   "name": "Pomegranate",
+   "alternatives": [],
+   "confidence": null
+  },
+  {
+   "name": "Cucumbers",
+   "alternatives": [],
+   "confidence": null
+  },
+  {
+   "name": "Kvass Sauerkraut Tonic",
+   "alternatives": [],
+   "confidence": null
+  },
+  {
+   "name": "Pepper Sauce",
+   "alternatives": [],
+   "confidence": null
+  },
+  {
+   "name": "Flaxseeds",
+   "alternatives": [],
+   "confidence": null
+  },
+  {
+   "name": "Organic Ketchup",
+   "alternatives": [],
+   "confidence": null
+  },
+  {
+   "name": "Cream Cheese",
+   "alternatives": [],
+   "confidence": null
+  },
+  {
+   "name": "Ranch Dressing",
+   "alternatives": [],
+   "confidence": null
+  },
+  {
+   "name": "Blue Cheese Crumbles",
+   "alternatives": [],
+   "confidence": null
+  },
+  {
+   "name": "Milk",
+   "alternatives": [],
+   "confidence": null
+  }
+ ]
+}

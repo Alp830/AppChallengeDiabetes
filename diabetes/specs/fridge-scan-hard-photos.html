@@ -12,7 +12,7 @@
 <main>
 
   <header>
-    <p>Engineering plan · Not started</p>
+    <p>Engineering plan · In progress</p>
     <h1>Plan: Fridge scan that reads hard photos, blurry and clear</h1>
     <details class="meta">
       <summary>Metadata</summary>
@@ -151,52 +151,52 @@
     <p>Status markers: <code>[]</code> idle · <code>[wip]</code> in progress · <code>[x]</code> complete · <code>[f]</code> failed. All start as <code>[]</code>; the Build Plan workflow updates them as it works.</p>
 
     <div class="phase">
-      <h3><code class="status">[]</code> Phase 1: Answer key, eval harness, baseline</h3>
+      <h3><code class="status">[x]</code> Phase 1: Answer key, eval harness, baseline</h3>
       <h4>1.1. Answer key</h4>
       <ul class="checklist">
-        <li><code class="status">[]</code> Copy both photos to <code>tool/scan_eval/photos/</code>; add it to <code>.gitignore</code>.</li>
-        <li><code class="status">[]</code> Write <code>answer_key.json</code> from the draft in Notes. Each item gets accepted names, zone, <code>isFood</code>, <code>tier</code> (<code>readable</code> / <code>recognizable</code> / <code>hidden</code>) and <code>visibleInBlurryPhoto</code>.</li>
-        <li><code class="status">[]</code> The owner confirms or corrects it before any baseline number is trusted.</li>
-        <li><code class="status">[]</code> Ask the owner for 3 more photos (another fridge or pantry, a grocery bag, a dim photo) and add short keys for them.</li>
+        <li><code class="status">[x]</code> Copy both photos to <code>tool/scan_eval/photos/</code>; add it to <code>.gitignore</code>.</li>
+        <li><code class="status">[x]</code> Write <code>answer_key.json</code> from the draft in Notes. Each item gets accepted names, zone, <code>isFood</code>, <code>tier</code> (<code>readable</code> / <code>recognizable</code> / <code>hidden</code>) and <code>visibleInBlurryPhoto</code>.</li>
+        <li><code class="status">[x]</code> The owner confirms or corrects it before any baseline number is trusted. <em>Confirmed 2026-10-25: the green Kirkland boxes are butter; the top-right door shelf is medicine and supplements. Names refined from native-resolution crops.</em></li>
+        <li><code class="status">[x]</code> Ask the owner for 3 more photos (another fridge or pantry, a grocery bag, a dim photo) and add short keys for them. <em>Done 2026-10-25: the owner chose to work with the two photos plus a 0.7 s, 60 fps webcam clip of the blurry shot (tool/scan_eval/photos/webcam_clip.mp4), used in Phase 5 as a real burst.</em></li>
       </ul>
       <h4>1.2. Move the scan out of main.dart</h4>
       <ul class="checklist">
-        <li><code class="status">[]</code> Move <code>FridgePhotoFoodAgent</code> unchanged into <code>lib/fridge/scan/fridge_scan_service.dart</code>, re-exported from <code>main.dart</code>.</li>
-        <li><code class="status">[]</code> Return <code>usageMetadata</code> token counts with the items.</li>
+        <li><code class="status">[x]</code> Move <code>FridgePhotoFoodAgent</code> unchanged into <code>lib/fridge/scan/fridge_scan_service.dart</code>, re-exported from <code>main.dart</code>.</li>
+        <li><code class="status">[x]</code> Return <code>usageMetadata</code> token counts with the items.</li>
       </ul>
       <h4>1.3. Eval harness</h4>
       <ul class="checklist">
-        <li><code class="status">[]</code> Run the selected variant 3× per photo; score per tier, with matching that is lowercase, singular, token overlap on accepted names, plus alternatives. Write <code>results/&lt;date&gt;-&lt;variant&gt;.md</code> with hits, misses, false items, latency and cost.</li>
-        <li><code class="status">[]</code> Keep a spend ledger from real token counts in <code>results/ledger.json</code>; refuse a run that could take the total past <strong>$4.50</strong>.</li>
-        <li><code class="status">[]</code> Run the baseline (today's code, including today's 2048 px gallery resize) on both photos.</li>
+        <li><code class="status">[x]</code> Run the selected variant 3× per photo; score per tier, with matching that is lowercase, singular, token overlap on accepted names, plus alternatives. Write <code>results/&lt;date&gt;-&lt;variant&gt;.md</code> with hits, misses, false items, latency and cost.</li>
+        <li><code class="status">[x]</code> Keep a spend ledger from real token counts in <code>results/ledger.json</code>; refuse a run that could take the total past <strong>$4.50</strong>.</li>
+        <li><code class="status">[x]</code> Run the baseline (today's code, including today's 2048 px gallery resize) on both photos.</li>
       </ul>
       <h4>1.4. Testing Strategy</h4>
       <p>Scorer unit tests run offline (synonyms, plurals, alternatives, tiers, duplicates). The refactor must not change the normal suite.</p>
       <ul class="checklist">
-        <li><code class="status">[]</code> <code>flutter test test/fridge_food_recognition_test.dart test/fridge_scan_dialog_test.dart</code> — the move changed no behavior.</li>
-        <li><code class="status">[]</code> <code>flutter test</code> — 420+ passing, only the 11 known failures.</li>
-        <li><code class="status">[]</code> <code>flutter test tool/scan_eval/scan_eval_test.dart --dart-define=SCAN_VARIANT=baseline --dart-define=GEMINI_API_KEY=…</code> — baseline report and ledger entry exist.</li>
+        <li><code class="status">[x]</code> <code>flutter test test/fridge_food_recognition_test.dart test/fridge_scan_dialog_test.dart</code> — the move changed no behavior.</li>
+        <li><code class="status">[x]</code> <code>flutter test</code> — 420+ passing, only the 11 known failures.</li>
+        <li><code class="status">[x]</code> <code>flutter test tool/scan_eval/scan_eval_test.dart --dart-define=SCAN_VARIANT=baseline --dart-define=GEMINI_API_KEY=…</code> — baseline report and ledger entry exist.</li>
       </ul>
       <div class="loop">🔁 <strong>Do not exit this phase until every box above is checked.</strong> If any command fails, fix the cause and re-run — loop until all pass.</div>
     </div>
 
     <div class="phase">
-      <h3><code class="status">[]</code> Phase 2: Keep the pixels, straighten, and Scan v2</h3>
+      <h3><code class="status">[wip]</code> Phase 2: Keep the pixels, straighten, and Scan v2</h3>
       <h4>2.1. Keep the original</h4>
       <ul class="checklist">
-        <li><code class="status">[]</code> Gallery: remove the 2048 px <code>maxWidth</code>/<code>maxHeight</code> and <code>imageQuality</code> added earlier, so the picker returns the original. Camera: <code>ResolutionPreset.max</code>, falling back to <code>veryHigh</code> if initialization fails.</li>
-        <li><code class="status">[]</code> <code>photo_prep.dart</code>: bake EXIF orientation, keep the decoded original in memory, and derive a 2048 px q85 overview for upload. Uploads never carry the full original. On web, time a 24 MP decode; if it's over 1.5 s, cap the kept original at 4096 px and note it.</li>
+        <li><code class="status">[x]</code> Gallery: remove the 2048 px <code>maxWidth</code>/<code>maxHeight</code> and <code>imageQuality</code> added earlier, so the picker returns the original. Camera: <code>ResolutionPreset.max</code>, falling back to <code>veryHigh</code> if initialization fails.</li>
+        <li><code class="status">[wip]</code> <code>photo_prep.dart</code>: bake EXIF orientation, keep the decoded original in memory, and derive a 2048 px q85 overview for upload. Uploads never carry the full original. On web, time a 24 MP decode; if it's over 1.5 s, cap the kept original at 4096 px and note it.</li>
       </ul>
       <h4>2.2. Prompt and schema v2</h4>
       <ul class="checklist">
-        <li><code class="status">[]</code> Remove the "OMIT it entirely" rule: list every food or drink, give a best guess, mark it <code>guess</code>, and add up to two alternatives.</li>
-        <li><code class="status">[]</code> Zone first, with a count before each zone's items. Name contents, not containers.</li>
-        <li><code class="status">[]</code> Each item gets <code>confidence</code>, <code>alternatives</code>, <code>location</code>, <code>box_2d</code> (0–1000), <code>photoIndex</code> and <code>isFood</code>. The response also has <code>tiltDegrees</code> (the clockwise angle the photo needs to be level). <code>isFood: false</code> items are dropped in code and counted.</li>
-        <li><code class="status">[]</code> Keep the <code>FoodType</code> enum, the placeholder filter and expiry estimates.</li>
+        <li><code class="status">[x]</code> Remove the "OMIT it entirely" rule: list every food or drink, give a best guess, mark it <code>guess</code>, and add up to two alternatives.</li>
+        <li><code class="status">[x]</code> Zone first, with a count before each zone's items. Name contents, not containers.</li>
+        <li><code class="status">[x]</code> Each item gets <code>confidence</code>, <code>alternatives</code>, <code>location</code>, <code>box_2d</code> (0–1000), <code>photoIndex</code> and <code>isFood</code>. The response also has <code>tiltDegrees</code> (the clockwise angle the photo needs to be level). <code>isFood: false</code> items are dropped in code and counted.</li>
+        <li><code class="status">[x]</code> Keep the <code>FoodType</code> enum, the placeholder filter and expiry estimates.</li>
       </ul>
       <h4>2.3. Straighten</h4>
       <ul class="checklist">
-        <li><code class="status">[]</code> If <code>|tiltDegrees| &gt; 10</code>, rotate the kept original (bicubic, expand canvas) before Phase 3 cuts any tiles or crops; boxes from pass 1 are rotated with it. Pass 1 itself is never re-run for tilt.</li>
+        <li><code class="status">[x]</code> If <code>|tiltDegrees| &gt; 10</code>, rotate the kept original (bicubic, expand canvas) before Phase 3 cuts any tiles or crops; boxes from pass 1 are rotated with it. Pass 1 itself is never re-run for tilt.</li>
       </ul>
       <h4>2.4. Variants to measure</h4>
       <table>
@@ -209,9 +209,9 @@
       </table>
       <h4>2.5. Testing Strategy</h4>
       <ul class="checklist">
-        <li><code class="status">[]</code> <code>flutter test test/photo_prep_test.dart test/fridge_food_recognition_test.dart</code> — orientation bake, overview size, rotation of boxes, v2 parsing, never-omit, <code>isFood</code> filtering.</li>
-        <li><code class="status">[]</code> Live: <code>v2-high</code>, <code>v2-ultra</code>, <code>v2-medium</code> on both photos; keep the best variant within budget.</li>
-        <li><code class="status">[]</code> The chosen variant beats the baseline on both photos, with sure precision ≥ 90% and 0 leaks.</li>
+        <li><code class="status">[x]</code> <code>flutter test test/photo_prep_test.dart test/fridge_food_recognition_test.dart</code> — orientation bake, overview size, rotation of boxes, v2 parsing, never-omit, <code>isFood</code> filtering.</li>
+        <li><code class="status">[x]</code> Live: <code>v2-high</code>, <code>v2-ultra</code>, <code>v2-medium</code> on both photos; keep the best variant within budget.</li>
+        <li><code class="status">[wip]</code> The chosen variant beats the baseline on both photos, with sure precision ≥ 90% and 0 leaks.</li>
       </ul>
       <div class="loop">🔁 <strong>Do not exit this phase until every box above is checked.</strong> If any command fails, fix the cause and re-run — loop until all pass.</div>
     </div>

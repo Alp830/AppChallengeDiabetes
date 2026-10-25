@@ -29,6 +29,9 @@ import 'design/undo_snack_bar.dart';
 import 'firebase_options.dart';
 import 'fridge/freshness.dart';
 import 'fridge/fridge_scan_dialog.dart';
+import 'fridge/scan/fridge_scan_service.dart';
+import 'fridge/scan/photo_prep.dart';
+import 'fridge/scan/scan_models.dart';
 import 'fridge/selectable_fridge_grid.dart';
 import 'home/mvp_home_page.dart';
 import 'meals/data/meal_repository.dart';
@@ -46,6 +49,8 @@ import 'sleep/data/sleep_repository.dart';
 import 'sleep/services/evening_food_context_service.dart';
 import 'settings/data/app_preferences_repository.dart';
 import 'settings/models/meal_nutrition_preferences.dart';
+
+export 'fridge/scan/fridge_scan_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -1620,13 +1625,33 @@ class FridgePageState extends State<FridgePage> {
     }
 
     if (!context.mounted) return;
+    // Decode once and keep the pixels; a retry reuses them instead of
+    // decoding the photo again. A failed decode is not cached.
+    Future<PreparedPhoto>? preparedPhoto;
     final result = await showDialog<FridgeScanResult>(
       context: context,
       barrierDismissible: false,
       builder: (context) => FridgeScanDialog(
         imageBytes: imageBytes,
-        detect: (imageBytes, abort) =>
-            FridgePhotoFoodAgent.detectFoods(imageBytes, abortTrigger: abort),
+        detect: (imageBytes, abort) async {
+          final PreparedPhoto photo;
+          try {
+            photo = await (preparedPhoto ??= preparePhotoAsync(imageBytes));
+          } catch (error) {
+            preparedPhoto = null;
+            // The same bytes will never decode on a second try.
+            throw AiRequestException(
+              'Could not read the photo: $error',
+              retryable: false,
+            );
+          }
+          final response = await FridgeScanService.scanV2(
+            photo.overviewJpeg,
+            abortTrigger: abort,
+          );
+          // Confidence is not shown yet; every food item is added.
+          return [for (final item in response.items) item.toFoodItem()];
+        },
       ),
     );
     if (result == null) return; // Cancelled.
@@ -1881,8 +1906,13 @@ class _FridgeCameraSheetState extends State<FridgeCameraSheet> {
   /// when the user explicitly taps "Take a picture".
   bool _cameraStarted = false;
 
+  /// Bumped whenever the camera is stopped, so an initialization still in
+  /// flight (e.g. the max-preset fallback) knows it no longer owns the sheet.
+  int _cameraGeneration = 0;
+
   @override
   void dispose() {
+    _cameraGeneration++;
     _cameraController?.dispose();
     super.dispose();
   }
@@ -1896,6 +1926,7 @@ class _FridgeCameraSheetState extends State<FridgeCameraSheet> {
   }
 
   void _backToChooser() {
+    _cameraGeneration++;
     _cameraController?.dispose();
     setState(() {
       _cameraStarted = false;
@@ -1906,6 +1937,8 @@ class _FridgeCameraSheetState extends State<FridgeCameraSheet> {
   }
 
   Future<void> _initializeCamera() async {
+    final generation = _cameraGeneration;
+    bool stale() => !mounted || generation != _cameraGeneration;
     try {
       final cameras = await availableCameras();
       if (cameras.isEmpty) {
@@ -1916,15 +1949,35 @@ class _FridgeCameraSheetState extends State<FridgeCameraSheet> {
         (camera) => camera.lensDirection == CameraLensDirection.back,
         orElse: () => cameras.first,
       );
-      final cameraController = CameraController(
+      // The highest resolution the camera offers, so small labels stay
+      // legible when the scanner zooms into tiles of the kept original. Some
+      // devices refuse the max preset, so fall back once to veryHigh.
+      var cameraController = CameraController(
         camera,
-        // High resolution so small labels stay legible for the food scanner.
-        ResolutionPreset.veryHigh,
+        ResolutionPreset.max,
         enableAudio: false,
       );
 
       _cameraController = cameraController;
-      await cameraController.initialize();
+      try {
+        await cameraController.initialize();
+      } catch (_) {
+        await cameraController.dispose();
+        // The sheet closed or went back to the chooser while max was
+        // failing; whoever stopped it already cleaned up.
+        if (stale()) return;
+        cameraController = CameraController(
+          camera,
+          ResolutionPreset.veryHigh,
+          enableAudio: false,
+        );
+        _cameraController = cameraController;
+        await cameraController.initialize();
+        if (stale()) {
+          await cameraController.dispose();
+          return;
+        }
+      }
     } catch (error) {
       _cameraError = error.toString();
     }
@@ -1978,15 +2031,12 @@ class _FridgeCameraSheetState extends State<FridgeCameraSheet> {
       return;
     }
     try {
-      // Gallery originals can be several MB and go up as base64 (+33%). The
-      // model sees 1120 image tokens either way, so this cuts upload time,
-      // not cost. 2048 px and quality 85 keep label text sharp; the camera
-      // path is already ~1080p.
+      // No maxWidth/maxHeight/imageQuality: the picker hands back the
+      // original. The scanner keeps its pixels for zooming and only uploads a
+      // 2048 px overview (see preparePhoto), so shrinking here would throw
+      // away detail it needs.
       final picked = await _imagePicker.pickImage(
         source: ImageSource.gallery,
-        maxWidth: 2048,
-        maxHeight: 2048,
-        imageQuality: 85,
       );
       if (picked == null) {
         return;
@@ -4590,282 +4640,6 @@ class AgentRequest {
       diabetesEnabled: diabetesEnabled,
       useMealBalance: useMealBalance,
     );
-  }
-}
-
-class FridgePhotoFoodAgent {
-  static String get _apiKey => AppEnvironment.geminiApiKey;
-
-  /// Gemini 4 Argon at thinking level low. It replaced gemini-3.1-pro-preview
-  /// (thinking high): it is a stable release instead of a preview, and on
-  /// Roboflow's real-world OCR eval Argon low scored 85.7% in 7.7 s at
-  /// ~$0.005 a sample against Pro high's 73.1% in 18.6 s at ~$0.026. That eval
-  /// reads labels; it doesn't test unlabelled foods, so check new prompts
-  /// against the dried linden flowers photo that flash-tier models once
-  /// called "bread". Argon has no free tier, and its price doubles on
-  /// Dec 1, 2026 ($4 / $20 per 1M tokens). If it fails that photo, go back to
-  /// 'gemini-3.1-pro-preview' with thinkingLevel low.
-  static const model = 'gemini-4-argon';
-  static const endpoint =
-      'https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent';
-
-  /// [abortTrigger] stops the request when the retry loop gives up on this
-  /// attempt (see `runWithAbortableAiRetry`).
-  static Future<List<FoodItem>> detectFoods(
-    Uint8List imageBytes, {
-    http.Client? client,
-    String? apiKey,
-    Future<void>? abortTrigger,
-  }) async {
-    final token = apiKey ?? _apiKey;
-    if (token.isEmpty) {
-      throw const AiRequestException(
-        'Missing GEMINI_API_KEY',
-        retryable: false,
-      );
-    }
-
-    final request =
-        http.AbortableRequest(
-            'POST',
-            Uri.parse(endpoint),
-            abortTrigger: abortTrigger,
-          )
-          ..headers.addAll({
-            'Content-Type': 'application/json',
-            'x-goog-api-key': token,
-          })
-          ..body = jsonEncode({
-            'contents': [
-              {
-                'parts': [
-                  {
-                    'inline_data': {
-                      'mime_type': 'image/jpeg',
-                      'data': base64Encode(imageBytes),
-                    },
-                  },
-                  {'text': _buildPrompt()},
-                ],
-              },
-            ],
-            // No temperature: Argon ignores sampling parameters.
-            'generationConfig': {
-              // 1120 image tokens, the default and what Google recommends for
-              // image analysis: fine texture (rice grains vs flour powder) and
-              // small label text stay visible.
-              'mediaResolution': 'MEDIA_RESOLUTION_HIGH',
-              // Thinking is billed as output and is most of a scan's time and
-              // cost. Low is enough for reading labels.
-              'thinkingConfig': {'thinkingLevel': 'low'},
-              // A ceiling, not a target: only generated tokens are billed. Google
-              // asks for at least 32K on Argon, which may spend more of the
-              // limit thinking than older models did, and a cut-off JSON array
-              // would cost a whole retry.
-              'maxOutputTokens': 32768,
-              // Force a clean, schema-validated JSON array on the way back.
-              'responseMimeType': 'application/json',
-              'responseSchema': _responseSchema,
-            },
-          });
-
-    // A client made here is closed here, so a scan doesn't leave a
-    // connection pool open behind it.
-    final httpClient = client ?? http.Client();
-    final http.Response response;
-    try {
-      response = await http.Response.fromStream(await httpClient.send(request));
-    } finally {
-      if (client == null) httpClient.close();
-    }
-
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw AiRequestException.fromStatus(response.statusCode, response.body);
-    }
-
-    // Everything below is either "the model gave us nothing usable" (a
-    // FormatException, worth another attempt) or a refusal (never worth one).
-    // A TypeError from an unexpected shape is mapped to FormatException too,
-    // so the retry rule never sees a raw cast failure.
-    try {
-      final data = jsonDecode(response.body) as Map<String, dynamic>;
-      final blockReason = _blockReason(data);
-      if (blockReason != null) {
-        throw AiRequestException(
-          'Gemini food scan was blocked: $blockReason',
-          retryable: false,
-        );
-      }
-      final candidates = data['candidates'] as List<dynamic>? ?? const [];
-      if (candidates.isEmpty) {
-        throw const FormatException('Gemini food scan returned no candidates');
-      }
-      final first = candidates.first as Map<String, dynamic>;
-      if (first['finishReason'] == 'SAFETY') {
-        throw const AiRequestException(
-          'Gemini food scan was blocked: SAFETY',
-          retryable: false,
-        );
-      }
-      final content = first['content'] as Map<String, dynamic>?;
-      final parts = content?['parts'] as List<dynamic>? ?? const [];
-      if (parts.isEmpty) {
-        throw const FormatException('Gemini food scan returned no content');
-      }
-      final text = (parts.first as Map<String, dynamic>)['text'] as String?;
-      if (text == null || text.trim().isEmpty) {
-        throw const FormatException('Gemini food scan returned no text');
-      }
-
-      final decodedJson = jsonDecode(_stripJsonFence(text));
-      final foodJson = decodedJson is List<dynamic>
-          ? decodedJson
-          : (decodedJson as Map<String, dynamic>)['foods'] as List<dynamic>? ??
-                const [];
-
-      return foodJson
-          .whereType<Map<String, dynamic>>()
-          .map(_foodItemFromJson)
-          .where(
-            (foodItem) =>
-                foodItem.name.isNotEmpty && !_isPlaceholderName(foodItem.name),
-          )
-          .toList();
-    } on TypeError catch (error) {
-      throw FormatException('Gemini food scan returned an odd shape: $error');
-    }
-  }
-
-  /// `promptFeedback.blockReason` means the photo or prompt was refused, so
-  /// sending the very same bytes again would be refused the same way.
-  static String? _blockReason(Map<String, dynamic> data) {
-    final feedback = data['promptFeedback'];
-    if (feedback is! Map<String, dynamic>) return null;
-    final reason = feedback['blockReason'];
-    return reason is String && reason.isNotEmpty ? reason : null;
-  }
-
-  /// The prompt forbids placeholder items, but guard in code too so an
-  /// "Unknown" entry can never reach the fridge UI.
-  static bool _isPlaceholderName(String name) {
-    final normalized = name.toLowerCase().trim();
-    const placeholders = {
-      'unknown',
-      'unknown item',
-      'unknown food',
-      'unidentified',
-      'unidentified item',
-      'unclear',
-      'not sure',
-      'n/a',
-      'none',
-    };
-    return placeholders.contains(normalized) ||
-        normalized.startsWith('unknown ') ||
-        normalized.startsWith('unidentified ');
-  }
-
-  /// Structured-output schema so Gemini returns a strict JSON array of items,
-  /// each with a valid [FoodType] label.
-  static Map<String, dynamic> get _responseSchema => {
-    'type': 'ARRAY',
-    'items': {
-      'type': 'OBJECT',
-      'properties': {
-        'name': {'type': 'STRING'},
-        'amount': {'type': 'STRING'},
-        'foodType': {
-          'type': 'STRING',
-          'enum': [for (final foodType in FoodType.values) foodType.label],
-        },
-        'description': {'type': 'STRING'},
-        'expiryEstimateDays': {'type': 'INTEGER', 'nullable': true},
-      },
-      'required': ['name', 'amount', 'foodType'],
-    },
-  };
-
-  static FoodItem _foodItemFromJson(Map<String, dynamic> json) {
-    final name = (json['name'] ?? '').toString().trim();
-    final amount = (json['amount'] ?? '').toString().trim();
-    final type = (json['foodType'] ?? '').toString().trim();
-
-    return FoodItem(
-      name: name,
-      amount: amount.isEmpty ? '1 $name' : amount,
-      foodType: FoodType.fromLabel(type),
-      description: (json['description'] ?? '').toString().trim().isEmpty
-          ? null
-          : (json['description'] ?? '').toString().trim(),
-      expiryDate: _expiryFromEstimate(json['expiryEstimateDays']),
-    );
-  }
-
-  /// Maps an estimated fridge shelf-life (in days from today) to a concrete
-  /// expiry date. Tolerates ints, numeric strings, and missing/invalid values
-  /// (which yield null, keeping older prompts backward compatible).
-  static DateTime? _expiryFromEstimate(Object? value) {
-    if (value == null) {
-      return null;
-    }
-    final days = value is num ? value.toInt() : int.tryParse(value.toString());
-    if (days == null || days < 0) {
-      return null;
-    }
-    return DateTime.now().add(Duration(days: days));
-  }
-
-  static String _buildPrompt() {
-    final foodTypes = FoodType.values
-        .map((foodType) => foodType.label)
-        .join(', ');
-
-    return '''
-You are a fridge inventory assistant. Inspect the entire image and identify every visible food and drink item.
-
-Include only items you can identify with reasonable confidence. Do not include shelves, containers whose contents are unknown, or uncertain guesses. Combine repeated identical items into one entry.
-
-Identification rules:
-- Systematically examine every bag, jar, box, and container — including partially visible, opaque, or nested ones (a bag inside a bag) and items at the edges of the image.
-- Consider the full range of foods, including dried herbs and herbal teas (e.g. linden/ihlamur, chamomile, mint), spices, and regional or international items. Do not default to a common lookalike food (e.g. never call dried flowers or herbs "bread").
-- For packaged or labeled items, READ any visible text on the packaging and identify the product from its label rather than its shape or color.
-- For unlabeled bags of dry staples, identify by texture and by what is common in a home pantry: fine matte white powder = flour; crystalline white = sugar or salt; small oblong translucent grains = rice; golden cracked grains = bulgur; round dried seeds = beans, chickpeas, or lentils; also consider pasta, semolina, and oats.
-- If you cannot identify an item with reasonable confidence, OMIT it entirely. Never output "Unknown", "Unidentified", or any placeholder name.
-
-Use count-based amounts as the primary measurement style. Examples:
-- 3 bananas
-- 2 apples
-- 1 milk carton
-- 1 bag of spinach
-- 6 eggs
-
-Use one of these foodType values:
-$foodTypes
-
-For each item, estimate "expiryEstimateDays": the typical number of days from
-today until it spoils in a fridge (a whole number). Use null if you cannot
-reasonably estimate it.
-
-Return only valid JSON as an array, with no Markdown or explanation. Each object must use this exact shape:
-[
-  {
-    "name": "Bananas",
-    "amount": "3 bananas",
-    "foodType": "Produce",
-    "description": "optional short detail, or empty string",
-    "expiryEstimateDays": 5
-  }
-]
-''';
-  }
-
-  static String _stripJsonFence(String text) {
-    return text
-        .trim()
-        .replaceFirst(RegExp(r'^```json\s*'), '')
-        .replaceFirst(RegExp(r'^```\s*'), '')
-        .replaceFirst(RegExp(r'\s*```$'), '')
-        .trim();
   }
 }
 

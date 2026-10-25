@@ -1,0 +1,200 @@
+{
+ "variant": "v2-high",
+ "photo": "blurry",
+ "run": 2,
+ "latencyMs": 48611,
+ "promptTokens": 2619,
+ "candidatesTokens": 3746,
+ "thoughtsTokens": 0,
+ "items": [
+  {
+   "name": "Whipped Cream",
+   "alternatives": [
+    "Creamer",
+    "Iced Coffee"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Eggs",
+   "alternatives": [
+    "Takeout box",
+    "Tofu"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Milk",
+   "alternatives": [
+    "Kefir",
+    "Juice"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Leftover Soup",
+   "alternatives": [
+    "Hummus",
+    "Applesauce"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Yogurt",
+   "alternatives": [
+    "Sour Cream",
+    "Cottage Cheese"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Cheese",
+   "alternatives": [
+    "Tofu",
+    "Butter"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Tomato Stew",
+   "alternatives": [
+    "Marinated Meat",
+    "Curry"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Cooked Meal",
+   "alternatives": [
+    "Stew",
+    "Rice"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Jam",
+   "alternatives": [
+    "Salsa",
+    "Pasta Sauce"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Honey",
+   "alternatives": [
+    "Jam",
+    "Pickles"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Butter",
+   "alternatives": [
+    "Juice boxes",
+    "Matcha boxes"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Leftover Vegetables",
+   "alternatives": [
+    "Salad",
+    "Stir fry"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Eggs",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Garlic",
+   "alternatives": [
+    "Mushrooms",
+    "Bread rolls"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Produce",
+   "alternatives": [
+    "Cauliflower",
+    "Cabbage"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Mustard",
+   "alternatives": [
+    "Cheese spread",
+    "Butter"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Guacamole",
+   "alternatives": [
+    "Apple",
+    "Lime"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Cheese",
+   "alternatives": [
+    "Butter",
+    "Orange juice"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Salad Dressing",
+   "alternatives": [
+    "Syrup",
+    "Sauce"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Electrolyte Drink",
+   "alternatives": [
+    "Water",
+    "Vinegar"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Hot Sauce",
+   "alternatives": [
+    "Chili oil",
+    "Ketchup"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Peanut Butter",
+   "alternatives": [
+    "Salsa",
+    "Pasta Sauce"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Tomato Sauce",
+   "alternatives": [
+    "Hot Sauce",
+    "Salsa"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Snack Pouch",
+   "alternatives": [
+    "Cheese",
+    "Prunes"
+   ],
+   "confidence": "guess"
+  }
+ ]
+}

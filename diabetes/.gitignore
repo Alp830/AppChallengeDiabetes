@@ -45,3 +45,6 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Fridge scan eval photos (private, contain medicine labels)
+/tool/scan_eval/photos/

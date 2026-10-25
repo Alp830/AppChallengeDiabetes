@@ -1,0 +1,224 @@
+{
+ "variant": "v2-medium",
+ "photo": "blurry",
+ "run": 2,
+ "latencyMs": 42561,
+ "promptTokens": 2619,
+ "candidatesTokens": 4425,
+ "thoughtsTokens": 0,
+ "items": [
+  {
+   "name": "Canned Drink or Oats",
+   "alternatives": [
+    "Breadcrumbs",
+    "Oatmeal"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Eggs",
+   "alternatives": [
+    "Tofu",
+    "Mushrooms"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Milk or Kefir",
+   "alternatives": [
+    "Almond milk",
+    "Juice"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Hummus or Soup",
+   "alternatives": [
+    "Applesauce",
+    "Mashed potatoes"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Yogurt or Sour Cream",
+   "alternatives": [
+    "Cottage cheese",
+    "Cream cheese"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Cheese or Butter",
+   "alternatives": [
+    "Yeast packets",
+    "herb paste"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Cooked Tomato Stew or Salsa",
+   "alternatives": [
+    "Marinated meat",
+    "Ratatouille"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Cooked Dish in Pot",
+   "alternatives": [
+    "Leftover soup",
+    "Stew"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Jam or Salsa",
+   "alternatives": [
+    "Pasta sauce",
+    "Chutney"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Pickles or Olives",
+   "alternatives": [
+    "Jam",
+    "Honey"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Juice Boxes or Butter Sticks",
+   "alternatives": [
+    "Kerrygold butter",
+    "Tofu packs"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Leftover Vegetable Dish",
+   "alternatives": [
+    "Cut fruit",
+    "Salad"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Eggs",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Mushrooms or Garlic",
+   "alternatives": [
+    "Potatoes",
+    "Cauliflower florets"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Bagged Produce",
+   "alternatives": [
+    "Apples",
+    "Onions"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Leafy Greens or Vegetables",
+   "alternatives": [
+    "Celery",
+    "Cucumber"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Mustard or Condiment",
+   "alternatives": [
+    "Mayonnaise",
+    "Cheese dip"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Guacamole or Lime Juice",
+   "alternatives": [
+    "Pesto",
+    "Green salsa"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Cheese or Butter Block",
+   "alternatives": [
+    "Cheddar cheese",
+    "Orange juice"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Salad Dressing or Sauce",
+   "alternatives": [
+    "Liquid sweetener",
+    "Vinegar"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Cooking Oil or Syrup",
+   "alternatives": [
+    "Electrolyte drink",
+    "Vinegar"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Hot Sauce or Ketchup",
+   "alternatives": [
+    "Chili sauce",
+    "Cocktail sauce"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Green Superfood Powder or Relish",
+   "alternatives": [
+    "Pickle relish",
+    "Pesto"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Peanut Butter or Salsa",
+   "alternatives": [
+    "Pasta sauce",
+    "Apple butter"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Tomato Sauce or Salsa",
+   "alternatives": [
+    "Hot sauce",
+    "Gazpacho"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Dark Bottle Sauce",
+   "alternatives": [
+    "Soy sauce",
+    "Balsamic vinegar"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Blue Packaged Snack or Cheese",
+   "alternatives": [
+    "Shredded cheese",
+    "Chocolate"
+   ],
+   "confidence": "guess"
+  }
+ ]
+}

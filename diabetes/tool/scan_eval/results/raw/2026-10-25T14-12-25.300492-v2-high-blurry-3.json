@@ -1,0 +1,205 @@
+{
+ "variant": "v2-high",
+ "photo": "blurry",
+ "run": 3,
+ "latencyMs": 52184,
+ "promptTokens": 2619,
+ "candidatesTokens": 4017,
+ "thoughtsTokens": 0,
+ "items": [
+  {
+   "name": "Cinnamon rolls dough",
+   "alternatives": [
+    "Crescent rolls dough",
+    "Biscuit dough"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Eggs",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Milk",
+   "alternatives": [
+    "Kefir",
+    "Juice"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Applesauce",
+   "alternatives": [
+    "Hummus",
+    "Soup"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Yogurt",
+   "alternatives": [
+    "Sour cream",
+    "Cottage cheese"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Butter",
+   "alternatives": [
+    "Cream cheese",
+    "Tofu"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Tomato sauce",
+   "alternatives": [
+    "Chili",
+    "Cooked beans"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Leftovers in lunch bag",
+   "alternatives": [
+    "Marinated meat",
+    "Dark Tupperware meal"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Jam",
+   "alternatives": [
+    "Salsa",
+    "Pickled beets"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Pickles",
+   "alternatives": [
+    "Olives",
+    "Jam"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Juice boxes",
+   "alternatives": [
+    "Herbal tea boxes",
+    "Butter sticks"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Leftover vegetable stew",
+   "alternatives": [
+    "Stir-fry",
+    "Salad"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Eggs",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Mushrooms",
+   "alternatives": [
+    "Cauliflower",
+    "Garlic bulbs"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Salsa",
+   "alternatives": [
+    "Pasta sauce",
+    "Peach jam"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Bagged produce",
+   "alternatives": [
+    "Cabbage",
+    "Apples"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Mustard",
+   "alternatives": [
+    "Ghee",
+    "Honey"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Lime juice",
+   "alternatives": [
+    "Guacamole",
+    "Green sauce"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Orange juice",
+   "alternatives": [
+    "Cheddar cheese",
+    "Cantaloupe"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Salad dressing",
+   "alternatives": [
+    "Condiment sauce",
+    "Marinade"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Electrolyte solution",
+   "alternatives": [
+    "Soy sauce",
+    "Vinegar"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Hot sauce",
+   "alternatives": [
+    "Chili oil",
+    "Ketchup"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Tomato sauce",
+   "alternatives": [
+    "Hot sauce",
+    "Salsa"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Dark sauce bottle",
+   "alternatives": [
+    "Soy sauce",
+    "Balsamic vinegar"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Blue snack pouch",
+   "alternatives": [
+    "Cheese",
+    "Frozen berries"
+   ],
+   "confidence": "guess"
+  }
+ ]
+}

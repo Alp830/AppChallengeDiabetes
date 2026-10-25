@@ -1,0 +1,367 @@
+{
+ "variant": "v2-high",
+ "photo": "clear",
+ "run": 3,
+ "latencyMs": 86601,
+ "promptTokens": 2583,
+ "candidatesTokens": 8986,
+ "thoughtsTokens": 0,
+ "items": [
+  {
+   "name": "White Cheese (Bryndza)",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Cooked food in metal pan",
+   "alternatives": [
+    "Leftover meat",
+    "Roasted vegetables"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Apricots or peaches",
+   "alternatives": [
+    "Egg yolks",
+    "Mandarin oranges"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Eggs",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Pomegranate juice or dark syrup",
+   "alternatives": [
+    "Red wine",
+    "Grape juice"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Yogurt or sour cream dip",
+   "alternatives": [
+    "Cream cheese spread",
+    "Mashed potatoes"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Hummus or lentil soup",
+   "alternatives": [
+    "Gravy",
+    "Bean puree"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Stonyfield Organic Greek Yogurt",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Canned fish or pate",
+   "alternatives": [
+    "Sardines",
+    "Cat food"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Tomato stew or salsa",
+   "alternatives": [
+    "Marinara sauce",
+    "Cooked peppers"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Cooked soup or stew",
+   "alternatives": [
+    "Borscht",
+    "Chicken broth"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Berry jam or preserves",
+   "alternatives": [
+    "Pickled beets",
+    "Tomato paste"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Fruit compote or tomato sauce",
+   "alternatives": [
+    "Apple butter",
+    "Honey"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Kerrygold Butter",
+   "alternatives": [
+    "Herb butter",
+    "Cheese blocks"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Roasted meat or vegetables",
+   "alternatives": [
+    "Cut fruit",
+    "Sauteed mushrooms"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Eggs",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Lavash or flatbread",
+   "alternatives": [
+    "Mushrooms",
+    "Pita bread"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Sliced cheese or butter",
+   "alternatives": [
+    "Puff pastry",
+    "Tofu"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Meat or poultry in bag",
+   "alternatives": [
+    "Root vegetables",
+    "Bread"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Fresh cheese wheel or deli turkey",
+   "alternatives": [
+    "Sulguni cheese",
+    "Rotisserie chicken breast"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Avocados or dark vegetables",
+   "alternatives": [
+    "Eggplants",
+    "Beets"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Pickled yellow peppers or olives",
+   "alternatives": [
+    "Canned corn",
+    "Pickled garlic"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Green herb stew or soup",
+   "alternatives": [
+    "Spinach dish",
+    "Sauteed greens"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Garlic spread or condiment jar",
+   "alternatives": [
+    "Mayonnaise",
+    "Horseradish"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Wrapped cheese or cottage cheese",
+   "alternatives": [
+    "Cauliflower",
+    "Dough"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Fresh herbs (dill or parsley)",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Grated cheese or bulgur",
+   "alternatives": [
+    "Couscous",
+    "Chopped nuts"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Blueberries or dark grapes",
+   "alternatives": [
+    "Blackberries",
+    "Plums"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Pomegranate or red onion",
+   "alternatives": [
+    "Beet",
+    "Red apple"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Carrots or red peppers",
+   "alternatives": [
+    "Tomatoes",
+    "Apples"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Cucumbers or zucchini",
+   "alternatives": [
+    "Green peppers",
+    "Jalapenos"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Summer squash or cabbage",
+   "alternatives": [
+    "Melon",
+    "Green apples"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Jarred condiment or supplement",
+   "alternatives": [
+    "Mustard",
+    "Vitamins"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Honey or jam jar",
+   "alternatives": [
+    "Salsa",
+    "Vitamins"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Seasoning or sauce jar",
+   "alternatives": [
+    "Pickles",
+    "Pesto"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Glass jar in top right door",
+   "alternatives": [
+    "Jam",
+    "Condiment"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Green boxed bottle or carton",
+   "alternatives": [
+    "Herbal extract",
+    "Juice box"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Fermented Beet Kvass (Gut Tonic)",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Dark sauce or syrup bottle",
+   "alternatives": [
+    "Pomegranate molasses",
+    "Chili oil"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Honey or broth in glass jar",
+   "alternatives": [
+    "Apricot jam",
+    "Ghee"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Fontana Farms Pepper Sauce",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Blue pouch (snacks or flaxseeds)",
+   "alternatives": [
+    "Chia seeds",
+    "Dried fruit"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Tahini or nut butter",
+   "alternatives": [
+    "Salad dressing",
+    "Apple cider"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Organic Tomato Ketchup",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Philadelphia Original Cream Cheese",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Hidden Valley Ranch Dressing",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Shredded cheese or snack bag with pink clip",
+   "alternatives": [
+    "Frozen vegetables",
+    "Tortilla chips"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Organic Lactose-Free 2% Reduced Fat Milk",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "2% Reduced Fat Milk",
+   "alternatives": [],
+   "confidence": "sure"
+  }
+ ]
+}

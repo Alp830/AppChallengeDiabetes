@@ -1,0 +1,229 @@
+{
+ "variant": "v2-high",
+ "photo": "blurry",
+ "run": 1,
+ "latencyMs": 35767,
+ "promptTokens": 2619,
+ "candidatesTokens": 4555,
+ "thoughtsTokens": 0,
+ "items": [
+  {
+   "name": "Quaker Oats",
+   "alternatives": [
+    "Breadcrumbs",
+    "Cornmeal"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Eggs",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Milk or kefir bottle",
+   "alternatives": [
+    "Almond milk",
+    "Juice"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Hummus or soup",
+   "alternatives": [
+    "Applesauce",
+    "Leftover curry"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Yogurt or sour cream",
+   "alternatives": [
+    "Cottage cheese",
+    "Cream cheese"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Tofu or feta package",
+   "alternatives": [
+    "Butter",
+    "Cheese"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Tomato stew orcooked dish",
+   "alternatives": [
+    "Salsa",
+    "Marinated meat"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Cooked meal in pot",
+   "alternatives": [
+    "Soup",
+    "Rice and beans"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Jam or salsa",
+   "alternatives": [
+    "Pasta sauce",
+    "Chutney"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Honey or syrup",
+   "alternatives": [
+    "Fruit preserves",
+    "Pickles"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Kerrygold butter or cheese",
+   "alternatives": [
+    "Juice boxes",
+    "Tofu blocks"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Leftover vegetable dish",
+   "alternatives": [
+    "Salad",
+    "Stir-fry"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Eggs",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Garlic or mushrooms",
+   "alternatives": [
+    "Cooked chicken",
+    "Cauliflower"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Produce in bag",
+   "alternatives": [
+    "Potatoes",
+    "Apples"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Leafy greens",
+   "alternatives": [
+    "Herbs",
+    "Celery"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Mustard or condiment",
+   "alternatives": [
+    "Ghee",
+    "Miso paste"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Avocado saver or lime juice",
+   "alternatives": [
+    "Guacamole cup",
+    "Kiwi"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Cheese or butter block",
+   "alternatives": [
+    "Cheddar cheese",
+    "Orange juice"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Jam or sauce",
+   "alternatives": [
+    "Salsa",
+    "Pickled onions"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Dressing or liquid supplement",
+   "alternatives": [
+    "Ketchup",
+    "Hot sauce"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Oral Electrolyte or Syrup",
+   "alternatives": [
+    "Simple syrup",
+    "Liquid medicine"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Condiment bottle",
+   "alternatives": [
+    "Ranch dressing",
+    "Mayonnaise"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Hot sauce or dressing",
+   "alternatives": [
+    "Chili oil",
+    "Sweet chili sauce"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Peanut butter or tahini",
+   "alternatives": [
+    "Salsa",
+    "Marinara sauce"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Tomato sauce or hot sauce",
+   "alternatives": [
+    "Salsa",
+    "Bloody Mary mix"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Dark bottle",
+   "alternatives": [
+    "Soy sauce",
+    "Balsamic vinegar"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Blue bagged snack or yeast",
+   "alternatives": [
+    "Cheese",
+    "Dried fruit"
+   ],
+   "confidence": "guess"
+  }
+ ]
+}

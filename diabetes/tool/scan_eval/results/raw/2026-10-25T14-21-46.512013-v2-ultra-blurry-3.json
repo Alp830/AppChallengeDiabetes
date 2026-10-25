@@ -1,0 +1,232 @@
+{
+ "variant": "v2-ultra",
+ "photo": "blurry",
+ "run": 3,
+ "latencyMs": 89724,
+ "promptTokens": 3724,
+ "candidatesTokens": 4579,
+ "thoughtsTokens": 0,
+ "items": [
+  {
+   "name": "Oats",
+   "alternatives": [
+    "Breadcrumbs",
+    "Cornmeal"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Eggs",
+   "alternatives": [
+    "Cream cheese",
+    "Butter"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Wine",
+   "alternatives": [
+    "Soy sauce",
+    "Balsamic vinegar"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Shredded cheese",
+   "alternatives": [
+    "Sliced deli meat",
+    "Cut fruit"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Hummus",
+   "alternatives": [
+    "Lentil soup",
+    "Applesauce"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Greek yogurt",
+   "alternatives": [
+    "Sour cream",
+    "Cottage cheese"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Feta cheese",
+   "alternatives": [
+    "Tofu",
+    "Butter"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Tomato stew",
+   "alternatives": [
+    "Pasta with marinara",
+    "Marinated meat"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Leftover cooked meal",
+   "alternatives": [
+    "Soup",
+    "Rice"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Salsa",
+   "alternatives": [
+    "Strawberry jam",
+    "Pasta sauce"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Fruit preserves",
+   "alternatives": [
+    "Honey",
+    "Pickles"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Juice boxes",
+   "alternatives": [
+    "Herbal tea boxes",
+    "Butter sticks"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Vegetable salad",
+   "alternatives": [
+    "Mixed berries",
+    "Cut vegetables"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Eggs",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Mushrooms",
+   "alternatives": [
+    "Garlic bulbs",
+    "Cauliflower"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Applesauce",
+   "alternatives": [
+    "Peach jam",
+    "Broth"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Peeled garlic",
+   "alternatives": [
+    "Potatoes",
+    "Dumplings"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Cheese block",
+   "alternatives": [
+    "Tofu",
+    "Sandwich meat"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Ghee",
+   "alternatives": [
+    "Mustard",
+    "Vitamins"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Guacamole",
+   "alternatives": [
+    "Butter",
+    "Pesto"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Cheddar cheese",
+   "alternatives": [
+    "Orange juice",
+    "Sliced peaches"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Salad dressing",
+   "alternatives": [
+    "Kefir",
+    "Coffee creamer"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Maple syrup",
+   "alternatives": [
+    "Soy sauce",
+    "Pomegranate molasses"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Chili sauce",
+   "alternatives": [
+    "French dressing",
+    "Ketchup"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Tomato pasta sauce",
+   "alternatives": [
+    "Hot sauce",
+    "Ketchup"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Dark glass bottle",
+   "alternatives": [
+    "Balsamic vinegar",
+    "Soy sauce"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Snack pouch",
+   "alternatives": [
+    "Dried fruit",
+    "Cheese"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Condiment bottle",
+   "alternatives": [
+    "BBQ sauce",
+    "Worcestershire sauce"
+   ],
+   "confidence": "guess"
+  }
+ ]
+}

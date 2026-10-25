@@ -1,0 +1,372 @@
+{
+ "variant": "v2-medium",
+ "photo": "clear",
+ "run": 2,
+ "latencyMs": 78046,
+ "promptTokens": 2583,
+ "candidatesTokens": 8536,
+ "thoughtsTokens": 0,
+ "items": [
+  {
+   "name": "Eggs",
+   "alternatives": [
+    "Lemons",
+    "Apricots"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Nordex Piknik White Cheese",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Eggs",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Canned food",
+   "alternatives": [
+    "Tomato paste",
+    "Condensed milk"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Pomegranate juice",
+   "alternatives": [
+    "Grape juice",
+    "Balsamic vinegar"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Kaymak",
+   "alternatives": [
+    "Feta cheese",
+    "Leftover rice"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Lentil soup",
+   "alternatives": [
+    "Hummus",
+    "Applesauce"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Stonyfield Organic Greek Yogurt",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Canned fish",
+   "alternatives": [
+    "Sardines",
+    "Tuna"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Tomato stew",
+   "alternatives": [
+    "Roasted red peppers",
+    "Borscht"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Cooked meal",
+   "alternatives": [
+    "Soup",
+    "Stew"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Berry jam",
+   "alternatives": [
+    "Pickled beets",
+    "Tomato sauce"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Mustard",
+   "alternatives": [
+    "Ghee",
+    "Lemon curd"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Fruit compote",
+   "alternatives": [
+    "Jam",
+    "Marinara sauce"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Kirkland Signature Grass-Fed Butter",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Cut vegetables",
+   "alternatives": [
+    "Roasted meat",
+    "Chopped fruit"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Eggs",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Garlic bulbs",
+   "alternatives": [
+    "Mushrooms",
+    "Potatoes"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Sliced cheese",
+   "alternatives": [
+    "Butter",
+    "Puff pastry"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Meat",
+   "alternatives": [
+    "Root vegetables",
+    "Bread"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Fresh mozzarella",
+   "alternatives": [
+    "Tofu",
+    "Chicken breast"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Avocados",
+   "alternatives": [
+    "Eggplant",
+    "Black plums"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Cooked soup",
+   "alternatives": [
+    "Stew",
+    "Sauteed greens"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Pickled yellow peppers",
+   "alternatives": [
+    "Canned corn",
+    "Canned peaches"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Lemonade",
+   "alternatives": [
+    "Salad dressing",
+    "White wine"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Flatbread",
+   "alternatives": [
+    "Cheese",
+    "Hummus"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Farmer cheese",
+   "alternatives": [
+    "Cauliflower",
+    "Cabbage"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Fresh dill",
+   "alternatives": [
+    "Parsley",
+    "Cilantro"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Shredded cheese",
+   "alternatives": [
+    "Bulgur",
+    "Almond flour"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Blueberries",
+   "alternatives": [
+    "Grapes",
+    "Cherry tomatoes"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Pomegranate",
+   "alternatives": [
+    "Red onion",
+    "Beet"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Carrots",
+   "alternatives": [
+    "Red bell peppers",
+    "Tomatoes"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Cabbage",
+   "alternatives": [
+    "Melon",
+    "Cheese"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Cucumbers",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Spice jar",
+   "alternatives": [
+    "Supplement bottle",
+    "Sauce jar"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Condiment jars",
+   "alternatives": [
+    "Supplements",
+    "Jam"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Canned condiment",
+   "alternatives": [
+    "Mustard",
+    "Salsa"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Beverage can",
+   "alternatives": [
+    "Cooking spray",
+    "Matcha tin"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Fermented Beet Kvass",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Hot sauce",
+   "alternatives": [
+    "Syrup",
+    "Vinegar"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Honey",
+   "alternatives": [
+    "Apple butter",
+    "Broth"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Fontana Farms Pepper Sauce",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Flaxseeds",
+   "alternatives": [
+    "Chia seeds",
+    "Lentils"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Tahini",
+   "alternatives": [
+    "Peanut butter",
+    "Minced garlic"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "365 Organic Tomato Ketchup",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Philadelphia Original Cream Cheese",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Hidden Valley Ranch Dressing",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Snack pouch",
+   "alternatives": [
+    "Cheese curds",
+    "Dried fruit"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Organic Lactose-Free 2% Reduced Fat Milk",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "2% Reduced Fat Milk",
+   "alternatives": [],
+   "confidence": "sure"
+  }
+ ]
+}

@@ -1,0 +1,51 @@
+{
+ "variant": "baseline",
+ "photo": "blurry",
+ "run": 3,
+ "latencyMs": 11289,
+ "promptTokens": 1887,
+ "candidatesTokens": 522,
+ "thoughtsTokens": 0,
+ "items": [
+  {
+   "name": "Eggs",
+   "alternatives": [],
+   "confidence": null
+  },
+  {
+   "name": "Butter",
+   "alternatives": [],
+   "confidence": null
+  },
+  {
+   "name": "Cauliflower",
+   "alternatives": [],
+   "confidence": null
+  },
+  {
+   "name": "Yogurt or Sour Cream",
+   "alternatives": [],
+   "confidence": null
+  },
+  {
+   "name": "Liquid Iron Supplement",
+   "alternatives": [],
+   "confidence": null
+  },
+  {
+   "name": "Hot Sauce or Red Condiment",
+   "alternatives": [],
+   "confidence": null
+  },
+  {
+   "name": "Jam or Preserves",
+   "alternatives": [],
+   "confidence": null
+  },
+  {
+   "name": "Leftovers in Storage Containers",
+   "alternatives": [],
+   "confidence": null
+  }
+ ]
+}

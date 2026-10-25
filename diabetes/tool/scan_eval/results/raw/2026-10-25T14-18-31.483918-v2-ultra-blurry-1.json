@@ -1,0 +1,200 @@
+{
+ "variant": "v2-ultra",
+ "photo": "blurry",
+ "run": 1,
+ "latencyMs": 81492,
+ "promptTokens": 3724,
+ "candidatesTokens": 3036,
+ "thoughtsTokens": 0,
+ "items": [
+  {
+   "name": "Rolled Oats",
+   "alternatives": [
+    "Cornstarch",
+    "Breadcrumbs"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Cream Cheese",
+   "alternatives": [
+    "Butter",
+    "Hummus"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Sauces or Kefir",
+   "alternatives": [
+    "Milk",
+    "Salad Dressing"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Cooked Lentil Soup",
+   "alternatives": [
+    "Hummus",
+    "Applesauce"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Yogurt",
+   "alternatives": [
+    "Sour Cream",
+    "Cottage Cheese"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Feta Cheese",
+   "alternatives": [
+    "Butter",
+    "Tofu"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Tomato Paste",
+   "alternatives": [
+    "Pepper Paste",
+    "Tomato Stew"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Leftover Meal",
+   "alternatives": [
+    "Marinated Meat",
+    "Cut Vegetables"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Jam",
+   "alternatives": [
+    "Salsa",
+    "Pasta Sauce"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Honey",
+   "alternatives": [
+    "Molasses",
+    "Jam"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Juice Boxes",
+   "alternatives": [
+    "Matcha Packets",
+    "Herbal Tea"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Cooked Vegetable Dish",
+   "alternatives": [
+    "Salad",
+    "Stew"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Eggs",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Garlic",
+   "alternatives": [
+    "Mushrooms",
+    "Cauliflower"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Fresh Produce",
+   "alternatives": [
+    "Cabbage",
+    "Lettuce"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Mustard",
+   "alternatives": [
+    "Mango Chutney",
+    "Ghee"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Guacamole",
+   "alternatives": [
+    "Pesto",
+    "Lime Juice"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Cheddar Cheese",
+   "alternatives": [
+    "Orange Juice",
+    "Apricots"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Salad Dressing",
+   "alternatives": [
+    "Kefir",
+    "Coffee Creamer"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Electrolyte Drink",
+   "alternatives": [
+    "Bottled Water",
+    "Almond Milk"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Hot Sauce",
+   "alternatives": [
+    "Chili Oil",
+    "Ketchup"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Apricot Jam",
+   "alternatives": [
+    "Salsa",
+    "Marmalade"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Tomato Sauce",
+   "alternatives": [
+    "Hot Sauce",
+    "French Dressing"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Blueberry Snack Pouch",
+   "alternatives": [
+    "Prunes",
+    "Shredded Cheese"
+   ],
+   "confidence": "guess"
+  }
+ ]
+}

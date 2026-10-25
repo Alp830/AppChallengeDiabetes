@@ -1,0 +1,61 @@
+{
+ "variant": "baseline",
+ "photo": "blurry",
+ "run": 2,
+ "latencyMs": 20931,
+ "promptTokens": 1887,
+ "candidatesTokens": 647,
+ "thoughtsTokens": 0,
+ "items": [
+  {
+   "name": "Eggs",
+   "alternatives": [],
+   "confidence": null
+  },
+  {
+   "name": "Cauliflower",
+   "alternatives": [],
+   "confidence": null
+  },
+  {
+   "name": "Kerrygold Irish Butter",
+   "alternatives": [],
+   "confidence": null
+  },
+  {
+   "name": "Yogurt or Sour Cream",
+   "alternatives": [],
+   "confidence": null
+  },
+  {
+   "name": "Juice Boxes",
+   "alternatives": [],
+   "confidence": null
+  },
+  {
+   "name": "Hot Sauce or Red Sauce",
+   "alternatives": [],
+   "confidence": null
+  },
+  {
+   "name": "Condiment Jars",
+   "alternatives": [],
+   "confidence": null
+  },
+  {
+   "name": "Bottled Sauces and Dressings",
+   "alternatives": [],
+   "confidence": null
+  },
+  {
+   "name": "Liquid Iron Supplement",
+   "alternatives": [],
+   "confidence": null
+  },
+  {
+   "name": "Prepared Food / Leftovers",
+   "alternatives": [],
+   "confidence": null
+  }
+ ]
+}

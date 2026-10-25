@@ -1,0 +1,248 @@
+{
+ "variant": "v2-medium",
+ "photo": "blurry",
+ "run": 1,
+ "latencyMs": 41216,
+ "promptTokens": 2619,
+ "candidatesTokens": 4704,
+ "thoughtsTokens": 0,
+ "items": [
+  {
+   "name": "Oats",
+   "alternatives": [
+    "Coffee",
+    "Protein powder"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Eggs",
+   "alternatives": [
+    "Cream cheese",
+    "Tofu"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Sparkling water",
+   "alternatives": [
+    "Wine",
+    "Juice"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Hummus",
+   "alternatives": [
+    "Soup",
+    "Applesauce"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Sliced deli meat",
+   "alternatives": [
+    "Sliced cheese",
+    "Leftovers"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Yogurt",
+   "alternatives": [
+    "Sour cream",
+    "Cottage cheese"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Feta cheese",
+   "alternatives": [
+    "Tofu",
+    "Butter"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Tomato stew",
+   "alternatives": [
+    "Marinated meat",
+    "Pasta with red sauce"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Cooked stew",
+   "alternatives": [
+    "Cooked rice",
+    "Bean soup"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Salsa",
+   "alternatives": [
+    "Jam",
+    "Pasta sauce"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Grape jelly",
+   "alternatives": [
+    "Pickled beets",
+    "Fruit preserves"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Butter",
+   "alternatives": [
+    "Juice boxes",
+    "Broth cartons"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Leftover salad",
+   "alternatives": [
+    "Roasted vegetables",
+    "Stir-fry"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Eggs",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Garlic bulbs",
+   "alternatives": [
+    "Mushrooms",
+    "Small potatoes"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Tortillas",
+   "alternatives": [
+    "Pita bread",
+    "Cheese slices"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Fresh produce",
+   "alternatives": [
+    "Apples",
+    "Onions"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Leafy greens",
+   "alternatives": [
+    "Broccoli",
+    "Herbs"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Ghee",
+   "alternatives": [
+    "Mustard",
+    "Honey"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Guacamole",
+   "alternatives": [
+    "Pesto",
+    "Salsa verde"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Cheddar cheese",
+   "alternatives": [
+    "Butter",
+    "Orange juice"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Cream cheese",
+   "alternatives": [
+    "Butter",
+    "Sour dip"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Salad dressing",
+   "alternatives": [
+    "Marinade",
+    "Syrup"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Pedialyte",
+   "alternatives": [
+    "Water",
+    "Vinegar"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Hot sauce",
+   "alternatives": [
+    "Chili oil",
+    "Ketchup"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Condiment",
+   "alternatives": [
+    "Mayonnaise",
+    "Mustard"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Peanut butter",
+   "alternatives": [
+    "Applesauce",
+    "Caramel sauce"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Tomato sauce",
+   "alternatives": [
+    "Hot sauce",
+    "Salsa"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Dark sauce bottle",
+   "alternatives": [
+    "Soy sauce",
+    "Worcestershire sauce"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Snack pouch",
+   "alternatives": [
+    "Shredded cheese",
+    "Dried fruit"
+   ],
+   "confidence": "guess"
+  }
+ ]
+}

@@ -1,0 +1,245 @@
+{
+ "variant": "v2-medium",
+ "photo": "blurry",
+ "run": 3,
+ "latencyMs": 45301,
+ "promptTokens": 2619,
+ "candidatesTokens": 4604,
+ "thoughtsTokens": 0,
+ "items": [
+  {
+   "name": "Oats",
+   "alternatives": [
+    "Breadcrumbs",
+    "Cornmeal"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Eggs",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Sparkling cider",
+   "alternatives": [
+    "Wine",
+    "Juice"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Hummus",
+   "alternatives": [
+    "Leftover soup",
+    "Mashed potatoes"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Sour cream",
+   "alternatives": [
+    "Greek yogurt",
+    "Cottage cheese"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Butter",
+   "alternatives": [
+    "Cream cheese",
+    "Tofu"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Leftover tomato stew",
+   "alternatives": [
+    "Curry",
+    "Chili"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Cooked dish in pot",
+   "alternatives": [
+    "Leftover soup",
+    "Braised meat"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Salsa",
+   "alternatives": [
+    "Jam",
+    "Pasta sauce"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Pickles",
+   "alternatives": [
+    "Olives",
+    "Peppers"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Jam",
+   "alternatives": [
+    "Honey",
+    "Chutney"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Juice boxes",
+   "alternatives": [
+    "Broth cartons",
+    "Butter sticks"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Marinated vegetables",
+   "alternatives": [
+    "Cut fruit",
+    "Leftover salad"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Eggs",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Garlic bulbs",
+   "alternatives": [
+    "Mushrooms",
+    "Shallots"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Cauliflower",
+   "alternatives": [
+    "Cabbage",
+    "Turnips"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Leafy greens",
+   "alternatives": [
+    "Celery",
+    "Broccoli"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Cheese",
+   "alternatives": [
+    "Butter",
+    "Lemon"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Avocado saver",
+   "alternatives": [
+    "Lime",
+    "Green bell pepper"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Cheddar cheese",
+   "alternatives": [
+    "Cantaloupe",
+    "Butter"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Yogurt",
+   "alternatives": [
+    "Cream cheese",
+    "Dip"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Salad dressing",
+   "alternatives": [
+    "Marinade",
+    "Syrup"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Aloe vera juice",
+   "alternatives": [
+    "Electrolyte solution",
+    "Simple syrup"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Hot sauce",
+   "alternatives": [
+    "Ketchup",
+    "Chili oil"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Mustard",
+   "alternatives": [
+    "Relish",
+    "Pesto"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Relish",
+   "alternatives": [
+    "Pesto",
+    "Salsa verde"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Apple cider vinegar",
+   "alternatives": [
+    "iced tea",
+    "Peaches in syrup"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Tomato sauce",
+   "alternatives": [
+    "Salsa",
+    "Bloody Mary mix"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Soy sauce",
+   "alternatives": [
+    "Balsamic vinegar",
+    "Worcestershire sauce"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Cheese snack",
+   "alternatives": [
+    "Chocolate",
+    "Nuts"
+   ],
+   "confidence": "guess"
+  }
+ ]
+}

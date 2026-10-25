@@ -1,0 +1,383 @@
+{
+ "variant": "v2-high",
+ "photo": "clear",
+ "run": 1,
+ "latencyMs": 84421,
+ "promptTokens": 2583,
+ "candidatesTokens": 8935,
+ "thoughtsTokens": 0,
+ "items": [
+  {
+   "name": "White Cheese (Feta/Bryndza)",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Eggs",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Pomegranate Juice",
+   "alternatives": [
+    "Grape Juice",
+    "Syrup"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Butter",
+   "alternatives": [
+    "Cheese",
+    "Leftover dip"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Mashed Potatoes",
+   "alternatives": [
+    "Yogurt",
+    "Dough"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Lentil Soup",
+   "alternatives": [
+    "Hummus",
+    "Oatmeal"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Greek Yogurt",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Canned Fish",
+   "alternatives": [
+    "Cat food",
+    "Pate"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Tomato Stew",
+   "alternatives": [
+    "Marinara Sauce",
+    "Chili"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Cooked Stew",
+   "alternatives": [
+    "Soup",
+    "Rice Pilaf"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Fruit Jam",
+   "alternatives": [
+    "Pickled Beets",
+    "Salsa"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Mustard",
+   "alternatives": [
+    "Mayonnaise",
+    "Ghee"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Tomato Paste",
+   "alternatives": [
+    "Pepper Paste",
+    "Jam"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Salted Butter",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Roasted Vegetables",
+   "alternatives": [
+    "Cut Fruit",
+    "Cooked Meat"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Eggs",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Linden Flowers (Ihlamur)",
+   "alternatives": [
+    "Bread",
+    "Chamomile"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Mushrooms",
+   "alternatives": [
+    "Potatoes",
+    "Walnuts"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Meat",
+   "alternatives": [
+    "Root Vegetables",
+    "Mushrooms"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Cheese Wheel",
+   "alternatives": [
+    "Tofu",
+    "Turkey Breast"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Avocados",
+   "alternatives": [
+    "Eggplant",
+    "Mushrooms"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Pickled Peppers",
+   "alternatives": [
+    "Olives",
+    "Pickles"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Herb Soup",
+   "alternatives": [
+    "Spinach Stew",
+    "Borscht"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Artichoke Hearts",
+   "alternatives": [
+    "Pickles",
+    "Pesto"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Bread",
+   "alternatives": [
+    "Cheese",
+    "Tortillas"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Flour",
+   "alternatives": [
+    "Rice",
+    "Cottage Cheese"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Fresh Dill",
+   "alternatives": [
+    "Parsley",
+    "Cilantro"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Bulgur",
+   "alternatives": [
+    "Brown Sugar",
+    "Couscous"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Blueberries",
+   "alternatives": [
+    "Grapes",
+    "Olives"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Pomegranate",
+   "alternatives": [
+    "Red Onion",
+    "Beet"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Carrots",
+   "alternatives": [
+    "Bell Peppers",
+    "Tomatoes"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Cucumbers",
+   "alternatives": [
+    "Zucchini",
+    "Jalapenos"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "White Beans",
+   "alternatives": [
+    "Garlic",
+    "Chickpeas"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Zucchini",
+   "alternatives": [
+    "Cucumbers",
+    "Green Beans"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Spice Jar",
+   "alternatives": [
+    "Vitamin bottle",
+    "Condiment"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Preserve Jar",
+   "alternatives": [
+    "Sauce",
+    "Pickles"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Mustard",
+   "alternatives": [
+    "Honey",
+    "Vitamins"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Seasoning",
+   "alternatives": [
+    "Tea",
+    "Medicine"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Stick Butter",
+   "alternatives": [
+    "Cheese",
+    "Cream Cheese"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Beet Kvass",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Hot Sauce",
+   "alternatives": [
+    "Syrup",
+    "Liquid Vitamin"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Broth / Honey",
+   "alternatives": [
+    "Apple Cider",
+    "Ghee"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Pepper Sauce",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Flaxseed / Superfood Pouch",
+   "alternatives": [
+    "Pecans",
+    "Chia Seeds"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Tahini / Nut Butter",
+   "alternatives": [
+    "Salad Dressing",
+    "Miso Paste"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Organic Ketchup",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Cream Cheese",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Buttermilk Ranch Dressing",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Yeast / Powder Packet",
+   "alternatives": [
+    "Cheese shreds",
+    "Chia seeds"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Lactose-Free 2% Milk",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "2% Milk",
+   "alternatives": [],
+   "confidence": "sure"
+  }
+ ]
+}
