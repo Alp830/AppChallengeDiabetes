@@ -134,7 +134,7 @@ class MealQaService {
       throw MealQaException(
         'Gemini request failed: ${response.statusCode} ${response.body}',
         statusCode: response.statusCode,
-        retryable: isRetryableStatus(response.statusCode),
+        retryable: isRetryableResponse(response.statusCode, response.body),
       );
     }
 

@@ -5,6 +5,7 @@ import '../../design/app_radius.dart';
 import '../../design/friendly_errors.dart';
 import '../../design/load_error.dart';
 import '../../design/spacing.dart';
+import '../../design/undo_snack_bar.dart';
 import '../../settings/data/app_preferences_repository.dart';
 import 'saved_recipe.dart';
 import 'saved_recipe_page.dart';
@@ -51,6 +52,8 @@ class _SavedRecipesPageState extends State<SavedRecipesPage> {
         ..showSnackBar(
           SnackBar(
             content: const Text('Removed from saved recipes'),
+            persist: false,
+            duration: undoSnackBarDuration,
             action: SnackBarAction(
               label: 'Undo',
               // Re-saving writes the same fingerprint, so it lands back in

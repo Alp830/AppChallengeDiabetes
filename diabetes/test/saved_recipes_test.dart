@@ -66,6 +66,45 @@ void main() {
     });
   });
 
+  group('budget tradeoff metadata', () {
+    test('round trips every tradeoff field', () {
+      const original = MealRecommendation(
+        dishName: 'Lentil stew',
+        imagePrompt: '',
+        reason: 'Cheap.',
+        ingredients: ['Lentils'],
+        instructions: ['Simmer.'],
+        priorityMode: 'budgetFirst',
+        unmetNutritionPreferences: ['protein'],
+        constraintNotice: 'Kept it cheap.',
+        estimatedCostUpperBoundPerServing: 4.5,
+        requestBudgetPerServing: 4,
+      );
+
+      final restored = MealRecommendation.fromJson(original.toJson());
+
+      expect(restored.priorityMode, 'budgetFirst');
+      expect(restored.unmetNutritionPreferences, ['protein']);
+      expect(restored.constraintNotice, 'Kept it cheap.');
+      expect(restored.estimatedCostUpperBoundPerServing, 4.5);
+      expect(restored.requestBudgetPerServing, 4);
+      expect(original.copyWith(imageUrl: 'x').requestBudgetPerServing, 4);
+    });
+
+    test('an old saved recipe without the fields still loads', () {
+      final restored = MealRecommendation.fromJson({
+        'dishName': 'Oatmeal',
+        'reason': 'Fast.',
+        'ingredients': ['Oats'],
+        'instructions': ['Stir.'],
+      });
+
+      expect(restored.requestBudgetPerServing, isNull);
+      expect(restored.priorityMode, isNull);
+      expect(restored.toJson().containsKey('requestBudgetPerServing'), false);
+    });
+  });
+
   group('recipeFingerprint', () {
     test('ignores ingredient order, case, and extra whitespace', () {
       final a = _recipe(ingredients: const ['1 lemon', '200g chicken', 'Rice']);

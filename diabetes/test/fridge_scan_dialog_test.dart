@@ -97,7 +97,7 @@ void main() {
                 barrierDismissible: false,
                 builder: (_) => FridgeScanDialog(
                   imageBytes: _png,
-                  detect: (_) => scan.future,
+                  detect: (_, _) => scan.future,
                 ),
               );
               closed = true;
@@ -161,7 +161,7 @@ void main() {
                     // Zero spacing keeps the test instant; ai_retry_test
                     // already covers the real 2 s wait.
                     retryPolicy: const AiRetryPolicy(delay: Duration.zero),
-                    detect: (_) {
+                    detect: (_, _) {
                       final completer = Completer<List<FoodItem>>();
                       pending.add(completer);
                       return completer.future;

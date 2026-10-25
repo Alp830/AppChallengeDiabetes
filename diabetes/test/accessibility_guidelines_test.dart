@@ -207,7 +207,7 @@ void main() {
                     maxAttempts: 1,
                     delay: Duration.zero,
                   ),
-                  detect: (_) async =>
+                  detect: (_, _) async =>
                       throw AiRequestException.fromStatus(503, 'busy'),
                 ),
               ),

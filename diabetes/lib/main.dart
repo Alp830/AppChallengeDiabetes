@@ -24,6 +24,8 @@ import 'design/friendly_errors.dart';
 import 'design/load_error.dart';
 import 'design/spacing.dart';
 import 'design/text_scale.dart';
+import 'design/title_case.dart';
+import 'design/undo_snack_bar.dart';
 import 'firebase_options.dart';
 import 'fridge/freshness.dart';
 import 'fridge/fridge_scan_dialog.dart';
@@ -34,6 +36,7 @@ import 'meals/models/meal_qa_models.dart';
 import 'meals/screens/meal_lab_page.dart';
 import 'meals/screens/meal_log_page.dart';
 import 'meals/screens/meal_qa_sheet.dart';
+import 'meals/services/meal_priority_policy.dart';
 import 'meals/saved/saved_recipe.dart';
 import 'meals/saved/saved_recipes_repository.dart';
 import 'meals/saved/saved_recipes_page.dart';
@@ -42,6 +45,7 @@ import 'onboarding/first_meal_coach.dart';
 import 'sleep/data/sleep_repository.dart';
 import 'sleep/services/evening_food_context_service.dart';
 import 'settings/data/app_preferences_repository.dart';
+import 'settings/models/meal_nutrition_preferences.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -522,8 +526,9 @@ class _AuthPageState extends State<AuthPage> {
                       ),
                       const SizedBox(height: Spacing.s32),
                       Text(
-                        _isSignUp ? 'Create account' : 'Sign in',
+                        _isSignUp ? 'Create account' : 'Sign In',
                         style: Theme.of(context).textTheme.titleLarge,
+                        textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: Spacing.s16),
                       TextFormField(
@@ -601,7 +606,7 @@ class _AuthPageState extends State<AuthPage> {
                               ? 'Please wait\u2026'
                               : _isSignUp
                               ? 'Create account'
-                              : 'Sign in',
+                              : 'Sign In',
                         ),
                       ),
                       const SizedBox(height: Spacing.s12),
@@ -854,7 +859,7 @@ class _MainPageState extends State<MainPage> {
       appBar: AppBar(
         centerTitle: false,
         titleSpacing: Spacing.s16,
-        toolbarHeight: 32 + (16 + 28 * (largeText ? 2 : 1)) * titleScale,
+        toolbarHeight: 60 + (16 + 28 * (largeText ? 2 : 1)) * titleScale,
         title: _HeaderTitle(
           eyebrow: _headerEyebrow(user),
           title: _headerTitle(user),
@@ -988,18 +993,18 @@ class _MainPageState extends State<MainPage> {
         return 'Cook from what you have';
       default:
         final hour = DateTime.now().hour;
-        if (hour < 12) return 'Good morning';
-        if (hour < 17) return 'Good afternoon';
-        return 'Good evening';
+        if (hour < 12) return 'Good Morning';
+        if (hour < 17) return 'Good Afternoon';
+        return 'Good Evening';
     }
   }
 
   String _headerTitle(User user) {
     switch (_selectedIndex) {
       case _fridgeTabIndex:
-        return 'Your fridge';
+        return 'Your Fridge';
       case _agentTabIndex:
-        return 'Meal ideas';
+        return 'Meal Ideas';
       default:
         return _userDisplayName(user) ?? 'Welcome back';
     }
@@ -1134,15 +1139,16 @@ class _HeaderTitle extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           style: theme.textTheme.labelMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
+            fontSize: 14,
             fontWeight: FontWeight.w500,
           ),
         ),
         const SizedBox(height: 1),
         Text(
-          title,
+          titleCase(title),
           maxLines: maxTitleLines,
           overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.titleLarge,
+          style: theme.textTheme.headlineMedium?.copyWith(fontSize: 36),
         ),
       ],
     );
@@ -1288,13 +1294,14 @@ class FridgePageState extends State<FridgePage> {
     _isDirty = false;
   }
 
-  /// Items ranked by earliest expiration date (nulls last). The index into the
-  /// working [_drafts] list is preserved so edit/remove callbacks address the
-  /// correct draft.
+  /// Items ranked by earliest expiration date (nulls last), keyed by each
+  /// draft's [_FridgeDraft.localId]. Not by list index: a delete or an undo
+  /// shifts every later index, which handed a tile's key (and its open
+  /// tooltip) to a different item and crashed the grid's layout. The grid's
+  /// callbacks hand ids back; [_draftIndex] turns them into indices.
   List<MapEntry<int, FoodItem>> get _rankedItems {
     final entries = [
-      for (var index = 0; index < _drafts.length; index++)
-        MapEntry(index, _drafts[index].item),
+      for (final draft in _drafts) MapEntry(draft.localId, draft.item),
     ];
     entries.sort((a, b) {
       final aDate = a.value.expiryDate;
@@ -1313,6 +1320,7 @@ class FridgePageState extends State<FridgePage> {
     ScaffoldMessengerState messenger, {
     required Widget content,
     SnackBarAction? action,
+    bool autoDismiss = false,
   }) {
     final liftAboveSaveBar = _isDirty;
     messenger.hideCurrentSnackBar();
@@ -1320,6 +1328,8 @@ class FridgePageState extends State<FridgePage> {
       SnackBar(
         content: content,
         action: action,
+        persist: autoDismiss ? false : null,
+        duration: undoSnackBarDuration,
         behavior: liftAboveSaveBar
             ? SnackBarBehavior.floating
             : SnackBarBehavior.fixed,
@@ -1350,6 +1360,9 @@ class FridgePageState extends State<FridgePage> {
       }
     });
   }
+
+  int _draftIndex(int localId) =>
+      _drafts.indexWhere((draft) => draft.localId == localId);
 
   void _editDraft(int index, FoodItem item) {
     _mutate(() => _drafts[index].item = item);
@@ -1511,11 +1524,13 @@ class FridgePageState extends State<FridgePage> {
         else
           SelectableFridgeGrid(
             items: ranked,
-            onEdit: (index) => _showEditFoodSheet(context, index),
-            onDelete: (index) =>
-                _stageDraftDeletion(ScaffoldMessenger.of(context), index),
-            onRemoveSelected: (indices) async {
-              _removeDrafts(indices);
+            onEdit: (id) => _showEditFoodSheet(context, _draftIndex(id)),
+            onDelete: (id) => _stageDraftDeletion(
+              ScaffoldMessenger.of(context),
+              _draftIndex(id),
+            ),
+            onRemoveSelected: (ids) async {
+              _removeDrafts(ids.map(_draftIndex));
               // The grid clears its own selection first, and it unmounts
               // entirely when the last item goes, so it can never report the
               // count back down to zero itself.
@@ -1610,7 +1625,8 @@ class FridgePageState extends State<FridgePage> {
       barrierDismissible: false,
       builder: (context) => FridgeScanDialog(
         imageBytes: imageBytes,
-        detect: FridgePhotoFoodAgent.detectFoods,
+        detect: (imageBytes, abort) =>
+            FridgePhotoFoodAgent.detectFoods(imageBytes, abortTrigger: abort),
       ),
     );
     if (result == null) return; // Cancelled.
@@ -1670,6 +1686,7 @@ class FridgePageState extends State<FridgePage> {
     _showFridgeSnackBar(
       messenger,
       content: Text('Removed ${draft.item.name}. Save to make it final.'),
+      autoDismiss: true,
       action: SnackBarAction(
         label: 'Undo',
         onPressed: () {
@@ -1961,7 +1978,16 @@ class _FridgeCameraSheetState extends State<FridgeCameraSheet> {
       return;
     }
     try {
-      final picked = await _imagePicker.pickImage(source: ImageSource.gallery);
+      // Gallery originals can be several MB and go up as base64 (+33%). The
+      // model sees 1120 image tokens either way, so this cuts upload time,
+      // not cost. 2048 px and quality 85 keep label text sharp; the camera
+      // path is already ~1080p.
+      final picked = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 2048,
+        maxHeight: 2048,
+        imageQuality: 85,
+      );
       if (picked == null) {
         return;
       }
@@ -2491,6 +2517,31 @@ class AgentPageState extends State<AgentPage> {
 
   AppPreferencesStore? _preferencesRepository;
   StreamSubscription<bool>? _balancePreferenceSubscription;
+
+  /// Nutrition priorities. [_nutritionPreferences] is what the boxes show and
+  /// what a request snapshots; [_confirmedNutrition] is the last value the
+  /// store confirmed, which a failed save rolls back to.
+  MealNutritionPreferences _nutritionPreferences =
+      MealNutritionPreferences.none;
+  MealNutritionPreferences _confirmedNutrition = MealNutritionPreferences.none;
+  StreamSubscription<MealNutritionPreferences>? _nutritionSubscription;
+
+  /// True once the first saved value arrived (or there is no account to ask).
+  bool _nutritionLoaded = false;
+  bool _nutritionLoadFailed = false;
+  bool _nutritionSaving = false;
+  bool _nutritionSaveFailed = false;
+  bool _preferencesSheetOpen = false;
+
+  /// Bumped to rebuild the open preferences sheet, which is a separate route
+  /// and doesn't rebuild when this state does.
+  final _sheetRefresh = ValueNotifier<int>(0);
+
+  /// The boxes are disabled while a save runs, which drops keyboard focus;
+  /// these let the toggled box take it back once the save settles.
+  final _highProteinFocus = FocusNode();
+  final _highCarbsFocus = FocusNode();
+  final _highFiberFocus = FocusNode();
   SavedRecipesStore? _savedRecipesStore;
   StreamSubscription<List<SavedRecipe>>? _savedRecipesSubscription;
 
@@ -2537,9 +2588,11 @@ class AgentPageState extends State<AgentPage> {
       }
     }
     final userId = widget.userId;
+    _nutritionLoaded = userId == null;
     if (userId != null) {
       _preferencesRepository =
           widget.preferencesRepository ?? AppPreferencesRepository();
+      _listenToNutritionPreferences(userId);
       _balancePreferenceSubscription = _preferencesRepository!
           .watchMealBalanceAgentEnabled(userId)
           .listen((enabled) {
@@ -2563,15 +2616,12 @@ class AgentPageState extends State<AgentPage> {
         (saved) {
           if (!mounted) return;
           setState(
-            () => _savedFingerprints = {
-              for (final recipe in saved) recipe.id,
-            },
+            () => _savedFingerprints = {for (final recipe in saved) recipe.id},
           );
         },
         // Saving is a bonus on this screen: if the list can't load, the card
         // simply shows "Save recipe" and the write still works.
-        onError: (Object error) =>
-            debugPrint('saved recipes stream: $error'),
+        onError: (Object error) => debugPrint('saved recipes stream: $error'),
       );
     }
     if (widget.diabetesEnabled && userId != null) {
@@ -2609,6 +2659,11 @@ class AgentPageState extends State<AgentPage> {
     _preferencesController.dispose();
     _feedbackController.dispose();
     _balancePreferenceSubscription?.cancel();
+    _nutritionSubscription?.cancel();
+    _sheetRefresh.dispose();
+    _highProteinFocus.dispose();
+    _highCarbsFocus.dispose();
+    _highFiberFocus.dispose();
     _qaTipSubscription?.cancel();
     _cancellation?.cancel();
     _savedRecipesSubscription?.cancel();
@@ -2632,11 +2687,217 @@ class AgentPageState extends State<AgentPage> {
     }
   }
 
+  bool get _nutritionResolved => _nutritionLoaded || _nutritionLoadFailed;
+
+  @visibleForTesting
+  AgentRequest? get lastRequest => _lastRequest;
+
+  void _updateNutrition(VoidCallback change) {
+    setState(change);
+    _sheetRefresh.value++;
+  }
+
+  void _listenToNutritionPreferences(String userId) {
+    _nutritionSubscription?.cancel();
+    _nutritionSubscription = _preferencesRepository!
+        .watchMealNutritionPreferences(userId)
+        .listen(
+          (value) {
+            if (!mounted) return;
+            _updateNutrition(() {
+              _nutritionLoaded = true;
+              _nutritionLoadFailed = false;
+              _confirmedNutrition = value;
+              // A save in flight owns the displayed value until it settles.
+              if (!_nutritionSaving) _nutritionPreferences = value;
+            });
+          },
+          onError: (Object error) {
+            debugPrint('nutrition preferences stream: $error');
+            if (!mounted) return;
+            _updateNutrition(() => _nutritionLoadFailed = true);
+          },
+        );
+  }
+
+  void _retryNutritionLoad() {
+    final userId = widget.userId;
+    if (userId == null || _preferencesRepository == null) return;
+    _updateNutrition(() {
+      _nutritionLoadFailed = false;
+      _nutritionLoaded = false;
+    });
+    _listenToNutritionPreferences(userId);
+  }
+
+  /// Applies [next]. With an account and a successful read it is saved, one
+  /// write at a time (the boxes are disabled while it runs) and rolled back
+  /// to the last confirmed value if it fails. Without an account, or after a
+  /// failed read, it only changes this picker: nothing is written, so an
+  /// unread saved value can never be overwritten.
+  Future<void> _setNutritionPreferences(
+    MealNutritionPreferences next, {
+    FocusNode? focusNode,
+  }) async {
+    if (_nutritionSaving || !_nutritionResolved) return;
+    final userId = widget.userId;
+    final repository = _preferencesRepository;
+    if (userId == null || repository == null || _nutritionLoadFailed) {
+      _updateNutrition(() {
+        _nutritionPreferences = next;
+        _nutritionSaveFailed = false;
+      });
+      return;
+    }
+    _updateNutrition(() {
+      _nutritionPreferences = next;
+      _nutritionSaving = true;
+      _nutritionSaveFailed = false;
+    });
+    try {
+      await repository.saveMealNutritionPreferences(userId, next);
+      if (!mounted) return;
+      _updateNutrition(() {
+        _confirmedNutrition = next;
+        _nutritionPreferences = next;
+        _nutritionSaving = false;
+      });
+      _restoreNutritionFocus(focusNode);
+    } catch (_) {
+      if (!mounted) return;
+      _updateNutrition(() {
+        _nutritionPreferences = _confirmedNutrition;
+        _nutritionSaving = false;
+        if (_preferencesSheetOpen) _nutritionSaveFailed = true;
+      });
+      _restoreNutritionFocus(focusNode);
+      if (!_preferencesSheetOpen) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text(_nutritionSaveErrorMessage)),
+        );
+      }
+    }
+  }
+
+  /// Hands focus back to the toggled box once it is enabled again, so a
+  /// keyboard user keeps their place in the sheet.
+  void _restoreNutritionFocus(FocusNode? focusNode) {
+    if (focusNode == null || !_preferencesSheetOpen) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _preferencesSheetOpen && focusNode.context != null) {
+        focusNode.requestFocus();
+      }
+    });
+  }
+
+  static const _nutritionSaveErrorMessage =
+      "Couldn't save your nutrition priorities. Try again.";
+
+  Widget _buildNutritionSection(BuildContext context) {
+    final theme = Theme.of(context);
+    final enabled = _nutritionResolved && !_nutritionSaving;
+    final preferences = _nutritionPreferences;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text('Nutrition priorities', style: theme.textTheme.titleMedium),
+        Text(
+          'Pick as many as you like. If they conflict with your budget, '
+          "we'll show the tradeoff.",
+          style: theme.textTheme.bodySmall,
+        ),
+        if (!_nutritionResolved)
+          Text(
+            'Loading your saved nutrition priorities…',
+            style: theme.textTheme.bodySmall,
+          ),
+        if (_nutritionLoadFailed)
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  "Couldn't load your saved nutrition priorities",
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.error,
+                  ),
+                ),
+              ),
+              TextButton(
+                key: const Key('agentNutritionRetryButton'),
+                onPressed: _retryNutritionLoad,
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        if (_nutritionSaveFailed)
+          Text(
+            _nutritionSaveErrorMessage,
+            key: const Key('agentNutritionSaveError'),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.error,
+            ),
+          ),
+        CheckboxListTile(
+          key: const Key('agentHighProteinCheckbox'),
+          focusNode: _highProteinFocus,
+          contentPadding: EdgeInsets.zero,
+          title: const Text(MealNutritionPreferences.proteinLabel),
+          value: preferences.highProtein,
+          onChanged: enabled
+              ? (value) => _setNutritionPreferences(
+                  preferences.copyWith(highProtein: value ?? false),
+                  focusNode: _highProteinFocus,
+                )
+              : null,
+        ),
+        CheckboxListTile(
+          key: const Key('agentHighCarbsCheckbox'),
+          focusNode: _highCarbsFocus,
+          contentPadding: EdgeInsets.zero,
+          title: const Text(MealNutritionPreferences.carbsLabel),
+          value: preferences.highCarbs,
+          onChanged: enabled
+              ? (value) => _setNutritionPreferences(
+                  preferences.copyWith(highCarbs: value ?? false),
+                  focusNode: _highCarbsFocus,
+                )
+              : null,
+        ),
+        CheckboxListTile(
+          key: const Key('agentHighFiberCheckbox'),
+          focusNode: _highFiberFocus,
+          contentPadding: EdgeInsets.zero,
+          title: const Text(MealNutritionPreferences.fiberLabel),
+          value: preferences.highFiber,
+          onChanged: enabled
+              ? (value) => _setNutritionPreferences(
+                  preferences.copyWith(highFiber: value ?? false),
+                  focusNode: _highFiberFocus,
+                )
+              : null,
+        ),
+      ],
+    );
+  }
+
   Future<void> _generateRecommendation() async {
+    double? budgetPerServing;
+    if (_hasBudget) {
+      budgetPerServing = parseBudgetPerServing(_budgetController.text);
+      if (budgetPerServing == null) {
+        // Send the user to the field, with its error showing.
+        await _showPreferences(validateBudget: true);
+        return;
+      }
+    }
     final request = AgentRequest(
       useFridgeItems: _useFridgeItems,
       hasBudget: _hasBudget,
-      budget: _hasBudget ? _budgetController.text.trim() : null,
+      budget: _hasBudget
+          ? _budgetController.text.trim().replaceFirst(RegExp(r'^\$\s*'), '')
+          : null,
+      budgetPerServing: budgetPerServing,
+      nutritionPreferences: _nutritionPreferences,
       hasTimeShortage: _hasTimeShortage,
       timeAvailable: _hasTimeShortage ? _timeController.text.trim() : null,
       foodPreferences: _preferencesController.text.trim(),
@@ -2653,8 +2914,10 @@ class AgentPageState extends State<AgentPage> {
     await _loadRecommendation(request);
   }
 
-  Future<void> _showPreferences() async {
+  Future<void> _showPreferences({bool validateBudget = false}) async {
     final preferencesFormKey = GlobalKey<FormState>();
+    _preferencesSheetOpen = true;
+    _nutritionSaveFailed = false;
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -2709,6 +2972,11 @@ class AgentPageState extends State<AgentPage> {
                         setSheetState(() {});
                       },
                     ),
+                    ValueListenableBuilder<int>(
+                      valueListenable: _sheetRefresh,
+                      builder: (context, tick, child) =>
+                          _buildNutritionSection(context),
+                    ),
                     SwitchListTile(
                       contentPadding: EdgeInsets.zero,
                       title: const Text('Set a budget'),
@@ -2719,14 +2987,20 @@ class AgentPageState extends State<AgentPage> {
                       TextFormField(
                         key: const Key('agentBudgetField'),
                         controller: _budgetController,
-                        keyboardType: TextInputType.number,
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        autovalidateMode: validateBudget
+                            ? AutovalidateMode.always
+                            : AutovalidateMode.onUserInteraction,
                         decoration: const InputDecoration(
-                          labelText: 'Budget',
+                          labelText: 'Budget per serving',
                           prefixText: r'$',
                         ),
                         validator: (value) =>
-                            value == null || value.trim().isEmpty
-                            ? 'Enter a budget or turn budget off'
+                            parseBudgetPerServing(value ?? '') == null
+                            ? 'Enter a budget above 0, like 7.50, or turn '
+                                  'budget off'
                             : null,
                       ),
                       const SizedBox(height: Spacing.s8),
@@ -2806,6 +3080,7 @@ class AgentPageState extends State<AgentPage> {
         },
       ),
     );
+    _preferencesSheetOpen = false;
   }
 
   /// F5 · keep this dish, ask for one small optional balancing tweak. Reuses the
@@ -2913,6 +3188,8 @@ class AgentPageState extends State<AgentPage> {
                   ? 'Removed from saved recipes'
                   : 'Saved. Find it on Home under Saved recipes.',
             ),
+            persist: false,
+            duration: undoSnackBarDuration,
             action: wasSaved
                 ? SnackBarAction(
                     label: 'Undo',
@@ -3142,7 +3419,10 @@ class AgentPageState extends State<AgentPage> {
               width: double.infinity,
               child: FilledButton.icon(
                 key: const Key('recommendMealButton'),
-                onPressed: _isLoadingRecommendation
+                onPressed:
+                    _isLoadingRecommendation ||
+                        !_nutritionResolved ||
+                        _nutritionSaving
                     ? null
                     : _generateRecommendation,
                 icon: const Icon(Icons.auto_awesome),
@@ -3185,6 +3465,7 @@ class AgentPageState extends State<AgentPage> {
             MealRecommendationCard(
               recommendation: recommendation,
               diabetesEnabled: widget.diabetesEnabled,
+              showUnmetHeading: _recommendations.length == 1,
               timeLabel:
                   (_lastRequest?.hasTimeShortage ?? false) &&
                       (_lastRequest?.timeAvailable?.isNotEmpty ?? false)
@@ -3365,10 +3646,20 @@ class MealRecommendationCard extends StatelessWidget {
     this.isSaved = false,
     this.onToggleSaved,
     this.showBalancingTweak = true,
+    this.showUnmetHeading = true,
+    this.budgetFromOriginalRequest = false,
   });
 
   final MealRecommendation recommendation;
   final bool diabetesEnabled;
+
+  /// Whether the "I couldn't meet all your preferences" heading shows. The
+  /// Meals tab turns it off when several results share the screen.
+  final bool showUnmetHeading;
+
+  /// True for a saved recipe: its budget fit belongs to the request it was
+  /// suggested for, not to the user's current settings.
+  final bool budgetFromOriginalRequest;
   final VoidCallback? onStartPostMealWalk;
   final VoidCallback? onLogMeal;
 
@@ -3441,6 +3732,161 @@ class MealRecommendationCard extends StatelessWidget {
     size: 76,
     color: Theme.of(context).colorScheme.onPrimaryContainer,
   );
+
+  static String _money(double value) => value == value.roundToDouble()
+      ? '\$${value.toStringAsFixed(0)}'
+      : '\$${value.toStringAsFixed(2)}';
+
+  static String _preferenceLabel(String key) => switch (key) {
+    MealNutritionPreferences.proteinKey =>
+      MealNutritionPreferences.proteinLabel,
+    MealNutritionPreferences.carbsKey => MealNutritionPreferences.carbsLabel,
+    MealNutritionPreferences.fiberKey => MealNutritionPreferences.fiberLabel,
+    _ => key,
+  };
+
+  /// Budget and nutrition tradeoff facts, shown persistently under the cost
+  /// pills. Empty on the happy path apart from the estimates note.
+  List<Widget> _tradeoffs(BuildContext context) {
+    final theme = Theme.of(context);
+    final mode = recommendation.priorityMode;
+    final budget = recommendation.requestBudgetPerServing;
+    final upper = recommendation.estimatedCostUpperBoundPerServing;
+    final notice = recommendation.constraintNotice?.trim() ?? '';
+    final unmet = [
+      for (final key in recommendation.unmetNutritionPreferences)
+        _preferenceLabel(key),
+    ];
+    final budgetFirst = mode == priorityModeBudgetFirst;
+    final groupLabel = budgetFirst
+        ? 'Budget-first option'
+        : mode == priorityModeNutritionFirst
+        ? 'Nutrition-first option'
+        : null;
+    final overBudget = budget != null && upper != null && upper > budget;
+    final showHeading = showUnmetHeading && budgetFirst && unmet.isNotEmpty;
+    final muted = theme.textTheme.bodySmall?.copyWith(
+      color: theme.colorScheme.onSurfaceVariant,
+    );
+    return [
+      if (showHeading) ...[
+        const SizedBox(height: Spacing.s8),
+        Semantics(
+          container: true,
+          label:
+              "I couldn't meet all your preferences within your budget. Relaxed: ${unmet.join(', ')}",
+          child: ExcludeSemantics(
+            child: Container(
+              key: const Key('mealUnmetHeading'),
+              padding: const EdgeInsets.symmetric(
+                horizontal: Spacing.s12,
+                vertical: Spacing.s8,
+              ),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.tertiaryContainer,
+                borderRadius: BorderRadius.circular(AppRadius.md),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    Icons.info_outline,
+                    size: 20,
+                    color: theme.colorScheme.onTertiaryContainer,
+                  ),
+                  const SizedBox(width: Spacing.s8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "I couldn't meet all your preferences within your budget",
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            color: theme.colorScheme.onTertiaryContainer,
+                          ),
+                        ),
+                        const SizedBox(height: Spacing.s4),
+                        Text(
+                          'Relaxed: ${unmet.join(', ')}',
+                          key: const Key('mealRelaxedPreferences'),
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onTertiaryContainer,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+      if (groupLabel != null || overBudget) ...[
+        const SizedBox(height: Spacing.s8),
+        Wrap(
+          spacing: Spacing.s8,
+          runSpacing: Spacing.s8,
+          children: [
+            if (groupLabel != null)
+              Semantics(
+                container: true,
+                label: groupLabel,
+                child: ExcludeSemantics(
+                  child: KeyedSubtree(
+                    key: const Key('mealPriorityModeLabel'),
+                    child: _InfoPill(
+                      icon: budgetFirst
+                          ? Icons.savings_outlined
+                          : Icons.restaurant_menu,
+                      label: groupLabel,
+                    ),
+                  ),
+                ),
+              ),
+            if (overBudget)
+              Semantics(
+                container: true,
+                label: 'Over your budget',
+                child: ExcludeSemantics(
+                  child: KeyedSubtree(
+                    key: const Key('mealOverBudgetLabel'),
+                    child: const _InfoPill(
+                      icon: Icons.warning_amber_rounded,
+                      label: 'Over your budget',
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ],
+      if (notice.isNotEmpty) ...[
+        const SizedBox(height: Spacing.s8),
+        Semantics(
+          container: true,
+          label: 'Note: $notice',
+          child: ExcludeSemantics(
+            child: Text(
+              notice,
+              key: const Key('mealConstraintNotice'),
+              style: theme.textTheme.bodyMedium,
+            ),
+          ),
+        ),
+      ],
+      if (budget != null) ...[
+        const SizedBox(height: Spacing.s8),
+        Text(
+          budgetFromOriginalRequest
+              ? 'Costs are estimates. Budget fit is from when this was suggested (${_money(budget)} per serving).'
+              : 'Costs are estimates.',
+          key: const Key('mealCostEstimatesNote'),
+          style: muted,
+        ),
+      ],
+    ];
+  }
 
   Widget _sectionHeader(BuildContext context, String title) {
     final theme = Theme.of(context);
@@ -3619,6 +4065,7 @@ class MealRecommendationCard extends StatelessWidget {
                     ],
                   ),
                 ],
+                ..._tradeoffs(context),
                 if (recommendation.eveningScore != null) ...[
                   const SizedBox(height: Spacing.s8),
                   _EveningFitChip(score: recommendation.eveningScore!),
@@ -4058,6 +4505,18 @@ enum MealType {
   final String label;
 }
 
+/// Parses a per-serving budget: a positive, finite decimal with an optional
+/// leading `$`. Returns null for anything else (empty, text, zero, negative,
+/// NaN, infinity, exponents, separators).
+double? parseBudgetPerServing(String input) {
+  var text = input.trim();
+  if (text.startsWith(r'$')) text = text.substring(1).trimLeft();
+  if (!RegExp(r'^(\d+\.?\d*|\.\d+)$').hasMatch(text)) return null;
+  final value = double.tryParse(text);
+  if (value == null || !value.isFinite || value <= 0) return null;
+  return value;
+}
+
 class AgentRequest {
   const AgentRequest({
     required this.useFridgeItems,
@@ -4074,11 +4533,19 @@ class AgentRequest {
     this.overnightSummary,
     this.diabetesEnabled = AppFeatures.diabetesEnabled,
     this.useMealBalance = false,
+    this.budgetPerServing,
+    this.nutritionPreferences = MealNutritionPreferences.none,
   });
 
   final bool useFridgeItems;
   final bool hasBudget;
   final String? budget;
+
+  /// The validated numeric form of [budget]; null when no budget is set.
+  final double? budgetPerServing;
+
+  /// Snapshot of the user's nutrition priorities when the request was made.
+  final MealNutritionPreferences nutritionPreferences;
   final bool hasTimeShortage;
   final String? timeAvailable;
   final String foodPreferences;
@@ -4109,6 +4576,8 @@ class AgentRequest {
       useFridgeItems: useFridgeItems,
       hasBudget: hasBudget,
       budget: budget,
+      budgetPerServing: budgetPerServing,
+      nutritionPreferences: nutritionPreferences,
       hasTimeShortage: hasTimeShortage ?? this.hasTimeShortage,
       timeAvailable: timeAvailable ?? this.timeAvailable,
       foodPreferences: foodPreferences,
@@ -4127,19 +4596,26 @@ class AgentRequest {
 class FridgePhotoFoodAgent {
   static String get _apiKey => AppEnvironment.geminiApiKey;
 
-  /// Gemini 3.1 Pro — strongest vision + label-reading on the Gemini API
-  /// (official gemini-2.5-pro successor). Needed because flash-tier models
-  /// misread uncommon foods (e.g. dried linden flowers as "bread").
-  /// Fallback if this preview ID is retired or costs must drop:
-  /// 'gemini-3.6-flash' (stable, ~10x cheaper).
-  static const model = 'gemini-3.1-pro-preview';
+  /// Gemini 4 Argon at thinking level low. It replaced gemini-3.1-pro-preview
+  /// (thinking high): it is a stable release instead of a preview, and on
+  /// Roboflow's real-world OCR eval Argon low scored 85.7% in 7.7 s at
+  /// ~$0.005 a sample against Pro high's 73.1% in 18.6 s at ~$0.026. That eval
+  /// reads labels; it doesn't test unlabelled foods, so check new prompts
+  /// against the dried linden flowers photo that flash-tier models once
+  /// called "bread". Argon has no free tier, and its price doubles on
+  /// Dec 1, 2026 ($4 / $20 per 1M tokens). If it fails that photo, go back to
+  /// 'gemini-3.1-pro-preview' with thinkingLevel low.
+  static const model = 'gemini-4-argon';
   static const endpoint =
       'https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent';
 
+  /// [abortTrigger] stops the request when the retry loop gives up on this
+  /// attempt (see `runWithAbortableAiRetry`).
   static Future<List<FoodItem>> detectFoods(
     Uint8List imageBytes, {
     http.Client? client,
     String? apiKey,
+    Future<void>? abortTrigger,
   }) async {
     final token = apiKey ?? _apiKey;
     if (token.isEmpty) {
@@ -4149,39 +4625,59 @@ class FridgePhotoFoodAgent {
       );
     }
 
-    final response = await (client ?? http.Client()).post(
-      Uri.parse(endpoint),
-      headers: {'Content-Type': 'application/json', 'x-goog-api-key': token},
-      body: jsonEncode({
-        'contents': [
-          {
-            'parts': [
+    final request =
+        http.AbortableRequest(
+            'POST',
+            Uri.parse(endpoint),
+            abortTrigger: abortTrigger,
+          )
+          ..headers.addAll({
+            'Content-Type': 'application/json',
+            'x-goog-api-key': token,
+          })
+          ..body = jsonEncode({
+            'contents': [
               {
-                'inline_data': {
-                  'mime_type': 'image/jpeg',
-                  'data': base64Encode(imageBytes),
-                },
+                'parts': [
+                  {
+                    'inline_data': {
+                      'mime_type': 'image/jpeg',
+                      'data': base64Encode(imageBytes),
+                    },
+                  },
+                  {'text': _buildPrompt()},
+                ],
               },
-              {'text': _buildPrompt()},
             ],
-          },
-        ],
-        'generationConfig': {
-          'temperature': 0.1,
-          // High media resolution spends more image tokens so fine texture
-          // (rice grains vs flour powder) and small label text stay visible.
-          'mediaResolution': 'MEDIA_RESOLUTION_HIGH',
-          // Deep reasoning helps with unlabeled/ambiguous containers.
-          'thinkingConfig': {'thinkingLevel': 'high'},
-          // Large enough that thinking plus a full grocery bag enumeration
-          // cannot truncate the JSON list mid-array.
-          'maxOutputTokens': 16384,
-          // Force a clean, schema-validated JSON array on the way back.
-          'responseMimeType': 'application/json',
-          'responseSchema': _responseSchema,
-        },
-      }),
-    );
+            // No temperature: Argon ignores sampling parameters.
+            'generationConfig': {
+              // 1120 image tokens, the default and what Google recommends for
+              // image analysis: fine texture (rice grains vs flour powder) and
+              // small label text stay visible.
+              'mediaResolution': 'MEDIA_RESOLUTION_HIGH',
+              // Thinking is billed as output and is most of a scan's time and
+              // cost. Low is enough for reading labels.
+              'thinkingConfig': {'thinkingLevel': 'low'},
+              // A ceiling, not a target: only generated tokens are billed. Google
+              // asks for at least 32K on Argon, which may spend more of the
+              // limit thinking than older models did, and a cut-off JSON array
+              // would cost a whole retry.
+              'maxOutputTokens': 32768,
+              // Force a clean, schema-validated JSON array on the way back.
+              'responseMimeType': 'application/json',
+              'responseSchema': _responseSchema,
+            },
+          });
+
+    // A client made here is closed here, so a scan doesn't leave a
+    // connection pool open behind it.
+    final httpClient = client ?? http.Client();
+    final http.Response response;
+    try {
+      response = await http.Response.fromStream(await httpClient.send(request));
+    } finally {
+      if (client == null) httpClient.close();
+    }
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw AiRequestException.fromStatus(response.statusCode, response.body);
@@ -4456,23 +4952,40 @@ class GeminiMealService {
       final jsonText = _stripJsonFence(text);
 
       final decodedJson = jsonDecode(jsonText);
-      final recommendations = <MealRecommendation>[];
+      // A lone object is only an answer to a one-dish request; any other
+      // count mismatch is rejected below instead of silently trimmed.
+      final List<dynamic> items;
       if (decodedJson is List<dynamic>) {
-        recommendations.addAll(
-          decodedJson
-              .map(
-                (item) =>
-                    MealRecommendation.fromJson(item as Map<String, dynamic>),
-              )
-              .take(request.recommendationCount),
-        );
+        items = decodedJson;
+      } else if (request.recommendationCount == 1) {
+        items = [decodedJson];
       } else {
-        recommendations.add(
-          MealRecommendation.fromJson(decodedJson as Map<String, dynamic>),
-        );
+        throw const FormatException('Gemini returned a single object');
       }
+      final recommendations = [
+        for (final item in items)
+          MealRecommendation.fromJson(item as Map<String, dynamic>),
+      ];
 
-      return _attachImages(recommendations);
+      validateMealResponse(
+        [for (final r in recommendations) r.priorityData],
+        requestedCount: request.recommendationCount,
+        preferences: request.nutritionPreferences,
+        budgetPerServing: request.budgetPerServing,
+      );
+      final ordered = request.nutritionPreferences.hasAny
+          ? orderByPriorityGroup(recommendations, (r) => r.priorityMode)
+          : recommendations;
+
+      final budget = request.budgetPerServing;
+      return _attachImages(
+        budget == null
+            ? ordered
+            : [
+                for (final r in ordered)
+                  r.copyWith(requestBudgetPerServing: budget),
+              ],
+      );
     } on TypeError catch (error) {
       throw FormatException('Gemini returned an odd shape: $error');
     }
@@ -4588,6 +5101,27 @@ class GeminiMealService {
         ? 'None.'
         : request.feedbackHistory.map((item) => '- $item').join('\n');
 
+    final prefs = request.nutritionPreferences;
+    final hasPriorities = prefs.hasAny;
+    final budgetLimit = request.budgetPerServing;
+    final priorityGuidance = hasPriorities
+        ? _nutritionPriorityGuidance(request)
+        : '';
+    final costBoundField = budgetLimit != null
+        ? '\n    "estimatedCostUpperBoundPerServing": 3.5,'
+        : '';
+    final priorityFields = hasPriorities
+        ? '\n    "priorityMode": "allPreferences",\n    "unmetNutritionPreferences": [],\n    "constraintNotice": null,'
+        : '';
+    final priorityFieldNotes = [
+      if (budgetLimit != null)
+        ' Set "estimatedCostUpperBoundPerServing" to a finite number of at least 0: the same estimate as "estimatedCostPerServing", taken as its upper end, in the budget\'s currency.',
+      if (budgetLimit != null && !hasPriorities)
+        ' Keep every dish\'s estimatedCostUpperBoundPerServing at or under the budget per serving.',
+      if (hasPriorities)
+        ' Set "priorityMode", "unmetNutritionPreferences" (only values from: ${prefs.selectedKeys.join(', ')}) and "constraintNotice" (a string, or null when there is nothing to explain) exactly as the nutrition priority rules above describe.',
+    ].join();
+
     final balanceGuidance = request.useMealBalance
         ? '''
 
@@ -4598,7 +5132,7 @@ The user chose meal-balance guidance. Honor their requested food, preferences, a
 - About 250-500 mL water or another unsweetened drink with or near the meal.
 - A plate or mixed-dish equivalent near 50% produce, 25% protein, and 25% quality carbohydrate.
 - Keep added sugar and saturated fat as a minority of the meal's calories, favoring whole ingredients over heavily processed or sugary ones when it fits the request.
-Briefly explain the balance in the reason. Do not reject a requested food or make medical claims if every target cannot be met.'''
+Briefly explain the balance in the reason. Do not reject a requested food or make medical claims if every target cannot be met.${hasPriorities ? '\nThese anchors are soft. When nutrition priorities are active, the selected nutrition priorities and any fallback groups below take precedence over them.' : ''}'''
         : '';
 
     final substitutionGuidance = request.useFridgeItems
@@ -4613,11 +5147,11 @@ If a recipe would normally call for an ingredient not present in the fridge list
         ? '''
 
 This is an evening meal, eaten within a few hours of sleep, when overnight glucose is most sensitive to what and how much is eaten. Without refusing or replacing what they asked for:
-- Gently prefer options built around fiber, protein, and unsaturated fats (legumes, yogurt, fish, tofu, oats, vegetables, olive oil), and lightly downrank late refined carbs and heavy saturated-fat plates.
-- Order the recommendations so the most sleep-compatible option comes first.
+- Gently prefer options built around fiber, protein, and unsaturated fats (legumes, yogurt, fish, tofu, oats, vegetables, olive oil), and lightly downrank late refined carbs and heavy saturated-fat plates.${hasPriorities ? ' This is soft guidance: it never overrides the selected nutrition priorities (for example, do not downrank a dish for being carbohydrate-forward when High carbs is selected) or the fallback groups.' : ''}
+- ${hasPriorities ? 'The order of the list follows the fallback groups when they apply (budget-first group first, then nutrition-first); within a group, or when no fallback applies, you may put the most sleep-compatible option first.' : 'Order the recommendations so the most sleep-compatible option comes first.'}
 - Lean slightly toward lighter, earlier-friendly portions, but still honor the user's request.
 - For each dish, set "eveningScore" from 1 (heavy or late-carb-forward) to 5 (light and sleep-friendly).
-- When a dish is carb-forward or heavy this close to bed, keep it in the list and add a short, friendly "glucoseNote" suggesting an optional pairing or tweak that softens the overnight rise (for example, pairing with something already in the fridge). Frame it as a helpful heads-up, never a warning or a rule.'''
+- When a dish is carb-forward or heavy this close to bed, keep it in the list and add a short, friendly "glucoseNote" suggesting an optional pairing or tweak that softens the overnight rise (for example, pairing with something already in the fridge). Frame it as a helpful heads-up, never a warning or a rule.${hasPriorities ? ' The glucoseNote stays optional and never vetoes a selected nutrition priority.' : ''}'''
         : '';
 
     // F4 · soft personalization from the user's recent overnight phenotype.
@@ -4668,7 +5202,7 @@ Use the amount exactly as the user wrote it when they include a measurement. If 
 $fridgeItems
 
 Feedback from the user about earlier suggestions:
-$feedback$balanceGuidance$eveningGuidance$overnightContext$substitutionGuidance
+$feedback$priorityGuidance$balanceGuidance$eveningGuidance$overnightContext$substitutionGuidance
 
 Return only valid JSON as an array with exactly ${request.recommendationCount} objects. Each object must use this exact shape:
 [
@@ -4680,13 +5214,67 @@ Return only valid JSON as an array with exactly ${request.recommendationCount} o
     "instructions": ["string"],
     "usedFridgeItems": ["string"],
     "estimatedCostPerServing": "string, e.g. \\"\$2-3/serving\\"",
-    "suggestedQuestions": ["string"],
+    "suggestedQuestions": ["string"],$costBoundField$priorityFields
     ${request.diabetesEnabled ? '"glucoseNote": "optional short friendly heads-up, or empty string",' : ''}
     "eveningScore": 4
   }
 ]
-${request.diabetesEnabled ? 'Only include a glucoseNote when it genuinely helps; otherwise use an empty string.' : 'Do not include glucose or diabetes advice.'} Only set eveningScore for evening meals; otherwise use null. Set "usedFridgeItems" to the exact names (from the fridge items list above) that this recipe actually uses; use an empty array if none apply or fridge items were not used. Set "estimatedCostPerServing" to a short rough estimate like "\$2-3/serving"; use your best judgment even without exact prices. Set "suggestedQuestions" to exactly 3 short questions this user would plausibly ask about this dish, written in their own casual first-person voice, that the rest of this card does not already answer; keep each under 8 words and never ask about medication or dosing.
+${request.diabetesEnabled ? 'Only include a glucoseNote when it genuinely helps; otherwise use an empty string.' : 'Do not include glucose or diabetes advice.'} Only set eveningScore for evening meals; otherwise use null. Set "usedFridgeItems" to the exact names (from the fridge items list above) that this recipe actually uses; use an empty array if none apply or fridge items were not used. Set "estimatedCostPerServing" to a short rough estimate like "\$2-3/serving"; use your best judgment even without exact prices. Set "suggestedQuestions" to exactly 3 short questions this user would plausibly ask about this dish, written in their own casual first-person voice, that the rest of this card does not already answer; keep each under 8 words and never ask about medication or dosing.$priorityFieldNotes
 ''';
+  }
+
+  static String _formatAmount(double value) =>
+      value == value.roundToDouble() ? value.toStringAsFixed(0) : '$value';
+
+  /// The single authoritative conflict order plus the nutrition priority and
+  /// budget-fallback rules. Only built when priorities are selected.
+  static String _nutritionPriorityGuidance(AgentRequest request) {
+    final prefs = request.nutritionPreferences;
+    final count = request.recommendationCount;
+    final limit = request.budgetPerServing;
+    final lines = <String>[
+      if (prefs.highProtein)
+        '- High protein: build the meal around practical protein ingredients (for example eggs, legumes, tofu, yogurt, fish, poultry). Do not promise gram amounts.',
+      if (prefs.highCarbs)
+        '- High carbs: make the meal more carbohydrate-forward using suitable grains, legumes, fruit, or starchy vegetables, not added sugar.',
+      if (prefs.highFiber)
+        '- High fiber: favor practical fiber-rich ingredients (for example beans, lentils, whole grains, vegetables, fruit, oats). Do not promise gram amounts.',
+    ];
+    final hierarchy = [
+      'The user\'s explicitly requested dishes, allergies, food safety, and practical time limits.',
+      if (limit != null) 'The budget and the fallback groups described below.',
+      'The selected nutrition priorities.',
+      'Soft guidance: meal balance and evening suggestions. They never override anything above.',
+    ];
+    final buffer = StringBuffer('''
+
+
+Nutrition priorities (selected: ${prefs.selectedLabels.join(', ')}). All selected priorities are equal; none outranks another.
+${lines.join('\n')}
+
+When requirements conflict, this order is authoritative and overrides any softer guidance elsewhere in this prompt:
+${[for (var i = 0; i < hierarchy.length; i++) '${i + 1}. ${hierarchy[i]}'].join('\n')}
+''');
+    if (limit == null) {
+      buffer.write(
+        '\nNo budget limit applies, so there is no fallback split: keep exactly $count recommendations, prioritize the selected nutrients, and set "priorityMode" to "allPreferences" for every meal. If a meal still does not meet a selected priority, list it in "unmetNutritionPreferences" and explain briefly in "constraintNotice".',
+      );
+    } else {
+      final split = fallbackSplit(count);
+      final budgetText = '\$${_formatAmount(limit)}';
+      buffer.write('''
+
+The per-serving budget is $budgetText. "priorityMode" for each meal is one of "allPreferences", "nutritionFirst", or "budgetFirst". "unmetNutritionPreferences" lists which selected priorities (${prefs.selectedKeys.map((key) => '"$key"').join(', ')}) the meal does not meet.
+- If every one of the $count meals can satisfy all selected priorities within the budget, set every meal to "allPreferences" with an empty "unmetNutritionPreferences" and a null "constraintNotice". Do not force a fallback.
+- Otherwise use exactly ${split.budgetFirst} "budgetFirst" and ${split.nutritionFirst} "nutritionFirst" meal(s), no "allPreferences" meals, and every one of them needs a non-empty "constraintNotice".
+- "budgetFirst": stays at or under the budget (its estimatedCostUpperBoundPerServing must not exceed $budgetText) and may relax some selected priorities. List the relaxed ones in "unmetNutritionPreferences"; the notice names them and says you couldn't find a meal meeting all the preferences within the budget.
+- "nutritionFirst": meets all selected priorities even if it costs more than the budget. The notice states how far it goes over the budget. List nothing in "unmetNutritionPreferences" unless a priority is still unmet.
+- Write notices in a friendly first-person voice, for example "I couldn't find a meal meeting all your preferences within your budget". Never claim that no such meal exists.
+- Put the "budgetFirst" meals first in the array, then the "nutritionFirst" meals.
+- Never use a fallback just because the budget is tight if a fitting meal exists. Do not decide which priorities are unreachable from dish names alone; estimate the cost of the actual recipe.
+''');
+    }
+    return buffer.toString();
   }
 
   static String _stripJsonFence(String text) {
@@ -4712,6 +5300,11 @@ class MealRecommendation {
     this.estimatedCostPerServing,
     this.suggestedQuestions = const [],
     this.imageUrl,
+    this.priorityMode,
+    this.unmetNutritionPreferences = const [],
+    this.constraintNotice,
+    this.estimatedCostUpperBoundPerServing,
+    this.requestBudgetPerServing,
   });
 
   final String dishName;
@@ -4746,7 +5339,35 @@ class MealRecommendation {
   /// request, and the image host rejects a localhost `Origin` outright.
   final String? imageUrl;
 
-  MealRecommendation copyWith({String? imageUrl}) {
+  /// "allPreferences", "nutritionFirst" or "budgetFirst"; null for meals made
+  /// without nutrition priorities and for recipes saved before they existed.
+  final String? priorityMode;
+
+  /// Selected priorities this meal does not meet ("protein", "carbs", "fiber").
+  final List<String> unmetNutritionPreferences;
+
+  /// Friendly explanation shown when a fallback meal relaxes the budget or a
+  /// priority.
+  final String? constraintNotice;
+
+  /// Numeric per-serving cost ceiling behind [estimatedCostPerServing].
+  final double? estimatedCostUpperBoundPerServing;
+
+  /// Per-serving budget of the request this meal was suggested for. Null when
+  /// the request had no budget and for recipes saved before it existed.
+  final double? requestBudgetPerServing;
+
+  MealPriorityData get priorityData => MealPriorityData(
+    priorityMode: priorityMode,
+    unmetNutritionPreferences: unmetNutritionPreferences,
+    constraintNotice: constraintNotice,
+    estimatedCostUpperBoundPerServing: estimatedCostUpperBoundPerServing,
+  );
+
+  MealRecommendation copyWith({
+    String? imageUrl,
+    double? requestBudgetPerServing,
+  }) {
     return MealRecommendation(
       dishName: dishName,
       imagePrompt: imagePrompt,
@@ -4759,6 +5380,12 @@ class MealRecommendation {
       estimatedCostPerServing: estimatedCostPerServing,
       suggestedQuestions: suggestedQuestions,
       imageUrl: imageUrl ?? this.imageUrl,
+      priorityMode: priorityMode,
+      unmetNutritionPreferences: unmetNutritionPreferences,
+      constraintNotice: constraintNotice,
+      estimatedCostUpperBoundPerServing: estimatedCostUpperBoundPerServing,
+      requestBudgetPerServing:
+          requestBudgetPerServing ?? this.requestBudgetPerServing,
     );
   }
 
@@ -4780,6 +5407,16 @@ class MealRecommendation {
             .take(3)
             .toList() ??
         const <String>[];
+    final mode = (json['priorityMode'] as String?)?.trim();
+    final rawUnmet = json['unmetNutritionPreferences'];
+    if (rawUnmet != null && rawUnmet is! List) {
+      throw const FormatException('unmetNutritionPreferences is not a list');
+    }
+    final unmet = [
+      for (final key in (rawUnmet as List<dynamic>?) ?? const [])
+        key.toString().trim(),
+    ];
+    final notice = (json['constraintNotice'] as String?)?.trim();
     return MealRecommendation(
       dishName: json['dishName'] as String,
       imagePrompt: json['imagePrompt'] as String? ?? '',
@@ -4798,6 +5435,13 @@ class MealRecommendation {
       imageUrl: (json['imageUrl'] as String?)?.trim().isEmpty ?? true
           ? null
           : (json['imageUrl'] as String).trim(),
+      priorityMode: mode == null || mode.isEmpty ? null : mode,
+      unmetNutritionPreferences: unmet,
+      constraintNotice: notice == null || notice.isEmpty ? null : notice,
+      estimatedCostUpperBoundPerServing:
+          (json['estimatedCostUpperBoundPerServing'] as num?)?.toDouble(),
+      requestBudgetPerServing: (json['requestBudgetPerServing'] as num?)
+          ?.toDouble(),
     );
   }
 
@@ -4816,5 +5460,13 @@ class MealRecommendation {
       'estimatedCostPerServing': estimatedCostPerServing,
     'suggestedQuestions': suggestedQuestions,
     if (imageUrl != null) 'imageUrl': imageUrl,
+    if (priorityMode != null) 'priorityMode': priorityMode,
+    if (unmetNutritionPreferences.isNotEmpty)
+      'unmetNutritionPreferences': unmetNutritionPreferences,
+    if (constraintNotice != null) 'constraintNotice': constraintNotice,
+    if (estimatedCostUpperBoundPerServing != null)
+      'estimatedCostUpperBoundPerServing': estimatedCostUpperBoundPerServing,
+    if (requestBudgetPerServing != null)
+      'requestBudgetPerServing': requestBudgetPerServing,
   };
 }

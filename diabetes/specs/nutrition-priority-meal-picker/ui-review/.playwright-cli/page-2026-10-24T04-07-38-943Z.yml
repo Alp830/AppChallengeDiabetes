@@ -1,0 +1,36 @@
+- generic [ref=e4]:
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - generic:
+            - generic [ref=e2129]: FIXTURE
+            - checkbox "Feasible" [ref=e2130]
+            - checkbox "Conflict" [checked] [ref=e2131]
+            - checkbox "Always invalid" [ref=e2132]
+            - generic [ref=e2133]: Fail next nutrition save
+            - switch [ref=e2134]
+            - generic [ref=e2135]: Diabetes on
+            - switch [checked] [ref=e2136]
+            - button "Remount picker" [ref=e2137]
+            - button "Open saved recipes" [ref=e2138]
+            - generic [ref=e2139]: "Gemini calls: 19"
+            - generic [ref=e2140]: "Saved priorities: protein,carbs,fiber"
+            - generic:
+              - group:
+                - textbox "What do you want to eat?" [ref=e2142]
+                - generic [ref=e2144]: Meal type
+                - generic:
+                  - checkbox "Breakfast" [ref=e2146]
+                  - checkbox "Lunch" [ref=e2147]
+                  - checkbox "Dinner" [checked] [ref=e2148]
+                  - checkbox "Snack" [ref=e2149]
+                  - checkbox "Drink" [ref=e2150]
+                - button "Recommend a meal" [ref=e2152]
+                - button "Preferences" [active] [ref=e2154]
+                - generic:
+                  - group "Fixture Dish 1 (budgetFirst) $5.20/serving Beginner Costs are estimates. Ingredients Tap a line to ask Instructions Tap a line to ask Ask about this meal":
+                    - generic [ref=e2156]: "I couldn't meet all your preferences within your budget. Relaxed: High fiber"
+                    - generic [ref=e2157]: Budget-first option
+                    - generic [ref=e2158]: "Note: We couldn't find a meal meeting all your preferences within $6.50 per serving, so this one relaxes: High fiber."
+                    - button "Ask why this meal was picked Deterministic fixture meal 1." [ref=e2159]

@@ -73,7 +73,7 @@ void main() {
         ),
       );
 
-      expect(find.byTooltip('Delete Eggs'), findsNothing);
+      expect(find.byKey(const Key('fridgeTileDelete_Eggs')), findsNothing);
       expect(find.bySemanticsLabel('Not selected'), findsOneWidget);
       await tester.tap(find.text('Eggs'));
       expect(toggled, isTrue);

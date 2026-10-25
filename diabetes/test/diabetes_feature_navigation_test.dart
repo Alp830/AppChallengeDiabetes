@@ -8,6 +8,7 @@ import 'package:diabetes/main.dart';
 import 'package:diabetes/meals/screens/meal_lab_page.dart';
 import 'package:diabetes/navigation/app_feature_navigation.dart';
 import 'package:diabetes/settings/data/app_preferences_repository.dart';
+import 'package:diabetes/settings/models/meal_nutrition_preferences.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -218,6 +219,17 @@ class _StaticPreferencesStore implements AppPreferencesStore {
   @override
   Stream<bool> watchFirstMealGuidePending(String userId) =>
       Stream<bool>.value(false);
+
+  @override
+  Future<void> saveMealNutritionPreferences(
+    String userId,
+    MealNutritionPreferences preferences,
+  ) async {}
+
+  @override
+  Stream<MealNutritionPreferences> watchMealNutritionPreferences(
+    String userId,
+  ) => Stream<MealNutritionPreferences>.value(MealNutritionPreferences.none);
 }
 
 class _FakeExerciseRepository implements ExerciseRepository {

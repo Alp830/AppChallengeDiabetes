@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../models/meal_nutrition_preferences.dart';
+
 abstract interface class AppPreferencesStore {
   Stream<bool> watchMealBalanceAgentEnabled(String userId);
   Future<void> saveMealBalanceAgentEnabled(String userId, bool enabled);
@@ -17,7 +19,28 @@ abstract interface class AppPreferencesStore {
   /// Marks the guide finished: the user got their first recommendation or
   /// skipped the tour.
   Future<void> completeFirstMealGuide(String userId);
+
+  /// Nutrient priorities (high protein / carbs / fiber) saved for this account.
+  Stream<MealNutritionPreferences> watchMealNutritionPreferences(String userId);
+  Future<void> saveMealNutritionPreferences(
+    String userId,
+    MealNutritionPreferences preferences,
+  );
 }
+
+/// Reads the saved nutrient priorities out of a `users/{uid}` document; missing
+/// or malformed data means no priorities.
+MealNutritionPreferences mealNutritionPreferencesFromUserData(
+  Map<String, dynamic>? data,
+) => MealNutritionPreferences.fromMap(data?['mealNutritionPreferences']);
+
+/// Merge-write payload for [AppPreferencesStore.saveMealNutritionPreferences].
+Map<String, Object?> mealNutritionPreferencesWritePayload(
+  MealNutritionPreferences preferences,
+) => {
+  'mealNutritionPreferences': preferences.toMap(),
+  'updatedAt': FieldValue.serverTimestamp(),
+};
 
 /// Value stored in `users/{uid}.firstMealGuide` while the guide is waiting.
 const firstMealGuidePendingValue = 'pending';
@@ -71,4 +94,20 @@ class AppPreferencesRepository implements AppPreferencesStore {
     'firstMealGuide': firstMealGuideDoneValue,
     'updatedAt': FieldValue.serverTimestamp(),
   }, SetOptions(merge: true));
+
+  @override
+  Stream<MealNutritionPreferences> watchMealNutritionPreferences(
+    String userId,
+  ) => _user(userId).snapshots().map(
+    (snapshot) => mealNutritionPreferencesFromUserData(snapshot.data()),
+  );
+
+  @override
+  Future<void> saveMealNutritionPreferences(
+    String userId,
+    MealNutritionPreferences preferences,
+  ) => _user(userId).set(
+    mealNutritionPreferencesWritePayload(preferences),
+    SetOptions(merge: true),
+  );
 }

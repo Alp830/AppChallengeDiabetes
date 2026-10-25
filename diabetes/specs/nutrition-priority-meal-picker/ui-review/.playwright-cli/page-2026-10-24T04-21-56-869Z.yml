@@ -1,0 +1,29 @@
+- generic [ref=e4] [cursor=pointer]:
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - generic:
+            - generic [ref=e156]: FIXTURE
+            - checkbox "Feasible" [ref=e157]
+            - checkbox "Conflict" [checked] [ref=e158]
+            - checkbox "Always invalid" [ref=e159]
+            - generic [ref=e160]: Fail next nutrition save
+            - switch [checked] [active] [ref=e161]
+            - generic [ref=e162]: Diabetes off
+            - switch [ref=e163]
+            - button "Remount picker" [ref=e164]
+            - button "Open saved recipes" [ref=e165]
+            - generic [ref=e166]: "Gemini calls: 1"
+            - generic [ref=e167]: "Saved priorities: protein,carbs,fiber"
+            - generic:
+              - group:
+                - generic:
+                  - group "Fixture Dish 2 (nutritionFirst) $9.75/serving Beginner Costs are estimates. Ingredients Tap a line to ask Instructions Tap a line to ask Ask about this meal":
+                    - checkbox "How do I store the leftovers?" [ref=e194]
+                    - checkbox "Can I make it spicier?" [ref=e195]
+                    - button "Save recipe" [ref=e196]
+                    - button "Add a balancing tweak" [ref=e197]
+                    - button "Log this meal" [ref=e198]
+                - textbox "What should be different?" [ref=e201]
+                - button "Suggest something else" [ref=e203]

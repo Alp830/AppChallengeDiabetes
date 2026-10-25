@@ -53,7 +53,7 @@ abstract class AppTheme {
       useMaterial3: true,
       colorScheme: scheme,
       fontFamily: 'AtkinsonHyperlegibleNext',
-      scaffoldBackgroundColor: scheme.surfaceContainerLow,
+      scaffoldBackgroundColor: const Color(0xFE1F2E2),
       splashFactory: InkSparkle.splashFactory,
       visualDensity: VisualDensity.standard,
       extensions: const [AppStatusColors.standard],

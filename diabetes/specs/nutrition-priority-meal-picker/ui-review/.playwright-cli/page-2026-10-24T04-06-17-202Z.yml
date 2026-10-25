@@ -1,0 +1,23 @@
+- generic [ref=e4]:
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - generic:
+            - generic:
+              - button "Back" [active] [ref=e1973]
+              - heading "Seeded Budget-First Lentil Bowl" [level=2] [ref=e1974]
+            - generic:
+              - group:
+                - generic:
+                  - group "Seeded Budget-First Lentil Bowl $2.40/serving Costs are estimates. Budget fit is from when this was suggested ($3 per serving). Ingredients Tap a line to ask Instructions Tap a line to ask":
+                    - generic [ref=e1975]: "I couldn't meet all your preferences within your budget. Relaxed: High protein"
+                    - generic [ref=e1976]: Budget-first option
+                    - generic [ref=e1977]: "Note: We couldn't find a meal meeting all your preferences within $3.00 per serving, so this one relaxes: High protein."
+                    - button "Ask why this meal was picked Pre-seeded recipe that carries tradeoff metadata." [ref=e1978]
+                    - button "Ask about lentils lentils" [ref=e1979]
+                    - button "Ask about rice rice" [ref=e1980]
+                    - button "Ask about step 1 1 Simmer lentils." [ref=e1981]
+                    - button "Ask about step 2 2 Serve over rice." [ref=e1982]
+                    - button "Saved. Tap to remove from saved recipes" [ref=e1983]
+                    - button "Log this meal" [ref=e1984]

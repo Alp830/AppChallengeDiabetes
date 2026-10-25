@@ -124,6 +124,49 @@ void main() {
     expect(httpCalls, 0, reason: 'a saved recipe opens from stored data');
   });
 
+  testWidgets('a saved recipe keeps its notice and budget-fit phrasing', (
+    tester,
+  ) async {
+    const recipe = MealRecommendation(
+      dishName: 'Lentil stew',
+      imagePrompt: '',
+      reason: 'Hearty.',
+      ingredients: ['Lentils'],
+      instructions: ['Simmer.'],
+      priorityMode: 'budgetFirst',
+      unmetNutritionPreferences: ['fiber'],
+      constraintNotice: 'Kept the cost low.',
+      estimatedCostUpperBoundPerServing: 6,
+      requestBudgetPerServing: 5,
+    );
+    final store = InMemorySavedRecipesStore(initial: [_saved(recipe)]);
+    await pumpList(tester, store: store);
+    await tester.tap(find.byKey(const Key('savedRecipe_0')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Kept the cost low.'), findsOneWidget);
+    expect(find.text('Budget-first option'), findsOneWidget);
+    expect(find.text('Relaxed: High fiber'), findsOneWidget);
+    expect(
+      find.textContaining(
+        r'Budget fit is from when this was suggested ($5 per serving)',
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('a saved recipe without metadata shows no tradeoff notes', (
+    tester,
+  ) async {
+    final store = InMemorySavedRecipesStore(initial: [_saved(_recipe())]);
+    await pumpList(tester, store: store);
+    await tester.tap(find.byKey(const Key('savedRecipe_0')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('mealCostEstimatesNote')), findsNothing);
+    expect(find.byKey(const Key('mealPriorityModeLabel')), findsNothing);
+  });
+
   testWidgets('the saved recipe view hides the balancing tweak', (
     tester,
   ) async {

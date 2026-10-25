@@ -1,4 +1,4 @@
-package com.example.diabetes
+package com.ms.nutriscan
 
 import io.flutter.embedding.android.FlutterActivity
 

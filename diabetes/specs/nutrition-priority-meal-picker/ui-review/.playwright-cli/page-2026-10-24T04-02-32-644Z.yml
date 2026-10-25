@@ -1,0 +1,40 @@
+- generic [ref=e4] [cursor=pointer]:
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - generic:
+            - generic [ref=e1429]: FIXTURE
+            - checkbox "Feasible" [checked] [ref=e1430]
+            - checkbox "Conflict" [ref=e1431]
+            - checkbox "Always invalid" [ref=e1432]
+            - generic [ref=e1433]: Fail next nutrition save
+            - switch [ref=e1434]
+            - generic [ref=e1435]: Diabetes off
+            - switch [ref=e1436]
+            - button "Remount picker" [ref=e1437]
+            - button "Open saved recipes" [ref=e1438]
+            - generic [ref=e1439]: "Gemini calls: 10"
+            - generic [ref=e1440]: "Saved priorities: protein,fiber"
+            - generic:
+              - group:
+                - textbox "What do you want to eat?" [ref=e1442]
+                - generic [ref=e1444]: Meal type
+                - generic:
+                  - checkbox "Breakfast" [ref=e1446]
+                  - checkbox "Lunch" [ref=e1447]
+                  - checkbox "Dinner" [checked] [ref=e1448]
+                  - checkbox "Snack" [ref=e1449]
+                  - checkbox "Drink" [ref=e1450]
+                - button "Recommend a meal" [active] [ref=e1452]
+                - button "Preferences" [ref=e1454]
+                - generic:
+                  - group "Fixture Dish 1 (allPreferences) $5.20/serving Beginner Costs are estimates. Ingredients Tap a line to ask Instructions Tap a line to ask Ask about this meal":
+                    - button "Ask why this meal was picked Deterministic fixture meal 1." [ref=e1463]
+                    - button "Ask about fixture ingredient A1 fixture ingredient A1" [ref=e1464]
+                    - button "Ask about fixture ingredient B fixture ingredient B" [ref=e1460]
+                    - button "Ask about step 1 1 Step one for dish 1." [ref=e1465]
+                    - button "Ask about step 2 2 Step two." [ref=e1462]
+                    - checkbox "Can I swap an ingredient in dish 1?" [ref=e1466]
+                    - checkbox "How do I store the leftovers?" [ref=e1467]
+                    - checkbox "Can I make it spicier?" [ref=e1468]

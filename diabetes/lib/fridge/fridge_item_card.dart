@@ -87,7 +87,7 @@ class FridgeItemCard extends StatelessWidget {
                         textAlign: TextAlign.center,
                         maxLines: useLargeTextLayout(context) ? 2 : 1,
                         overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodyMedium?.copyWith(
+                        style: theme.textTheme.bodyLarge?.copyWith(
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -106,7 +106,7 @@ class FridgeItemCard extends StatelessWidget {
                           textAlign: TextAlign.center,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.labelMedium?.copyWith(
+                          style: theme.textTheme.labelLarge?.copyWith(
                             color: statusColor,
                             fontWeight: FontWeight.w700,
                           ),
@@ -140,9 +140,14 @@ class FridgeItemCard extends StatelessWidget {
                 Positioned(
                   top: 0,
                   right: 0,
+                  // No tooltip: a tooltip's overlay that is open (the mouse
+                  // resting here) when Undo puts this tile back is created
+                  // during the lazy grid's layout, which Flutter rejects
+                  // ("_RenderLayoutBuilder was mutated in
+                  // RenderSliverGrid.performLayout"). The icon's semantic
+                  // label keeps the name for screen readers.
                   child: IconButton(
                     key: Key('fridgeTileDelete_${foodItem.name}'),
-                    tooltip: 'Delete ${foodItem.name}',
                     onPressed: onDelete,
                     iconSize: 18,
                     color: scheme.onSurfaceVariant,
@@ -150,7 +155,10 @@ class FridgeItemCard extends StatelessWidget {
                       minWidth: 48,
                       minHeight: 48,
                     ),
-                    icon: const Icon(Icons.close),
+                    icon: Icon(
+                      Icons.close,
+                      semanticLabel: 'Delete ${foodItem.name}',
+                    ),
                   ),
                 ),
             ],

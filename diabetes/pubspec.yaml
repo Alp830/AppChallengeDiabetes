@@ -43,9 +43,18 @@ dependencies:
   firebase_storage: ^13.1.0
   file_picker: ^10.3.10
 
+# camera_web 0.3.5+3 with one fix: availableCameras() skips a camera that
+# can't start (e.g. OBS Virtual Camera while OBS isn't streaming) instead of
+# failing for every camera. Upstream 0.3.5+6 still has the bug. See
+# third_party/camera_web/PATCHED.md; delete this block once upstream fixes it.
+dependency_overrides:
+  camera_web:
+    path: third_party/camera_web
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  flutter_launcher_icons: ^0.14.4
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
@@ -108,3 +117,18 @@ flutter:
           weight: 600
         - asset: assets/fonts/AtkinsonHyperlegibleNext-Bold.ttf
           weight: 700
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: assets/AppleV2.png
+  remove_alpha_ios: true
+  web:
+    generate: true
+    image_path: assets/AppleV2.png
+  windows:
+    generate: true
+    image_path: assets/AppleV2.png
+  macos:
+    generate: true
+    image_path: assets/AppleV2.png

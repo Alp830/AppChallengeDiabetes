@@ -55,6 +55,15 @@ void main() {
     expect(capturedRequest.url.toString(), FridgePhotoFoodAgent.endpoint);
     expect(capturedRequest.headers['x-goog-api-key'], 'test-token');
     expect(capturedRequest.body, contains('inline_data'));
+    final config =
+        (jsonDecode(capturedRequest.body)
+                as Map<String, dynamic>)['generationConfig']
+            as Map<String, dynamic>;
+    expect(FridgePhotoFoodAgent.model, 'gemini-4-argon');
+    expect(config['thinkingConfig'], {'thinkingLevel': 'low'});
+    expect(config['mediaResolution'], 'MEDIA_RESOLUTION_HIGH');
+    // Argon ignores sampling parameters, so none are sent.
+    expect(config.containsKey('temperature'), isFalse);
     expect(foods, hasLength(2));
     expect(foods.first.name, 'Apples');
     expect(foods.first.amount, '3 apples');

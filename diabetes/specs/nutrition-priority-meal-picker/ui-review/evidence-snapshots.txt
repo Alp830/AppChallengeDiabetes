@@ -1,0 +1,45 @@
+# Accessibility snapshot excerpts (playwright-cli snapshot), 2026-10-24
+
+## Conflict, count 5, budget 6.50, protein+fiber (full tree excerpt)
+            - generic [ref=e72]: "Gemini calls: 1"
+                  - group "Fixture Dish 3 (budgetFirst) $5.20/serving Beginner Costs are estimates. Ingredients Tap a line to ask Instructions Tap a line to ask Ask about this meal":
+                    - generic [ref=e100]: Budget-first option
+
+## Keyboard: focused 'High carbs', pressed Space, waited for save (mouse parked at 5,890)
+        - checkbox "Balance my meal Include produce, protein, quality carbs, and fiber." [ref=e133]
+        - checkbox "High protein" [checked] [ref=e136]
+        - checkbox "High carbs" [checked] [active] [ref=e137]
+        - checkbox "High fiber" [checked] [ref=e138]
+
+## Next Tab
+checkbox "High fiber"
+
+
+## Card order per count (session 1; budget $6.50, protein+fiber, Conflict; the mock deliberately returned nutrition-first meals first)
+Captured by scrolling the result list and recording each card's semantics label in order (dedup'd), with the Gemini call counter read before scrolling:
+== Conflict count 1: Gemini calls: 6
+Fixture Dish 1 (budgetFirst) $5.20;
+== Conflict count 2: Gemini calls: 7
+Fixture Dish 2 (budgetFirst) $5.20;Fixture Dish 1 (nutritionFirst) $9.75;
+== Conflict count 3: Gemini calls: 8
+Fixture Dish 2 (budgetFirst) $5.20;Fixture Dish 3 (budgetFirst) $5.20;Fixture Dish 1 (nutritionFirst) $9.75;
+== Conflict count 4: Gemini calls: 9
+Fixture Dish 3 (budgetFirst) $5.20;Fixture Dish 4 (budgetFirst) $5.20;Fixture Dish 1 (nutritionFirst) $9.75;Fixture Dish 2 (nutritionFirst) $9.75;
+== count 5 (Gemini calls: 5 at that point)
+Fixture Dish 3 (budgetFirst) $5.20;Fixture Dish 4 (budgetFirst) $5.20;Fixture Dish 5 (budgetFirst) $5.20;Fixture Dish 1 (nutritionFirst) $9.75;Fixture Dish 2 (nutritionFirst) $9.75;
+
+## Feasible (session 1, counts 1/3/5)
+== Feasible count 1: Gemini calls: 10
+Fixture Dish 1 (allPreferences) $5.20;
+== Feasible count 3: Gemini calls: 11
+Fixture Dish 1 (allPreferences) $5.20;Fixture Dish 2 (allPreferences) $5.20;Fixture Dish 3 (allPreferences) $5.20;
+== Feasible count 5: Gemini calls: 12
+Fixture Dish 1 (allPreferences) ... Fixture Dish 5 (allPreferences), all $5.20; no tradeoff label/notice nodes captured while scrolling.
+
+## Feasible count 1 (session 3, desktop-feasible-1-top.png)
+Nodes matching "first option|Over your budget|couldn't meet": 0
+group "Fixture Dish 1 (allPreferences) $5.20/serving Beginner Costs are estima...
+Gemini calls: 2
+
+## Always invalid (session 1)
+Gemini calls 12 -> 17 (5 bounded attempts), then: group "Couldn't get a meal idea after a few tries. Check your connection and try again." + button "Try again"

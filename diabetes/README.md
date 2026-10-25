@@ -12,8 +12,9 @@ GEMINI_API_KEY=your_api_key_here
 ```
 
 The Gemini key powers everything that calls a model, including fridge photo
-recognition, which uses `gemini-3.1-pro-preview` (multimodal) to enumerate every food
-item in a photo. The value also supports `--dart-define=GEMINI_API_KEY=...` as a
+recognition, which uses `gemini-4-argon` (multimodal, thinking level low) to
+enumerate every food item in a photo. Argon has no free tier, so the scan needs a
+paid key; the text features use `gemini-3-flash-preview`, which has one. The value also supports `--dart-define=GEMINI_API_KEY=...` as a
 fallback. Note: `.env` is bundled as a Flutter asset, so a full re-run (not hot
 reload) is needed after changing it.
 

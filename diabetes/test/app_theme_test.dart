@@ -39,8 +39,8 @@ void main() {
     );
   });
 
-  test('page is surfaceContainerLow so white cards separate by tone', () {
-    expect(theme.scaffoldBackgroundColor, scheme.surfaceContainerLow);
+  test('page is a soft green so white cards separate by tone', () {
+    expect(theme.scaffoldBackgroundColor, const Color(0xFFE1F2E2));
   });
 
   test('freshness colors come from the theme extension', () {

@@ -1,0 +1,13 @@
+- generic [ref=e4] [cursor=pointer]:
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - generic:
+            - generic:
+              - button "Back" [active] [ref=e330]
+              - heading "Saved recipes" [level=2] [ref=e331]
+            - generic:
+              - group:
+                - button "Seeded Budget-First Lentil Bowl Saved Jan 2" [ref=e332]
+                - button "Seeded Legacy Omelette Saved Jan 1" [ref=e333]

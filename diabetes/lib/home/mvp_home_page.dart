@@ -4,6 +4,7 @@ import '../design/app_radius.dart';
 import '../design/app_theme.dart';
 import '../design/load_error.dart';
 import '../design/spacing.dart';
+import '../design/undo_snack_bar.dart';
 import '../exercise/data/today_todo_repository.dart';
 import '../meals/saved/saved_recipe.dart';
 import '../meals/saved/saved_recipes_repository.dart';
@@ -256,6 +257,8 @@ class _HomeContentState extends State<_HomeContent> {
       ..showSnackBar(
         SnackBar(
           content: Text('Removed "${item.name}"'),
+          persist: false,
+          duration: undoSnackBarDuration,
           action: SnackBarAction(
             label: 'Undo',
             onPressed: () => _commit(

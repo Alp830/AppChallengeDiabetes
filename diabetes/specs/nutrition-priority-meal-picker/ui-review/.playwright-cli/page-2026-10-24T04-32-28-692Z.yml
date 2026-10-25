@@ -1,0 +1,27 @@
+- generic [ref=e83] [cursor=pointer]:
+  - generic "Dialog":
+    - button "Dismiss" [ref=e84]
+    - generic:
+      - group:
+        - generic [ref=e85]: Preferences
+        - switch "Use items from my fridge Your fridge is empty right now." [checked] [ref=e86]
+        - checkbox "Balance my meal Include produce, protein, quality carbs, and fiber." [ref=e87]
+        - generic [ref=e88]: Nutrition priorities
+        - generic [ref=e89]: Pick as many as you like. If they conflict with your budget, we'll show the tradeoff.
+        - checkbox "High protein" [checked] [ref=e90]
+        - checkbox "High carbs" [ref=e91]
+        - checkbox "High fiber" [checked] [ref=e92]
+        - switch "Set a budget" [checked] [active] [ref=e93]
+        - textbox "Budget per serving" [ref=e108]
+        - switch "I'm in a hurry" [ref=e94]
+        - generic [ref=e95]: Cooking difficulty
+        - checkbox "Beginner" [checked] [ref=e96]
+        - checkbox "Intermediate" [ref=e97]
+        - checkbox "Advanced" [ref=e98]
+        - generic [ref=e99]: Number of recommendations
+        - button "1" [ref=e100]
+        - button "2" [ref=e101]
+        - button "3" [ref=e102]
+        - button "4" [ref=e103]
+        - button "5" [ref=e104]
+        - button "Done" [ref=e105]

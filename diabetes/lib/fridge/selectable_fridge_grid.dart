@@ -51,7 +51,9 @@ class SelectableFridgeGrid extends StatefulWidget {
 
 class _SelectableFridgeGridState extends State<SelectableFridgeGrid> {
   final _scrollController = ScrollController();
-  final Map<int, GlobalKey> _itemKeys = {};
+
+  /// Each tile's key, together with the group it was made for.
+  final Map<int, (FoodType, GlobalKey)> _itemKeys = {};
   Set<int> _selected = {};
   bool _selectionMode = false;
   int _lastEmittedCount = -1;
@@ -82,6 +84,19 @@ class _SelectableFridgeGridState extends State<SelectableFridgeGrid> {
     _itemKeys.removeWhere((key, _) => !available.contains(key));
     final retained = _selected.intersection(available);
     if (!setEquals(retained, _selected)) _selected = retained;
+  }
+
+  /// A tile keeps its key while it stays in its group, and gets a new one
+  /// when its food type moves it to another. Every group is its own
+  /// SliverGrid, and a GlobalKey'd tile re-parented from one grid into
+  /// another mid-layout throws ("_RenderLayoutBuilder was mutated in
+  /// RenderSliverGrid.performLayout") and paints an error box in its place.
+  GlobalKey _keyFor(int item, FoodType group) {
+    final existing = _itemKeys[item];
+    if (existing != null && existing.$1 == group) return existing.$2;
+    final key = GlobalKey();
+    _itemKeys[item] = (group, key);
+    return key;
   }
 
   List<FoodItem> get _selectedFoods => widget.items
@@ -169,9 +184,9 @@ class _SelectableFridgeGridState extends State<SelectableFridgeGrid> {
         Spacing
             .s4 // icon tile + gap
             +
-        line(textTheme.bodyMedium!) * (largeText ? 2 : 1) +
+        line(textTheme.bodyLarge!) * (largeText ? 2 : 1) +
         Spacing.s4 +
-        line(textTheme.labelMedium!) +
+        line(textTheme.labelLarge!) +
         Spacing.s4; // pill text + its padding
   }
 
@@ -205,7 +220,7 @@ class _SelectableFridgeGridState extends State<SelectableFridgeGrid> {
             Flexible(
               child: Text(
                 foodType.label,
-                style: theme.textTheme.titleSmall,
+                style: theme.textTheme.titleMedium,
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -227,7 +242,7 @@ class _SelectableFridgeGridState extends State<SelectableFridgeGrid> {
     final largeText = useLargeTextLayout(context);
     final keys = <int, GlobalKey>{
       for (final entry in widget.items)
-        entry.key: _itemKeys.putIfAbsent(entry.key, GlobalKey.new),
+        entry.key: _keyFor(entry.key, entry.value.foodType),
     };
     final groups = _groups;
 
@@ -263,11 +278,12 @@ class _SelectableFridgeGridState extends State<SelectableFridgeGrid> {
                           widget.items.length == 1
                               ? '1 item'
                               : '${widget.items.length} items',
-                          style: Theme.of(context).textTheme.titleMedium
+                          style: Theme.of(context).textTheme.labelMedium
                               ?.copyWith(
                                 color: Theme.of(
                                   context,
                                 ).colorScheme.onSurfaceVariant,
+                                fontWeight: FontWeight.w500,
                               ),
                         ),
                       ),
@@ -338,28 +354,42 @@ class _SelectableFridgeGridState extends State<SelectableFridgeGrid> {
                       crossAxisSpacing: Spacing.s12,
                       mainAxisExtent: _tileExtent(context, largeText),
                     ),
-                    delegate: SliverChildBuilderDelegate((context, position) {
-                      final entry = groups[groupIndex].value[position];
-                      return KeyedSubtree(
-                        key: keys[entry.key],
-                        child: FridgeItemCard(
-                          foodItem: entry.value,
-                          selected: _selected.contains(entry.key),
-                          selectionMode: _selectionMode,
-                          onToggleSelection: () => _toggle(entry.key),
-                          onEdit: () {
-                            if (_addModifierPressed) {
-                              _toggle(entry.key);
-                            } else {
-                              widget.onEdit(entry.key);
-                            }
-                          },
-                          onDelete: widget.onDelete == null
-                              ? null
-                              : () => widget.onDelete!(entry.key),
-                        ),
-                      );
-                    }, childCount: groups[groupIndex].value.length),
+                    delegate: SliverChildBuilderDelegate(
+                      (context, position) {
+                        final entry = groups[groupIndex].value[position];
+                        return KeyedSubtree(
+                          key: keys[entry.key],
+                          child: FridgeItemCard(
+                            foodItem: entry.value,
+                            selected: _selected.contains(entry.key),
+                            selectionMode: _selectionMode,
+                            onToggleSelection: () => _toggle(entry.key),
+                            onEdit: () {
+                              if (_addModifierPressed) {
+                                _toggle(entry.key);
+                              } else {
+                                widget.onEdit(entry.key);
+                              }
+                            },
+                            onDelete: widget.onDelete == null
+                                ? null
+                                : () => widget.onDelete!(entry.key),
+                          ),
+                        );
+                      },
+                      childCount: groups[groupIndex].value.length,
+                      // Lets the grid find a tile's new slot by its key while
+                      // building. Without it, a delete or undo shifts the
+                      // later tiles and the lazy grid re-parents each keyed
+                      // tile during layout, which throws if that tile has an
+                      // open tooltip (the mouse resting on its delete button).
+                      findChildIndexCallback: (key) {
+                        final index = groups[groupIndex].value.indexWhere(
+                          (entry) => keys[entry.key] == key,
+                        );
+                        return index < 0 ? null : index;
+                      },
+                    ),
                   ),
                 ),
               ],

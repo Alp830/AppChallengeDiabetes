@@ -1,0 +1,39 @@
+- generic [ref=e4] [cursor=pointer]:
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - generic:
+            - generic [ref=e1287]: FIXTURE
+            - checkbox "Feasible" [checked] [active] [ref=e1288]
+            - checkbox "Conflict" [ref=e1289]
+            - checkbox "Always invalid" [ref=e1290]
+            - generic [ref=e1291]: Fail next nutrition save
+            - switch [ref=e1292]
+            - generic [ref=e1293]: Diabetes off
+            - switch [ref=e1294]
+            - button "Remount picker" [ref=e1295]
+            - button "Open saved recipes" [ref=e1296]
+            - generic [ref=e1297]: "Gemini calls: 9"
+            - generic [ref=e1298]: "Saved priorities: protein,fiber"
+            - generic:
+              - group:
+                - textbox "What do you want to eat?" [ref=e1381]
+                - generic [ref=e1383]: Meal type
+                - generic:
+                  - checkbox "Breakfast" [ref=e1385]
+                  - checkbox "Lunch" [ref=e1386]
+                  - checkbox "Dinner" [checked] [ref=e1387]
+                  - checkbox "Snack" [ref=e1388]
+                  - checkbox "Drink" [ref=e1389]
+                - button "Recommend a meal" [ref=e1391]
+                - button "Preferences" [ref=e1393]
+                - generic:
+                  - group "Fixture Dish 3 (budgetFirst) $5.20/serving Beginner Costs are estimates. Ingredients Tap a line to ask Instructions Tap a line to ask Ask about this meal":
+                    - generic [ref=e1395]: Budget-first option
+                    - generic [ref=e1396]: "Note: We couldn't find a meal meeting all your preferences within $6.50 per serving, so this one relaxes: High fiber."
+                    - button "Ask why this meal was picked Deterministic fixture meal 3." [ref=e1397]
+                    - button "Ask about fixture ingredient A3 fixture ingredient A3" [ref=e1398]
+                    - button "Ask about fixture ingredient B fixture ingredient B" [ref=e1399]
+                    - button "Ask about step 1 1 Step one for dish 3." [ref=e1400]
+                    - button "Ask about step 2 2 Step two." [ref=e1401]

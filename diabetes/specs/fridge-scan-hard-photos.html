@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plan: Fridge scan that reads hard photos, blurry and clear</title>
+<style>
+:root{--bg:#f7f6f0;--surface:#fff;--ink:#203a30;--muted:#59675e;--green:#267a5b;--amber:#976018;--line:#dae2d9;--font:system-ui,-apple-system,"Segoe UI",sans-serif}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 var(--font)}main{max-width:1000px;margin:auto;padding:40px 24px}h1,h2,h3,h4{line-height:1.3}h1{font-size:2.3rem}h2{color:var(--green);margin-top:0}section,.phase,header{margin-bottom:24px}section{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:24px}.phase{border-top:2px solid var(--line);padding-top:16px}.status{color:var(--amber);white-space:nowrap}code,pre{background:#eef3ed;border-radius:4px;font-size:.9em}code{padding:2px 5px;overflow-wrap:anywhere}pre{padding:16px;overflow:auto}li{margin:8px 0}figure{margin:24px 0;text-align:center}img{width:100%;max-width:720px;border-radius:12px}figcaption,.meta{font-size:.9rem;color:var(--muted)}dl{display:grid;grid-template-columns:130px 1fr;gap:6px}dd{margin:0;overflow-wrap:anywhere}.tag{font-size:.75rem;font-weight:700;color:var(--green);margin-right:8px}.tag.new{color:var(--amber)}.loop,.callout{padding:14px 18px;background:#f7f0df;border-left:4px solid var(--amber);border-radius:5px}table{border-collapse:collapse;width:100%}td,th{padding:10px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}@media(max-width:600px){main{padding:20px 12px}section{padding:16px}h1{font-size:1.8rem}dl{display:block}dd{margin-bottom:10px}}
+</style>
+</head>
+<body>
+<main>
+
+  <header>
+    <p>Engineering plan · Not started</p>
+    <h1>Plan: Fridge scan that reads hard photos, blurry and clear</h1>
+    <details class="meta">
+      <summary>Metadata</summary>
+      <dl>
+        <dt>created</dt>      <dd>2026-10-24T21:36:00Z</dd>
+        <dt>modified</dt>     <dd>2026-10-24T21:36:00Z, 2026-10-24T22:20:00Z</dd>
+        <dt>commits</dt>      <dd>dd3df4f (inspection baseline; workspace dirty with uncommitted Argon switch, retry abort, camera_web patch and fridge grid fix from this session), dd3df4f (revision 2, still uncommitted)</dd>
+        <dt>agent name</dt>   <dd>Claude Code root / claude-opus-5-5, Claude Code root / claude-opus-5-5 (revision 2: clear-photo and blur research)</dd>
+        <dt>session id</dt>   <dd>416c8359-22ac-471c-b79f-fcbabad2d3f5, 416c8359-22ac-471c-b79f-fcbabad2d3f5</dd>
+        <dt>back refs</dt>    <dd>../docs/TECHNICAL_OVERVIEW.md, C:/Users/alpsa/.pi/agent/specs/a2abox/2026-10-24-food-recognition-model.md (Argon low decision), user decisions in this session (budget, latency, show-everything, capture, improve both clear and blurry)</dd>
+        <dt>forward refs</dt> <dd>tool/scan_eval/results/ (eval reports, created in Phase 1)</dd>
+      </dl>
+    </details>
+  </header>
+
+  <figure>
+    <img src="fridge-scan-hard-photos/hero.png" alt="A blurry tilted fridge photo becomes a food list where uncertain rows carry a Maybe tag and a delete button.">
+    <figcaption>Goal: any photo, blurry or clear, gives a full list. Unsure items are shown as "Maybe" and removed with one tap.</figcaption>
+  </figure>
+
+  <section id="purpose">
+    <h2>Purpose</h2>
+    <p>Make the fridge scan identify the food in two very different kinds of hard photo:</p>
+    <ul>
+      <li><strong>Blurry photos</strong> like the reference webcam frame: 1920×1080, tilted about 25°, motion-blurred, back-lit, with a door bin swinging toward the camera.</li>
+      <li><strong>Large, clear photos</strong> like the reference phone photo: 4284×5712 (24 MP), sharp, but with 40+ small items whose labels shrink to a few pixels once the photo is compressed to fit Gemini's image budget.</li>
+    </ul>
+    <p>Today's scan silently drops anything it isn't sure of. The new scan <strong>shows everything it sees</strong>. Items it is unsure about are marked "Maybe" with alternatives, and in the worst case the user deletes a wrong item with one button press.</p>
+  </section>
+
+  <section id="problem">
+    <h2>Problem</h2>
+    <figure>
+      <img src="fridge-scan-hard-photos/hard-photo.jpg" alt="Tilted, blurry, back-lit webcam photo of an open fridge.">
+      <figcaption>The blurry reference (<code>Camera Roll/WIN_20261024_14_05_41_Pro.jpg</code>). The clear phone photo of the same fridge (<code>Downloads/unnamed.jpg</code>) is the second test photo, and the source of the answer key. It is not shown here because it contains prescription labels.</figcaption>
+    </figure>
+
+    <h3>Why the blurry photo fails</h3>
+    <table>
+      <thead><tr><th>Difficulty</th><th>Evidence</th><th>Current code</th></tr></thead>
+      <tbody>
+        <tr><td>Motion blur</td><td>The most damaging quality problem for vision models: it cut the odds of a correct product ID by <strong>88%</strong>. The best model fell from 98% to 75% accuracy, and to 69% when blur, rotation and framing problems combined (CHI '26, 1,859 real photos, GPT-4.1 and Gemini 2.5 Flash among those tested).</td><td>The prompt says to leave out anything uncertain, so blurry items vanish.</td></tr>
+        <tr><td>Fixing it afterwards</td><td>Deblurring or restoration before the model "recover only a fraction of lost performance and occasionally hurt accuracy" (Visual Quality Paradox study). Enlarging a crop adds no information (2610.09313, Prop. on interpolation).</td><td>Nothing; and the earlier draft of this plan proposed enlarging crops, which is now dropped.</td></tr>
+        <tr><td>About 25° tilt</td><td>Rotation significantly lowers identification in the CHI '26 study; Google's tips say to send correctly rotated images.</td><td>EXIF orientation isn't baked in, and small tilts are never corrected.</td></tr>
+        <tr><td>Back-light</td><td>The fridge lamp washes out the top shelf.</td><td>No exposure warning.</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Why the clear photo is harder than it looks</h3>
+    <table>
+      <thead><tr><th>Difficulty</th><th>Evidence</th><th>Current code</th></tr></thead>
+      <tbody>
+        <tr><td>Too few image tokens per item</td><td>A whole image sent within N tokens gives an object at most m·√(N/(W·H)) tokens per side, so doubling the budget only gets 41% more detail per object (2610.09313, 177,000 requests on 797 images, Gemini 3.8 among the models tested). A label 100 px tall in the 24 MP original ends up a fraction of one token.</td><td>The gallery photo is resized to 2048 px (added earlier this session), then compressed into about 1,120 tokens. The original pixels are thrown away before anything can zoom.</td></tr>
+        <tr><td>Too many items per call</td><td>"At fixed detail, recall falls as one call must report more targets." 40+ items in one call is worse than 10 in each of four.</td><td>One call for the whole photo.</td></tr>
+        <tr><td>Overconfident misses</td><td>A clean photo doesn't produce "guess" items for small door labels; they just get missed.</td><td>The planned zoom pass only triggered on guesses, so it would never run on a clean photo.</td></tr>
+        <tr><td>Truly hidden items</td><td>Drawers behind frosted plastic and bags. No one can name everything in them.</td><td>Scoring them as misses would make any target unfair.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="solution">
+    <h2>Solution</h2>
+    <figure>
+      <img src="fridge-scan-hard-photos/pipeline.png" alt="Pipeline: Check the photo, Scan with Gemini, Zoom into regions, Review the list.">
+      <figcaption>Check → Scan → Zoom with real pixels → Review. Each step is measured on real photos before it ships.</figcaption>
+    </figure>
+    <ol>
+      <li><strong>Measure first.</strong> An eval harness scores the real scan against a hand-written answer key split into three tiers (readable, recognizable, hidden), reporting recall, precision, latency and cost.</li>
+      <li><strong>Blurry photos: capture a better frame instead of repairing a bad one.</strong>
+        <ul>
+          <li><em>Sharpest of a burst:</em> when the user taps the shutter, take 4 frames over about 0.6 s and keep the sharpest (Laplacian variance, the same method Apple's sample code uses for bracketed sequences). This targets exactly the hand-shake blur in the reference photo.</li>
+          <li><em>Quality warning:</em> if even the best frame is blurry or over-exposed, say so ("Hold steady and retake") with <em>Use anyway</em>.</li>
+          <li><em>Straighten:</em> bake in EXIF orientation. Pass 1 also reports the photo's tilt; above 10°, the original is rotated before any crops are cut.</li>
+          <li><em>A second, steady photo</em> of the door (up to 3 photos per scan).</li>
+          <li><em>No deblurring or upscaling</em>: the evidence says they don't help.</li>
+        </ul>
+      </li>
+      <li><strong>Clear photos: give each item more real pixels.</strong>
+        <ul>
+          <li><em>Keep the original:</em> stop resizing at pick time. Keep the full-resolution bytes in memory and derive what gets uploaded from them, so upload size stays bounded and crops have native pixels. Camera capture moves from <code>veryHigh</code> (about 1080p) to <code>max</code>.</li>
+          <li><em>Tiles:</em> for a large photo, pass 1 sees a 2048 px overview. Overlapping native-resolution tiles (zones, or a 2×2 grid) are then scanned in parallel calls. Two rules from 2610.09313 make splitting safe: no tile may be lower-resolution than the overview, and tiles overlap by at least one item's width (about 12% of the side). Under those rules splitting "never significantly lowered recall" and raised it by up to 28 points.</li>
+          <li><em>Merge:</em> each tile's boxes are mapped back to full-photo coordinates and duplicates removed by box overlap plus name.</li>
+        </ul>
+      </li>
+      <li><strong>Both: Scan v2 prompt.</strong> Zone by zone with a count first, <strong>never omit</strong>, a confidence per item (<code>sure</code> / <code>likely</code> / <code>guess</code>), up to two alternatives, a box, <code>isFood</code>, and the photo's tilt. Name what's inside containers.</li>
+      <li><strong>Both: targeted zoom.</strong> Native-resolution crops of <code>guess</code> items, and of zones whose stated count exceeds the items listed, are re-checked in one call. On blurry photos this mostly helps with framing and background clutter; it can't add sharpness.</li>
+      <li><strong>Review.</strong> Every food item goes into the staged drafts. Unsure items get an amber <strong>Maybe</strong> badge, the tile ✕ deletes in one press, and the edit sheet offers alternatives as chips.</li>
+    </ol>
+    <p><strong>Budget agreed with the owner:</strong> about 15 s and about 2× today's cost per scan; up to $5 of real API calls for evaluation. Tiling multiplies calls, so it runs in parallel to hold latency, and the eval decides whether its accuracy gain is worth the cost. If it isn't within 2×, the plan reports that and asks before shipping it.</p>
+  </section>
+
+  <section id="targets">
+    <h2>Success targets</h2>
+    <table>
+      <thead><tr><th>Metric</th><th>Definition</th><th>Target</th></tr></thead>
+      <tbody>
+        <tr><td>Recall, blurry photo</td><td>Readable + recognizable items visible in the photo that appear in the output (sure or Maybe; alternatives count)</td><td>≥ 70%</td></tr>
+        <tr><td>Recall, clear photo</td><td>Readable + recognizable items in the answer key</td><td>≥ 90%</td></tr>
+        <tr><td>Hidden tier</td><td>Drawer and bagged items found</td><td>Reported only, no target</td></tr>
+        <tr><td>Sure precision</td><td>Items marked <code>sure</code> that are correct</td><td>≥ 90%</td></tr>
+        <tr><td>Non-food leaks</td><td>Medicine, supplements or skincare added as food</td><td>0</td></tr>
+        <tr><td>Latency</td><td>Median wall time, including tiles and zoom</td><td>≤ 15 s</td></tr>
+        <tr><td>Cost</td><td>Median tokens × list price, from <code>usageMetadata</code></td><td>≤ 2× the Phase 1 baseline (otherwise ask)</td></tr>
+      </tbody>
+    </table>
+    <p class="meta">Every result is the median of 3 runs per photo. One run proves nothing.</p>
+  </section>
+
+  <section id="files" class="files">
+    <h2>Relevant Files</h2>
+    <h3>Existing Files</h3>
+    <ul>
+      <li><span class="tag existing">existing</span> <code>lib/main.dart</code> — <code>FridgePhotoFoodAgent</code> (model, request, prompt, schema, parser); <code>FridgeCameraSheet</code> (camera at <code>ResolutionPreset.veryHigh</code>, gallery picker resized to 2048 px); <code>FridgePageState._takeFridgePhoto</code>; <code>FoodItem</code>.</li>
+      <li><span class="tag existing">existing</span> <code>lib/fridge/fridge_scan_dialog.dart</code> — progress, retry and failure UI.</li>
+      <li><span class="tag existing">existing</span> <code>lib/fridge/fridge_item_card.dart</code>, <code>lib/fridge/selectable_fridge_grid.dart</code> — tiles; the Maybe badge goes here.</li>
+      <li><span class="tag existing">existing</span> <code>lib/ai/ai_retry.dart</code> — <code>runWithAbortableAiRetry</code>; every scan call, including each tile, goes through it.</li>
+      <li><span class="tag existing">existing</span> <code>third_party/camera_web/</code> — patched web camera; burst capture on web goes through it.</li>
+      <li><span class="tag existing">existing</span> <code>test/fridge_food_recognition_test.dart</code>, <code>test/fridge_scan_dialog_test.dart</code>, <code>test/fridge_camera_sheet_test.dart</code>, <code>test/fridge_save_workflow_test.dart</code>, <code>test/large_text_test.dart</code>, <code>test/accessibility_guidelines_test.dart</code> — regression coverage.</li>
+      <li><span class="tag existing">existing</span> <code>pubspec.yaml</code> — promote <code>image</code> 4.10.1 (already in the lockfile, pure Dart, works on web) to a direct dependency.</li>
+    </ul>
+    <h3>New Files</h3>
+    <ul>
+      <li><span class="tag new">new</span> <code>lib/fridge/scan/fridge_scan_service.dart</code> — scan moved out of <code>main.dart</code>: overview pass, tile pass, zoom pass, merge.</li>
+      <li><span class="tag new">new</span> <code>lib/fridge/scan/scan_models.dart</code> — <code>ScannedItem</code>, <code>ScanResponse</code> (items + reported tilt + zone counts), schema.</li>
+      <li><span class="tag new">new</span> <code>lib/fridge/scan/photo_prep.dart</code> — orientation bake, deskew, overview downscale, tile planner, native crops, blur and exposure scores. Runs in an isolate on mobile.</li>
+      <li><span class="tag new">new</span> <code>lib/fridge/scan/scan_merge.dart</code> — maps tile and crop boxes to full-photo coordinates; dedupes by box overlap and name; keeps the highest confidence.</li>
+      <li><span class="tag new">new</span> <code>lib/fridge/burst_capture.dart</code> — takes N frames, scores them and returns the sharpest.</li>
+      <li><span class="tag new">new</span> <code>tool/scan_eval/scan_eval_test.dart</code>, <code>tool/scan_eval/answer_key.json</code>, <code>tool/scan_eval/photos/</code> (git-ignored), <code>tool/scan_eval/results/</code> — live eval, outside <code>test/</code>.</li>
+      <li><span class="tag new">new</span> <code>test/photo_prep_test.dart</code>, <code>test/scan_merge_test.dart</code>, <code>test/burst_capture_test.dart</code>, <code>test/fridge_maybe_badge_test.dart</code> — offline tests.</li>
+    </ul>
+  </section>
+
+  <section id="phases">
+    <h2>Implementation Phases</h2>
+    <p><strong>IMPORTANT:</strong> Execute every phase and task step by step, in order, top to bottom.</p>
+    <p>Status markers: <code>[]</code> idle · <code>[wip]</code> in progress · <code>[x]</code> complete · <code>[f]</code> failed. All start as <code>[]</code>; the Build Plan workflow updates them as it works.</p>
+
+    <div class="phase">
+      <h3><code class="status">[]</code> Phase 1: Answer key, eval harness, baseline</h3>
+      <h4>1.1. Answer key</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> Copy both photos to <code>tool/scan_eval/photos/</code>; add it to <code>.gitignore</code>.</li>
+        <li><code class="status">[]</code> Write <code>answer_key.json</code> from the draft in Notes. Each item gets accepted names, zone, <code>isFood</code>, <code>tier</code> (<code>readable</code> / <code>recognizable</code> / <code>hidden</code>) and <code>visibleInBlurryPhoto</code>.</li>
+        <li><code class="status">[]</code> The owner confirms or corrects it before any baseline number is trusted.</li>
+        <li><code class="status">[]</code> Ask the owner for 3 more photos (another fridge or pantry, a grocery bag, a dim photo) and add short keys for them.</li>
+      </ul>
+      <h4>1.2. Move the scan out of main.dart</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> Move <code>FridgePhotoFoodAgent</code> unchanged into <code>lib/fridge/scan/fridge_scan_service.dart</code>, re-exported from <code>main.dart</code>.</li>
+        <li><code class="status">[]</code> Return <code>usageMetadata</code> token counts with the items.</li>
+      </ul>
+      <h4>1.3. Eval harness</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> Run the selected variant 3× per photo; score per tier, with matching that is lowercase, singular, token overlap on accepted names, plus alternatives. Write <code>results/&lt;date&gt;-&lt;variant&gt;.md</code> with hits, misses, false items, latency and cost.</li>
+        <li><code class="status">[]</code> Keep a spend ledger from real token counts in <code>results/ledger.json</code>; refuse a run that could take the total past <strong>$4.50</strong>.</li>
+        <li><code class="status">[]</code> Run the baseline (today's code, including today's 2048 px gallery resize) on both photos.</li>
+      </ul>
+      <h4>1.4. Testing Strategy</h4>
+      <p>Scorer unit tests run offline (synonyms, plurals, alternatives, tiers, duplicates). The refactor must not change the normal suite.</p>
+      <ul class="checklist">
+        <li><code class="status">[]</code> <code>flutter test test/fridge_food_recognition_test.dart test/fridge_scan_dialog_test.dart</code> — the move changed no behavior.</li>
+        <li><code class="status">[]</code> <code>flutter test</code> — 420+ passing, only the 11 known failures.</li>
+        <li><code class="status">[]</code> <code>flutter test tool/scan_eval/scan_eval_test.dart --dart-define=SCAN_VARIANT=baseline --dart-define=GEMINI_API_KEY=…</code> — baseline report and ledger entry exist.</li>
+      </ul>
+      <div class="loop">🔁 <strong>Do not exit this phase until every box above is checked.</strong> If any command fails, fix the cause and re-run — loop until all pass.</div>
+    </div>
+
+    <div class="phase">
+      <h3><code class="status">[]</code> Phase 2: Keep the pixels, straighten, and Scan v2</h3>
+      <h4>2.1. Keep the original</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> Gallery: remove the 2048 px <code>maxWidth</code>/<code>maxHeight</code> and <code>imageQuality</code> added earlier, so the picker returns the original. Camera: <code>ResolutionPreset.max</code>, falling back to <code>veryHigh</code> if initialization fails.</li>
+        <li><code class="status">[]</code> <code>photo_prep.dart</code>: bake EXIF orientation, keep the decoded original in memory, and derive a 2048 px q85 overview for upload. Uploads never carry the full original. On web, time a 24 MP decode; if it's over 1.5 s, cap the kept original at 4096 px and note it.</li>
+      </ul>
+      <h4>2.2. Prompt and schema v2</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> Remove the "OMIT it entirely" rule: list every food or drink, give a best guess, mark it <code>guess</code>, and add up to two alternatives.</li>
+        <li><code class="status">[]</code> Zone first, with a count before each zone's items. Name contents, not containers.</li>
+        <li><code class="status">[]</code> Each item gets <code>confidence</code>, <code>alternatives</code>, <code>location</code>, <code>box_2d</code> (0–1000), <code>photoIndex</code> and <code>isFood</code>. The response also has <code>tiltDegrees</code> (the clockwise angle the photo needs to be level). <code>isFood: false</code> items are dropped in code and counted.</li>
+        <li><code class="status">[]</code> Keep the <code>FoodType</code> enum, the placeholder filter and expiry estimates.</li>
+      </ul>
+      <h4>2.3. Straighten</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> If <code>|tiltDegrees| &gt; 10</code>, rotate the kept original (bicubic, expand canvas) before Phase 3 cuts any tiles or crops; boxes from pass 1 are rotated with it. Pass 1 itself is never re-run for tilt.</li>
+      </ul>
+      <h4>2.4. Variants to measure</h4>
+      <table>
+        <thead><tr><th>Variant</th><th>Change</th><th>Question it answers</th></tr></thead>
+        <tbody>
+          <tr><td><code>v2-high</code></td><td>Prompt and schema v2; overview at <code>MEDIA_RESOLUTION_HIGH</code></td><td>What does never-omit plus zones buy on its own?</td></tr>
+          <tr><td><code>v2-ultra</code></td><td>Overview at per-part <code>ULTRA_HIGH</code> (2240 tokens, about +$0.002)</td><td>Does more budget on one image help? Theory predicts only about +41% detail per object.</td></tr>
+          <tr><td><code>v2-medium</code></td><td>Thinking <code>medium</code></td><td>Do blurry items need more reasoning?</td></tr>
+        </tbody>
+      </table>
+      <h4>2.5. Testing Strategy</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> <code>flutter test test/photo_prep_test.dart test/fridge_food_recognition_test.dart</code> — orientation bake, overview size, rotation of boxes, v2 parsing, never-omit, <code>isFood</code> filtering.</li>
+        <li><code class="status">[]</code> Live: <code>v2-high</code>, <code>v2-ultra</code>, <code>v2-medium</code> on both photos; keep the best variant within budget.</li>
+        <li><code class="status">[]</code> The chosen variant beats the baseline on both photos, with sure precision ≥ 90% and 0 leaks.</li>
+      </ul>
+      <div class="loop">🔁 <strong>Do not exit this phase until every box above is checked.</strong> If any command fails, fix the cause and re-run — loop until all pass.</div>
+    </div>
+
+    <div class="phase">
+      <h3><code class="status">[]</code> Phase 3: Tiles for large photos, zoom for unsure regions</h3>
+      <h4>3.1. Tile planner (clear, large photos)</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> Tile only when the kept original's long side is at least 1.5× the overview's (otherwise tiles would show no new pixels). A tile is never smaller in scale than the overview.</li>
+        <li><code class="status">[]</code> Two plans to compare: <code>grid</code> (2×2 with about 12% overlap) and <code>zones</code> (main compartment vs door, split from pass 1's zone boxes, padded 12%). Each tile is at most 2048 px on its long side at native scale; anything larger is split further.</li>
+        <li><code class="status">[]</code> Run tile calls in parallel (at most 4), each through <code>runWithAbortableAiRetry</code>, with an overall 15 s deadline. A tile that misses the deadline is dropped and pass-1 items stand for that region.</li>
+      </ul>
+      <h4>3.2. Targeted zoom (both kinds)</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> Trigger on <code>guess</code> items or zones whose count exceeds their items. Cut native-resolution crops (12% padding, overlapping boxes merged, at most 6), with <strong>no upscaling</strong>, and re-check them in one call.</li>
+        <li><code class="status">[]</code> A crop result replaces a pass-1 item only when its confidence is higher; an empty crop never removes an item.</li>
+      </ul>
+      <h4>3.3. Merge</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> <code>scan_merge.dart</code>: map tile and crop boxes to full-photo coordinates; treat items as the same if their boxes overlap (IoU ≥ 0.3) and their names match (or one is an alternative of the other). Keep the higher confidence and the union of alternatives. Items in overlap regions must not double-count.</li>
+      </ul>
+      <h4>3.4. Agentic vision (optional spike)</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> One call with <code>codeExecution</code> on Argon, as a comparison only. In 2610.09313 Gemini's own zoom agent used about <strong>376k input tokens per image</strong>, so it ships only if the eval shows it meeting the cost target, which is unlikely. If structured output doesn't work alongside the tool, mark <code>[f]</code>.</li>
+      </ul>
+      <h4>3.5. Testing Strategy</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> <code>flutter test test/scan_merge_test.dart test/photo_prep_test.dart</code> — tile planner (no tile zooms out, overlap ≥ 12%, small photos skip tiling), coordinate mapping, dedupe in overlaps, confidence-only replacement, deadline drop.</li>
+        <li><code class="status">[]</code> Live: <code>v3-grid</code>, <code>v3-zones</code>, <code>v3-zoom</code> and the best combination on both photos. Pick the cheapest that meets the recall targets within 15 s; if none fits the 2× cost budget, report the numbers and ask the owner.</li>
+      </ul>
+      <div class="loop">🔁 <strong>Do not exit this phase until every box above is checked.</strong> If any command fails, fix the cause and re-run — loop until all pass.</div>
+    </div>
+
+    <div class="phase">
+      <h3><code class="status">[]</code> Phase 4: Maybe items in the fridge</h3>
+      <h4>4.1. Data</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> Optional <code>scanReview</code> on <code>FoodItem</code> (confidence plus alternatives), stored only while set; old documents load fine. No rules change.</li>
+        <li><code class="status">[]</code> Editing the item, or tapping "Looks right", clears it.</li>
+      </ul>
+      <h4>4.2. UI</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> Tile: an amber "Maybe" badge with the semantic label "Maybe {name}, check this item". The tile ✕ stays the one-press delete.</li>
+        <li><code class="status">[]</code> Edit sheet: alternative chips ("Or: salsa · hot sauce") and a "Looks right" button.</li>
+        <li><code class="status">[]</code> Snackbar: "Added 18 items, 6 to check".</li>
+        <li><code class="status">[]</code> The meal agent prompt marks Maybe items as unconfirmed.</li>
+      </ul>
+      <h4>4.3. Testing Strategy</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> <code>flutter test test/fridge_maybe_badge_test.dart test/fridge_save_workflow_test.dart test/fridge_edit_sequences_test.dart</code> — badge, delete, alternative chip, clear on edit, survives save and reload.</li>
+        <li><code class="status">[]</code> <code>flutter test test/large_text_test.dart test/accessibility_guidelines_test.dart</code> — fits at 200% text, no new tap-target or label failures.</li>
+      </ul>
+      <div class="loop">🔁 <strong>Do not exit this phase until every box above is checked.</strong> If any command fails, fix the cause and re-run — loop until all pass.</div>
+    </div>
+
+    <div class="phase">
+      <h3><code class="status">[]</code> Phase 5: Capture: sharpest-of-burst, quality warning, up to 3 photos</h3>
+      <h4>5.1. Sharpest of a burst</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> <code>burst_capture.dart</code>: on shutter, call <code>takePicture</code> 4 times as fast as the platform allows (budget 0.8 s; fewer frames if it's slower). Score each frame's Laplacian variance on a 512 px grayscale copy in an isolate, and keep the sharpest. The shutter button shows "Hold still…" during the burst.</li>
+        <li><code class="status">[]</code> Measure how long <code>takePicture</code> takes on web (patched <code>camera_web</code>) and on Android. If a burst exceeds 1.5 s on a platform, fall back to a single frame there and note it.</li>
+      </ul>
+      <h4>5.2. Quality warning</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> Calibrate blur and over-exposure thresholds on all eval photos: the blurry reference must trip the warning and the clear one must not.</li>
+        <li><code class="status">[]</code> If the chosen frame still trips: show it with "Looks blurry, hold steady and retake" or "Bright light behind, try another angle", plus <em>Retake</em> and <em>Use anyway</em>. Never block the scan.</li>
+      </ul>
+      <h4>5.3. Multiple photos</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> "Add another photo": up to 3 removable thumbnails, then "Scan 3 photos". Each photo gets its own overview and tiles; items are merged across photos by name plus zone, without boxes, since boxes don't line up between photos.</li>
+        <li><code class="status">[]</code> Scan dialog: first thumbnail and "Reading 3 photos…".</li>
+      </ul>
+      <h4>5.4. Testing Strategy</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> <code>flutter test test/burst_capture_test.dart test/fridge_camera_sheet_test.dart test/fridge_scan_dialog_test.dart</code> — sharpest frame chosen from synthetic sharp and blurred frames; single-frame fallback; warning shows and can be bypassed; photo strip; request carries N photos.</li>
+        <li><code class="status">[]</code> Live: the owner retakes the reference shot on the webcam with burst on; compare its blur score and recall with the original blurry photo. Then the blurry photo plus a steady door close-up (<code>final-multi</code>): door recall improves with no duplicates.</li>
+      </ul>
+      <div class="loop">🔁 <strong>Do not exit this phase until every box above is checked.</strong> If any command fails, fix the cause and re-run — loop until all pass.</div>
+    </div>
+
+    <div class="phase">
+      <h3><code class="status">[]</code> Phase 6: Final eval and write-up</h3>
+      <ul class="checklist">
+        <li><code class="status">[]</code> Run the shipped configuration 3× on every eval photo; save <code>results/final.md</code> next to the baseline.</li>
+        <li><code class="status">[]</code> Manually scan both reference photos in the running web app and confirm the Maybe flow end to end.</li>
+        <li><code class="status">[]</code> Update <code>docs/TECHNICAL_OVERVIEW.md</code> §4.1 with the before and after numbers and the two research-backed ideas (sharpest-of-burst for blur, native-pixel tiles for large photos).</li>
+      </ul>
+      <h4>6.1. Testing Strategy</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> <code>flutter analyze lib test tool</code> — no new issues.</li>
+        <li><code class="status">[]</code> <code>flutter test</code> — no new failures beyond the 11 known ones.</li>
+      </ul>
+      <div class="loop">🔁 <strong>Do not exit this phase until every box above is checked.</strong> If any command fails, fix the cause and re-run — loop until all pass.</div>
+    </div>
+  </section>
+
+  <section id="validation">
+    <h2>Validation Commands</h2>
+    <p>Execute these commands to validate the entire plan is complete:</p>
+    <ul class="checklist">
+      <li><code class="status">[]</code> <code>flutter analyze lib test tool</code> — clean apart from the known <code>app_theme.dart:56</code> info.</li>
+      <li><code class="status">[]</code> <code>flutter test</code> — only the 11 known failures remain.</li>
+      <li><code class="status">[]</code> <code>tool/scan_eval/results/final.md</code> — every Success target met, or each miss written down with its number.</li>
+      <li><code class="status">[]</code> <code>tool/scan_eval/results/ledger.json</code> — total real spend ≤ $5.</li>
+      <li><code class="status">[]</code> <code>git status</code> — no eval photos tracked.</li>
+    </ul>
+    <div class="loop">🔁 <strong>The plan is not complete until every box is checked and every command passes. If for some reason a step is not possible to complete, mark it with [f] and move on if possible.</strong></div>
+  </section>
+
+  <section id="questionables">
+    <h2>Questionables</h2>
+    <details open>
+      <summary>The "green can" is Knik white cheese, not tuna</summary>
+      <p class="qa-answer">The tall green can on the top shelf is Knik white cheese (35 oz); the tuna is the small can on the second shelf. Both are in the draft key. Confirm in Phase 1.1.</p>
+    </details>
+    <details open>
+      <summary>Tiling may cost more than 2×</summary>
+      <p class="qa-answer">Each tile is a separate Argon call with its own thinking tokens. Parallel calls keep latency near one call, but cost scales with the number of tiles. Each tile lists fewer items, so output per call shrinks, but not to zero. The eval measures it, and if the cheapest plan that meets the target is over 2×, the owner decides.</p>
+    </details>
+    <details>
+      <summary>The 2048 px gallery resize added earlier this session is reversed</summary>
+      <p class="qa-answer">It cut upload time, but it threw away the pixels that tiles need. The new design keeps the original in memory and uploads only a bounded overview plus native-resolution tiles, so upload size stays bounded.</p>
+    </details>
+    <details>
+      <summary>Tilt comes from the model, not image processing</summary>
+      <p class="qa-answer">Detecting a fridge's tilt classically (shelf lines) is fragile. Pass 1 already looks at the photo, so it reports <code>tiltDegrees</code> at no extra cost, and only the tiles and crops use the straightened original. If the reported tilt proves unreliable in the eval, straightening is turned off.</p>
+    </details>
+    <details>
+      <summary>Burst capture depends on platform speed</summary>
+      <p class="qa-answer">On web, <code>takePicture</code> grabs a video frame, which should be fast. On phones it is a full still capture and may be slow. Phase 5.1 measures it and falls back to a single frame where a burst would make the user wait.</p>
+    </details>
+    <details>
+      <summary>Non-food items are dropped, not shown as Maybe</summary>
+      <p class="qa-answer">The door holds amoxicillin, supplements and a skincare serum. Medicine shouldn't reach a meal agent in a diabetes app. To reverse, show them as Maybe in category Other.</p>
+    </details>
+    <details>
+      <summary>Maybe items go straight into the fridge</summary>
+      <p class="qa-answer">This matches "worst case the user deletes it with one button press": staged drafts, a badge, and the existing ✕. Nothing is final until Save.</p>
+    </details>
+    <details>
+      <summary>Argon's price doubles on Dec 1, 2026</summary>
+      <p class="qa-answer">From $2/$10 to $4/$20 per 1M tokens. The cost target is relative to the baseline, so it holds; the absolute cost per scan doubles in December regardless.</p>
+    </details>
+  </section>
+
+  <section id="notes">
+    <h2>Notes</h2>
+
+    <h3>Draft answer key (from the clear photo; confirm in Phase 1.1)</h3>
+    <table>
+      <thead><tr><th>Zone</th><th>Readable</th><th>Recognizable</th><th>Hidden</th><th>In blurry photo?</th></tr></thead>
+      <tbody>
+        <tr><td>Top shelf</td><td>Knik white cheese (35 oz)</td><td>Egg carton (white) · glass bottle (sparkling water?) · dark sauce bottle</td><td>Orange food in the strainer pot</td><td>Cheese, eggs, dark bottle</td></tr>
+        <tr><td>Shelf 2</td><td>Stonyfield organic Greek yogurt · tuna can</td><td>Orange-lid tub (cottage cheese or labneh?) · glass dish of spread (hummus?) · teal-clip dish of tomato stew</td><td></td><td>Yes, blurry</td></tr>
+        <tr><td>Shelf 3</td><td>Butter (green-wrapped sticks)</td><td>Black pot (cooked dish) · red jam jar · brown jar (date syrup or jam?)</td><td>Yellow item behind</td><td>Yes, except the yellow item</td></tr>
+        <tr><td>Shelf 4</td><td></td><td>Teal-clip dish of chopped salad · brown egg carton · garlic or onions</td><td></td><td>Yes</td></tr>
+        <tr><td>Lower shelf and drawers</td><td></td><td>Jar of corn · lidded pot of soup · fresh dill · melon</td><td>Cheese block · eggplant? · bread · bulgur or semolina · cucumbers or zucchini · avocado?</td><td>No</td></tr>
+        <tr><td>Door</td><td>Kvass (fermented tonic) · Fontana Farms peppercorn dressing · organic ketchup · Philadelphia cream cheese · Hidden Valley ranch · organic lactose-free milk · 2% milk</td><td>Honey jar (green lid) · flax seeds · spice shakers</td><td></td><td>Kvass, honey, dressing (blurry)</td></tr>
+        <tr><td>Not food (must not be added)</td><td colspan="4">Mother's Promise liquid iron · Thorne, Nature's Bounty magnesium and Pure Encapsulations bottles · protein or supplement tubs · amoxicillin · Innisfree serum · Kirkland plastic wrap · basil plant on top of the fridge</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Research behind the design</h3>
+    <table>
+      <thead><tr><th>Source</th><th>Finding</th><th>Used for</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Shi, Gan, Jiang, "Why VLMs Miss Small Objects, and When Zooming In Is Safe"</strong> (arXiv 2610.09313, Oct 2026; 177k requests, 797 images, 11 models including Gemini 3.8)</td><td>Detail per object is limited by tokens per object side; doubling the budget gives only +41%. Recall falls as one call must list more items. Splitting is safe if no view zooms out and views overlap by one object: it never significantly lowered recall and raised it by up to +0.28. Enlarging pixels adds no information. Gemini's zoom agent used about 376k input tokens per image.</td><td>Keep originals; native-pixel tiles with overlap; no upscaling; agentic zoom demoted to a spike; ULTRA_HIGH tested but expected to help little</td></tr>
+        <tr><td><strong>Garg et al., "It's trained by non-disabled people"</strong> (CHI '26; 1,859 real product photos)</td><td>Best model 98% on good photos, 75% with quality problems, 69% when they combine. Blur cut the odds of a correct ID by 88%; rotation was also significant.</td><td>Blur is the top priority, tackled at capture; straightening</td></tr>
+        <tr><td><strong>"Demystifying the Visual Quality Paradox in MLLMs"</strong> (arXiv 2506.15645)</td><td>Restoration pipelines before the model recover only part of the lost accuracy and sometimes hurt; model performance doesn't follow human-judged image quality.</td><td>No deblurring or enhancement step</td></tr>
+        <tr><td><strong>Apple, "Finding the sharpest image in a sequence of captured images"</strong> (Accelerate sample)</td><td>Rank a burst by Laplacian sharpness and keep the best, a standard scanner technique.</td><td>Sharpest-of-burst capture</td></tr>
+        <tr><td><strong>Forky AI, "Fridge-to-recipe prompt engineering"</strong></td><td>One open prompt drops door and edge items and names containers; zones with counts fixed this. Per-shelf crops gave about +8% at 3× latency (sequential).</td><td>Zone-first prompt; tiles run in parallel</td></tr>
+        <tr><td><strong>Google Gemini docs</strong> (media resolution, image understanding, code execution)</td><td>HIGH = 1120 tokens and is recommended; ULTRA_HIGH = 2240, per-part only. Boxes in <code>box_2d</code> 0–1000. Send rotated-correctly, non-blurry images. Image code execution is official only on Gemini 3 Flash.</td><td>Schema, resolution variants, spike caveat</td></tr>
+        <tr><td><strong>Roboflow OCR eval</strong> (earlier debate)</td><td>Argon low 85.7% vs Pro high 73.1% at reading labels.</td><td>Why the scan runs on Argon low</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Rejected approaches</h3>
+    <ul>
+      <li><strong>Deblurring or super-resolution before upload:</strong> no evidence it helps vision models, some that it hurts, and a blurry photo has no detail to recover.</li>
+      <li><strong>Enlarging crops cut from the overview:</strong> no new information. Crops come from the original pixels instead.</li>
+      <li><strong>Sending the full 24 MP original:</strong> the model compresses it to the same token budget anyway, and the upload would be several MB.</li>
+      <li><strong>Gemini agentic zoom as the default:</strong> about 376k input tokens per image in the study, far over budget.</li>
+      <li><strong>On-device detector (YOLO):</strong> collapsed on real fridges for Forky, and would need training data this project doesn't have.</li>
+    </ul>
+
+    <h3>Cost estimate for evaluation</h3>
+    <p>Per Argon-low call: about $0.02–$0.045 at today's prices. Tile variants run 3–5 calls per scan. Estimated total: baseline 6, Phase 2 18, Phase 3 about 60 (tiles, zoom, combinations), Phase 5 and 6 about 20. That is roughly 100 calls, about $2.50–$4, under the $4.50 hard cap that the harness enforces. If the cap is reached, the remaining variants are skipped and listed as untested.</p>
+  </section>
+
+  <section id="amendments">
+    <h2>Amendments</h2>
+    <details>
+      <summary>2026-10-24T22:20:00Z — Revision 2 before execution: improvements for clear photos as well as blurry ones</summary>
+      <p>The owner asked for improvements for both kinds of photo. New research: native-pixel tiles with overlap and the keep-the-original change for large clear photos; sharpest-of-burst capture and model-reported tilt for blurry photos; no upscaling or deblurring; agentic zoom demoted after its measured token cost; the answer key split into tiers; the clear-photo recall target raised to 90% on readable and recognizable items. The plan had not been executed, so no status markers changed.</p>
+    </details>
+  </section>
+
+</main>
+</body>
+</html>

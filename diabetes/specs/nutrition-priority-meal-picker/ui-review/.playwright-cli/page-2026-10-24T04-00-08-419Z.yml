@@ -1,0 +1,40 @@
+- generic [ref=e4] [cursor=pointer]:
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - generic:
+            - generic [ref=e1048]: FIXTURE
+            - checkbox "Feasible" [ref=e1049]
+            - checkbox "Conflict" [checked] [ref=e1050]
+            - checkbox "Always invalid" [ref=e1051]
+            - generic [ref=e1052]: Fail next nutrition save
+            - switch [ref=e1053]
+            - generic [ref=e1054]: Diabetes off
+            - switch [ref=e1055]
+            - button "Remount picker" [ref=e1056]
+            - button "Open saved recipes" [ref=e1057]
+            - generic [ref=e1058]: "Gemini calls: 6"
+            - generic [ref=e1059]: "Saved priorities: protein,fiber"
+            - generic:
+              - group:
+                - textbox "What do you want to eat?" [ref=e1061]
+                - generic [ref=e1063]: Meal type
+                - generic:
+                  - checkbox "Breakfast" [ref=e1065]
+                  - checkbox "Lunch" [ref=e1066]
+                  - checkbox "Dinner" [checked] [ref=e1067]
+                  - checkbox "Snack" [ref=e1068]
+                  - checkbox "Drink" [ref=e1069]
+                - button "Recommend a meal" [ref=e1071]
+                - button "Preferences" [active] [ref=e1073]
+                - generic:
+                  - group "Fixture Dish 1 (budgetFirst) $5.20/serving Beginner Costs are estimates. Ingredients Tap a line to ask Instructions Tap a line to ask Ask about this meal":
+                    - generic [ref=e1075]: "I couldn't meet all your preferences within your budget. Relaxed: High fiber"
+                    - generic [ref=e1076]: Budget-first option
+                    - generic [ref=e1077]: "Note: We couldn't find a meal meeting all your preferences within $6.50 per serving, so this one relaxes: High fiber."
+                    - button "Ask why this meal was picked Deterministic fixture meal 1." [ref=e1078]
+                    - button "Ask about fixture ingredient A1 fixture ingredient A1" [ref=e1079]
+                    - button "Ask about fixture ingredient B fixture ingredient B" [ref=e1080]
+                    - button "Ask about step 1 1 Step one for dish 1." [ref=e1081]
+                    - button "Ask about step 2 2 Step two." [ref=e1082]

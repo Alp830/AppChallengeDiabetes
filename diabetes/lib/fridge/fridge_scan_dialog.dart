@@ -33,13 +33,21 @@ class FridgeScanDialog extends StatefulWidget {
     required this.imageBytes,
     required this.detect,
     this.retryPolicy = const AiRetryPolicy(
-      // The scan thinks at level high, so one attempt is genuinely slow.
-      attemptTimeout: Duration(seconds: 90),
+      // Argon at thinking low averages ~8 s a scan, so 60 s is a hung
+      // request, not a slow one. Attempts are aborted, not left running.
+      attemptTimeout: Duration(seconds: 60),
     ),
   });
 
   final Uint8List imageBytes;
-  final Future<List<FoodItem>> Function(Uint8List imageBytes) detect;
+
+  /// [abort] completes when the retry loop gives up on this attempt; pass it
+  /// on to the request so it is really stopped.
+  final Future<List<FoodItem>> Function(
+    Uint8List imageBytes,
+    Future<void> abort,
+  )
+  detect;
   final AiRetryPolicy retryPolicy;
 
   @override
@@ -68,8 +76,8 @@ class _FridgeScanDialogState extends State<FridgeScanDialog> {
     }
 
     try {
-      final foods = await runWithAiRetry(
-        () => widget.detect(widget.imageBytes),
+      final foods = await runWithAbortableAiRetry(
+        (abort) => widget.detect(widget.imageBytes, abort),
         policy: widget.retryPolicy,
         cancellation: _cancellation,
         onAttempt: (attempt, _) {

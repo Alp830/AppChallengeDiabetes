@@ -1,0 +1,39 @@
+- generic [ref=e4] [cursor=pointer]:
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - generic:
+            - generic [ref=e62]: FIXTURE
+            - checkbox "Feasible" [ref=e63]
+            - checkbox "Conflict" [checked] [active] [ref=e64]
+            - checkbox "Always invalid" [ref=e65]
+            - generic [ref=e66]: Fail next nutrition save
+            - switch [ref=e67]
+            - generic [ref=e68]: Diabetes off
+            - switch [ref=e69]
+            - button "Remount picker" [ref=e70]
+            - button "Open saved recipes" [ref=e71]
+            - generic [ref=e72]: "Gemini calls: 1"
+            - generic [ref=e73]: "Saved priorities: protein,fiber"
+            - generic:
+              - group:
+                - textbox "What do you want to eat?" [ref=e75]
+                - generic [ref=e92]: Meal type
+                - generic:
+                  - checkbox "Breakfast" [ref=e93]
+                  - checkbox "Lunch" [ref=e94]
+                  - checkbox "Dinner" [checked] [ref=e95]
+                  - checkbox "Snack" [ref=e96]
+                  - checkbox "Drink" [ref=e97]
+                - button "Recommend a meal" [ref=e98]
+                - button "Preferences" [ref=e99]
+                - generic:
+                  - group "Fixture Dish 3 (budgetFirst) $5.20/serving Beginner Costs are estimates. Ingredients Tap a line to ask Instructions Tap a line to ask Ask about this meal":
+                    - generic [ref=e100]: Budget-first option
+                    - generic [ref=e101]: "Note: We couldn't find a meal meeting all your preferences within $6.50 per serving, so this one relaxes: High fiber."
+                    - button "Ask why this meal was picked Deterministic fixture meal 3." [ref=e102]
+                    - button "Ask about fixture ingredient A3 fixture ingredient A3" [ref=e103]
+                    - button "Ask about fixture ingredient B fixture ingredient B" [ref=e104]
+                    - button "Ask about step 1 1 Step one for dish 3." [ref=e105]
+                    - button "Ask about step 2 2 Step two." [ref=e106]

@@ -45,6 +45,28 @@ void main() {
       expect(isRetryableAiError(Exception('Connection closed')), isTrue);
     });
 
+    test('a 429 for a used-up quota is not retried, a rate limit is', () {
+      const noTier =
+          '{"error":{"code":429,"message":"Quota exceeded for metric: '
+          'generate_content_free_tier_requests, limit: 0, model: gemini-4-argon"}}';
+      const perDay =
+          '{"error":{"code":429,"details":[{"quotaId":'
+          '"GenerateRequestsPerDayPerProjectPerModel-FreeTier"}]}}';
+      const perMinute =
+          '{"error":{"code":429,"details":[{"quotaId":'
+          '"GenerateRequestsPerMinutePerProjectPerModel"}]}}';
+
+      expect(isRetryableResponse(429, noTier), isFalse);
+      expect(isRetryableResponse(429, perDay), isFalse);
+      expect(isRetryableResponse(429, perMinute), isTrue);
+      expect(
+        isRetryableAiError(AiRequestException.fromStatus(429, noTier)),
+        isFalse,
+      );
+      // Only a 429 reads the body; a 503 that happens to say "PerDay" retries.
+      expect(isRetryableResponse(503, perDay), isTrue);
+    });
+
     test('cancellation and a missing key never retry', () {
       expect(isRetryableAiError(const AiCancelledException()), isFalse);
       expect(
@@ -54,6 +76,49 @@ void main() {
         isFalse,
       );
       expect(isRetryableAiError(StateError('nope')), isFalse);
+    });
+  });
+
+  group('runWithAbortableAiRetry', () {
+    test('a timed-out attempt is aborted before the next one starts', () async {
+      final aborted = <int>[];
+      var calls = 0;
+
+      final value = await runWithAbortableAiRetry<String>(
+        (abort) {
+          final number = ++calls;
+          abort.then((_) => aborted.add(number));
+          if (number == 1) return Completer<String>().future; // hangs
+          return Future.value('ok');
+        },
+        policy: const AiRetryPolicy(attemptTimeout: Duration(milliseconds: 10)),
+        sleep: (_) async {},
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      expect(value, 'ok');
+      expect(calls, 2);
+      // Attempt 1 by its timeout; attempt 2 once it settled.
+      expect(aborted, [1, 2]);
+    });
+
+    test('cancelling aborts the attempt in flight', () async {
+      final cancellation = AiCancellation();
+      final abortSeen = Completer<void>();
+
+      final run = runWithAbortableAiRetry<String>(
+        (abort) async {
+          await abort;
+          abortSeen.complete();
+          throw Exception('ClientException: Request aborted');
+        },
+        cancellation: cancellation,
+        sleep: (_) async {},
+      );
+      cancellation.cancel();
+
+      await expectLater(run, throwsA(isA<AiCancelledException>()));
+      expect(abortSeen.isCompleted, isTrue);
     });
   });
 

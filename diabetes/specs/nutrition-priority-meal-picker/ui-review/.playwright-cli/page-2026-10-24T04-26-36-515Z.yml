@@ -1,0 +1,20 @@
+- generic [ref=e4]:
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - generic:
+            - generic:
+              - button "Back" [active] [ref=e550]
+              - heading "Seeded Legacy Omelette" [level=2] [ref=e551]
+            - generic:
+              - group:
+                - generic:
+                  - group "Seeded Legacy Omelette $1-2/serving Ingredients Tap a line to ask Instructions Tap a line to ask":
+                    - button "Ask why this meal was picked Pre-seeded recipe saved before nutrition priorities existed." [ref=e552]
+                    - button "Ask about eggs eggs" [ref=e553]
+                    - button "Ask about spinach spinach" [ref=e554]
+                    - button "Ask about step 1 1 Whisk eggs." [ref=e555]
+                    - button "Ask about step 2 2 Cook with spinach." [ref=e556]
+                    - button "Saved. Tap to remove from saved recipes" [ref=e557]
+                    - button "Log this meal" [ref=e558]

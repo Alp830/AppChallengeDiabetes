@@ -136,4 +136,199 @@ void main() {
     expect(find.text('Add a balancing tweak'), findsNothing);
     expect(find.byKey(const Key('recipeUnsaveButton')), findsOneWidget);
   });
+
+  group('budget and nutrition tradeoffs', () {
+    MealRecommendation tradeoffMeal({
+      String? mode,
+      List<String> unmet = const [],
+      String? notice,
+      double? bound,
+      double? budget,
+    }) => MealRecommendation(
+      dishName: 'Lentil stew',
+      imagePrompt: '',
+      reason: 'Hearty and cheap.',
+      ingredients: const ['1 cup lentils'],
+      instructions: const ['Simmer.'],
+      estimatedCostPerServing: r'$2-3/serving',
+      priorityMode: mode,
+      unmetNutritionPreferences: unmet,
+      constraintNotice: notice,
+      estimatedCostUpperBoundPerServing: bound,
+      requestBudgetPerServing: budget,
+    );
+
+    Future<void> pumpTradeoff(
+      WidgetTester tester,
+      MealRecommendation meal, {
+      bool diabetes = false,
+      double textScale = 1,
+      bool fromOriginalRequest = false,
+      bool showUnmetHeading = true,
+    }) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light(),
+          home: MediaQuery(
+            data: MediaQueryData(
+              size: const Size(390, 844),
+              textScaler: TextScaler.linear(textScale),
+            ),
+            child: Scaffold(
+              body: ListView(
+                children: [
+                  MealRecommendationCard(
+                    recommendation: meal,
+                    diabetesEnabled: diabetes,
+                    budgetFromOriginalRequest: fromOriginalRequest,
+                    showUnmetHeading: showUnmetHeading,
+                    onAsk: (scope, {String? initialQuestion}) {},
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+    }
+
+    const heading = "I couldn't meet all your preferences within your budget";
+
+    testWidgets('happy path shows only the estimates note', (tester) async {
+      await pumpTradeoff(
+        tester,
+        tradeoffMeal(mode: 'allPreferences', bound: 3, budget: 5),
+      );
+      expect(find.byKey(const Key('mealPriorityModeLabel')), findsNothing);
+      expect(find.byKey(const Key('mealConstraintNotice')), findsNothing);
+      expect(find.byKey(const Key('mealOverBudgetLabel')), findsNothing);
+      expect(find.text(heading), findsNothing);
+      expect(find.text('Costs are estimates.'), findsOneWidget);
+    });
+
+    testWidgets('no budget means no estimates note', (tester) async {
+      await pumpTradeoff(tester, tradeoffMeal());
+      expect(find.byKey(const Key('mealCostEstimatesNote')), findsNothing);
+    });
+
+    testWidgets('budget-first fallback shows everything', (tester) async {
+      await pumpTradeoff(
+        tester,
+        tradeoffMeal(
+          mode: 'budgetFirst',
+          unmet: const ['protein', 'fiber'],
+          notice: 'Kept the cost low, so protein and fiber are lighter.',
+          bound: 6,
+          budget: 5,
+        ),
+      );
+      expect(find.text('Budget-first option'), findsOneWidget);
+      expect(find.byIcon(Icons.savings_outlined), findsOneWidget);
+      expect(find.text('Over your budget'), findsOneWidget);
+      expect(find.byKey(const Key('mealOverBudgetLabel')), findsOneWidget);
+      expect(find.text(heading), findsOneWidget);
+      expect(find.text('Relaxed: High protein, High fiber'), findsOneWidget);
+      expect(
+        find.text('Kept the cost low, so protein and fiber are lighter.'),
+        findsOneWidget,
+      );
+      expect(find.text('Costs are estimates.'), findsOneWidget);
+    });
+
+    testWidgets('nutrition-first fallback is labeled', (tester) async {
+      await pumpTradeoff(
+        tester,
+        tradeoffMeal(mode: 'nutritionFirst', bound: 8, budget: 5),
+      );
+      expect(find.text('Nutrition-first option'), findsOneWidget);
+      expect(find.text('Over your budget'), findsOneWidget);
+      expect(find.text(heading), findsNothing);
+    });
+
+    testWidgets('within budget never says over budget', (tester) async {
+      await pumpTradeoff(
+        tester,
+        tradeoffMeal(mode: 'nutritionFirst', bound: 5, budget: 5),
+      );
+      expect(find.byKey(const Key('mealOverBudgetLabel')), findsNothing);
+    });
+
+    testWidgets('heading can be hidden when results share the screen', (
+      tester,
+    ) async {
+      await pumpTradeoff(
+        tester,
+        tradeoffMeal(mode: 'budgetFirst', unmet: const ['carbs'], budget: 5),
+        showUnmetHeading: false,
+      );
+      expect(find.text(heading), findsNothing);
+      expect(find.text('Budget-first option'), findsOneWidget);
+    });
+
+    testWidgets('still shows with diabetes disabled and exposes semantics', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await pumpTradeoff(
+        tester,
+        tradeoffMeal(
+          mode: 'budgetFirst',
+          unmet: const ['protein'],
+          notice: 'A note.',
+          bound: 9,
+          budget: 5,
+        ),
+        diabetes: false,
+      );
+      expect(find.byKey(const Key('mealConstraintNotice')), findsOneWidget);
+      expect(find.bySemanticsLabel('Budget-first option'), findsOneWidget);
+      expect(find.bySemanticsLabel('Over your budget'), findsOneWidget);
+      expect(find.bySemanticsLabel('Note: A note.'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel(RegExp(r"^I couldn't meet all your")),
+        findsOneWidget,
+      );
+      handle.dispose();
+    });
+
+    testWidgets(
+      'saved recipes phrase budget fit as from the original request',
+      (tester) async {
+        await pumpTradeoff(
+          tester,
+          tradeoffMeal(budget: 6),
+          fromOriginalRequest: true,
+        );
+        expect(
+          find.textContaining(
+            r'Budget fit is from when this was suggested ($6 per serving)',
+          ),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets('fits at 200% text on a 390px wide screen', (tester) async {
+      await pumpTradeoff(
+        tester,
+        tradeoffMeal(
+          mode: 'budgetFirst',
+          unmet: const ['protein', 'carbs', 'fiber'],
+          notice:
+              'I kept this under your budget, so it gives up some of the '
+              'nutrition priorities you chose.',
+          bound: 9,
+          budget: 5,
+        ),
+        textScale: 2,
+        fromOriginalRequest: true,
+      );
+      expect(tester.takeException(), isNull);
+      expect(find.text('Over your budget'), findsOneWidget);
+    });
+  });
 }

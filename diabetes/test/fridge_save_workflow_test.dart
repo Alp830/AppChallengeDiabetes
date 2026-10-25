@@ -1,4 +1,5 @@
 import 'package:diabetes/main.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -80,6 +81,103 @@ void main() {
     expect(key.currentState!.isDirty, isFalse);
     expect(committed, isEmpty);
   });
+
+  testWidgets(
+    'moving an item into a group that already has tiles keeps every tile',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 780);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      StoredFoodItem typed(String id, String name, FoodType type) =>
+          StoredFoodItem(
+            id: id,
+            foodItem: FoodItem(name: name, amount: '1', foodType: type),
+          );
+
+      // The web app is driven by a mouse, which shows each tile's delete
+      // tooltip on hover.
+      final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await mouse.addPointer(location: Offset.zero);
+      addTearDown(mouse.removePointer);
+
+      await tester.pumpWidget(
+        wrap(GlobalKey<FridgePageState>(), [
+          typed('a', 'Oats', FoodType.grain),
+          typed('b', 'Cashews', FoodType.snack),
+          typed('c', 'Shredded', FoodType.other),
+          typed('d', 'Mystery', FoodType.other),
+        ], []),
+      );
+      await mouse.moveTo(
+        tester.getCenter(find.byKey(const Key('fridgeTileDelete_Shredded'))),
+      );
+      await tester.pump(const Duration(seconds: 1));
+
+      await changeTypeViaEditSheet(tester, 'Shredded', 'Snack');
+
+      expect(tester.takeException(), isNull);
+      expect(find.byType(ErrorWidget), findsNothing);
+      for (final name in ['Oats', 'Cashews', 'Shredded', 'Mystery']) {
+        expect(find.text(name), findsOneWidget, reason: name);
+      }
+    },
+  );
+
+  testWidgets(
+    'deleting a tile never hands its slot to a tile from another group',
+    (tester) async {
+      tester.view.physicalSize = const Size(360, 780);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      StoredFoodItem typed(String id, String name, FoodType type) =>
+          StoredFoodItem(
+            id: id,
+            foodItem: FoodItem(name: name, amount: '1', foodType: type),
+          );
+
+      // Stored order differs from group order: Shredded (Other) is listed
+      // before Cashews (Snack), and Snack's grid is laid out before Other's.
+      await tester.pumpWidget(
+        wrap(GlobalKey<FridgePageState>(), [
+          typed('a', 'Oats', FoodType.grain),
+          typed('b', 'Shredded', FoodType.other),
+          typed('c', 'Cashews', FoodType.snack),
+          typed('d', 'Mystery', FoodType.other),
+        ], []),
+      );
+
+      // Clicked with a mouse, as on web: the button's tooltip is showing
+      // when the tile goes away.
+      final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await mouse.addPointer(location: Offset.zero);
+      addTearDown(mouse.removePointer);
+      await mouse.moveTo(
+        tester.getCenter(find.byKey(const Key('fridgeTileDelete_Shredded'))),
+      );
+      await tester.pump(const Duration(seconds: 1));
+      await mouse.down(
+        tester.getCenter(find.byKey(const Key('fridgeTileDelete_Shredded'))),
+      );
+      await mouse.up();
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.byType(ErrorWidget), findsNothing);
+      expect(find.text('Shredded'), findsNothing);
+      for (final name in ['Oats', 'Cashews', 'Mystery']) {
+        expect(find.text(name), findsOneWidget, reason: name);
+      }
+
+      await tester.tap(find.text('Undo'));
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.byType(ErrorWidget), findsNothing);
+      expect(find.text('Shredded'), findsOneWidget);
+    },
+  );
 
   testWidgets('the edit sheet keeps Delete in its top area', (tester) async {
     tester.view.physicalSize = const Size(360, 780);

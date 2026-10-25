@@ -1,0 +1,34 @@
+- generic [ref=e4]:
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - generic:
+            - generic [ref=e1923]: FIXTURE
+            - checkbox "Feasible" [ref=e1924]
+            - checkbox "Conflict" [checked] [ref=e1925]
+            - checkbox "Always invalid" [ref=e1926]
+            - generic [ref=e1927]: Fail next nutrition save
+            - switch [ref=e1928]
+            - generic [ref=e1929]: Diabetes on
+            - switch [checked] [ref=e1930]
+            - button "Remount picker" [ref=e1931]
+            - button "Open saved recipes" [ref=e1932]
+            - generic [ref=e1933]: "Gemini calls: 17"
+            - generic [ref=e1934]: "Saved priorities: protein,carbs,fiber"
+            - generic:
+              - group:
+                - textbox "What do you want to eat?" [ref=e1936]
+                - generic:
+                  - checkbox "Quick breakfast" [ref=e1938]
+                  - checkbox "Use what's expiring" [ref=e1939]
+                  - checkbox "Under $5" [ref=e1940]
+                - generic [ref=e1942]: Meal type
+                - generic:
+                  - checkbox "Breakfast" [ref=e1944]
+                  - checkbox "Lunch" [ref=e1945]
+                  - checkbox "Dinner" [checked] [ref=e1946]
+                  - checkbox "Snack" [ref=e1947]
+                  - checkbox "Drink" [ref=e1948]
+                - button "Recommend a meal" [ref=e1950]
+                - button "Preferences" [active] [ref=e1952]

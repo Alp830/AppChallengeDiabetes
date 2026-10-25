@@ -1,0 +1,31 @@
+- generic [ref=e4] [cursor=pointer]:
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - generic:
+            - generic [ref=e247]: FIXTURE
+            - checkbox "Feasible" [ref=e248]
+            - checkbox "Conflict" [checked] [ref=e249]
+            - checkbox "Always invalid" [ref=e250]
+            - generic [ref=e251]: Fail next nutrition save
+            - switch [checked] [ref=e252]
+            - generic [ref=e253]: Diabetes off
+            - switch [ref=e254]
+            - button "Remount picker" [ref=e255]
+            - button "Open saved recipes" [ref=e256]
+            - generic [ref=e257]: "Gemini calls: 1"
+            - generic [ref=e258]: "Saved priorities: protein,carbs,fiber"
+            - generic:
+              - group:
+                - textbox "What do you want to eat?" [ref=e260]
+                - generic [ref=e262]: Meal type
+                - generic:
+                  - checkbox "Breakfast" [ref=e264]
+                  - checkbox "Lunch" [ref=e265]
+                  - checkbox "Dinner" [checked] [ref=e266]
+                  - checkbox "Snack" [ref=e267]
+                  - checkbox "Drink" [ref=e268]
+                - button "Recommend a meal" [ref=e270]
+                - button "Preferences" [active] [ref=e272]
+                - generic: Fixture Dish 3 (budgetFirst) $5.20/serving Beginner Costs are estimates. Ingredients Tap a line to ask Instructions Tap a line to ask Ask about this meal

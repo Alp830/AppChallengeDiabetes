@@ -1,0 +1,40 @@
+- generic [ref=e4]:
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - generic:
+            - generic [ref=e2002]: FIXTURE
+            - checkbox "Feasible" [ref=e2003]
+            - checkbox "Conflict" [checked] [ref=e2004]
+            - checkbox "Always invalid" [ref=e2005]
+            - generic [ref=e2006]: Fail next nutrition save
+            - switch [ref=e2007]
+            - generic [ref=e2008]: Diabetes on
+            - switch [checked] [ref=e2009]
+            - button "Remount picker" [ref=e2010]
+            - button "Open saved recipes" [active] [ref=e2011]
+            - generic [ref=e2012]: "Gemini calls: 18"
+            - generic [ref=e2013]: "Saved priorities: protein,carbs,fiber"
+            - generic:
+              - group:
+                - textbox "What do you want to eat?" [ref=e2015]
+                - generic [ref=e2017]: Meal type
+                - generic:
+                  - checkbox "Breakfast" [ref=e2019]
+                  - checkbox "Lunch" [ref=e2020]
+                  - checkbox "Dinner" [checked] [ref=e2021]
+                  - checkbox "Snack" [ref=e2022]
+                  - checkbox "Drink" [ref=e2023]
+                - button "Recommend a meal" [ref=e2025]
+                - button "Preferences" [ref=e2027]
+                - generic:
+                  - group "Fixture Dish 1 (allPreferences) $2-3/serving Beginner Ingredients Tap a line to ask Instructions Tap a line to ask Ask about this meal":
+                    - button "Ask why this meal was picked Deterministic fixture meal 1." [ref=e2029]
+                    - button "Ask about fixture ingredient A1 fixture ingredient A1" [ref=e2030]
+                    - button "Ask about fixture ingredient B fixture ingredient B" [ref=e2031]
+                    - button "Ask about step 1 1 Step one for dish 1." [ref=e2032]
+                    - button "Ask about step 2 2 Step two." [ref=e2033]
+                    - checkbox "Can I swap an ingredient in dish 1?" [ref=e2034]
+                    - checkbox "How do I store the leftovers?" [ref=e2035]
+                    - checkbox "Can I make it spicier?" [ref=e2036]

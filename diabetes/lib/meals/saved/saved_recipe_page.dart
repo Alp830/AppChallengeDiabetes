@@ -102,6 +102,7 @@ class _SavedRecipePageState extends State<SavedRecipePage> {
             diabetesEnabled: widget.diabetesEnabled,
             difficultyLabel: null,
             isSaved: true,
+            budgetFromOriginalRequest: true,
             showBalancingTweak: false,
             onToggleSaved: _removing ? null : _remove,
             onAsk: (scope, {String? initialQuestion}) => showMealQaSheet(

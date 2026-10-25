@@ -35,7 +35,7 @@ class AiRequestException implements Exception, RetryableAiError {
       AiRequestException(
         'Gemini request failed: $status',
         statusCode: status,
-        retryable: isRetryableStatus(status),
+        retryable: isRetryableResponse(status, body),
       );
 
   final String message;
@@ -58,9 +58,16 @@ class AiCancelledException implements Exception {
 
 /// Lets the screen stop a retry loop when the user leaves or cancels.
 class AiCancellation {
-  bool _cancelled = false;
-  bool get isCancelled => _cancelled;
-  void cancel() => _cancelled = true;
+  final _cancelled = Completer<void>();
+  bool get isCancelled => _cancelled.isCompleted;
+
+  /// Completes on [cancel], so an attempt in flight can abort its request
+  /// instead of running on after the user has gone.
+  Future<void> get whenCancelled => _cancelled.future;
+
+  void cancel() {
+    if (!_cancelled.isCompleted) _cancelled.complete();
+  }
 }
 
 /// How many times to try, how long to wait between tries, and how long one
@@ -83,6 +90,16 @@ class AiRetryPolicy {
 bool isRetryableStatus(int status) =>
     const {408, 429, 500, 502, 503, 504}.contains(status);
 
+/// [isRetryableStatus], except a 429 that means the quota is used up rather
+/// than "slow down". `limit: 0` is a model this key's tier can't use at all
+/// (Argon has no free tier) and a per-day quota doesn't refill in 2 s, so
+/// five attempts would only make the user wait for the same refusal.
+bool isRetryableResponse(int status, String body) {
+  if (!isRetryableStatus(status)) return false;
+  if (status != 429) return true;
+  return !(body.contains('limit: 0') || body.contains('PerDay'));
+}
+
 /// True when trying the very same request again could plausibly work.
 bool isRetryableAiError(Object error) {
   if (error is AiCancelledException) return false;
@@ -101,11 +118,34 @@ bool isRetryableAiError(Object error) {
 /// between tries.
 ///
 /// [onAttempt] fires before each attempt (1-based) so the UI can show
-/// `Retrying 2/5`. Attempts never overlap: the next one starts only after the
-/// previous future has settled. Throws the last error once the attempts run
-/// out, or [AiCancelledException] as soon as [cancellation] is cancelled.
+/// `Retrying 2/5`. Throws the last error once the attempts run out, or
+/// [AiCancelledException] as soon as [cancellation] is cancelled.
+///
+/// A timed-out attempt is only abandoned, not stopped: `Future.timeout` leaves
+/// the HTTP call running. Callers that can abort their request should use
+/// [runWithAbortableAiRetry] instead.
 Future<T> runWithAiRetry<T>(
   Future<T> Function() attempt, {
+  AiRetryPolicy policy = const AiRetryPolicy(),
+  AiCancellation? cancellation,
+  void Function(int attempt, int maxAttempts)? onAttempt,
+  Future<void> Function(Duration) sleep = Future.delayed,
+}) => runWithAbortableAiRetry(
+  (_) => attempt(),
+  policy: policy,
+  cancellation: cancellation,
+  onAttempt: onAttempt,
+  sleep: sleep,
+);
+
+/// [runWithAiRetry], but each attempt gets an `abort` future that completes
+/// when the loop gives up on it: its timeout fired, or [cancellation] was
+/// cancelled. Pass it to `http.AbortableRequest` so a slow attempt is really
+/// stopped, which keeps attempts from overlapping and from being billed twice.
+/// `abort` also completes once the attempt has settled; that is harmless for
+/// a finished request.
+Future<T> runWithAbortableAiRetry<T>(
+  Future<T> Function(Future<void> abort) attempt, {
   AiRetryPolicy policy = const AiRetryPolicy(),
   AiCancellation? cancellation,
   void Function(int attempt, int maxAttempts)? onAttempt,
@@ -115,15 +155,31 @@ Future<T> runWithAiRetry<T>(
     if (cancellation?.isCancelled ?? false) throw const AiCancelledException();
     onAttempt?.call(number, policy.maxAttempts);
 
+    final abort = Completer<void>();
+    void abortAttempt() {
+      if (!abort.isCompleted) abort.complete();
+    }
+
+    cancellation?.whenCancelled.then((_) => abortAttempt());
     try {
       final timeout = policy.attemptTimeout;
-      final future = attempt();
-      return timeout == null ? await future : await future.timeout(timeout);
+      final future = attempt(abort.future);
+      return timeout == null
+          ? await future
+          : await future.timeout(
+              timeout,
+              onTimeout: () {
+                abortAttempt();
+                throw TimeoutException('AI attempt timed out', timeout);
+              },
+            );
     } catch (error) {
       if (cancellation?.isCancelled ?? false) {
         throw const AiCancelledException();
       }
       if (number >= policy.maxAttempts || !isRetryableAiError(error)) rethrow;
+    } finally {
+      abortAttempt();
     }
 
     await sleep(policy.delay);
