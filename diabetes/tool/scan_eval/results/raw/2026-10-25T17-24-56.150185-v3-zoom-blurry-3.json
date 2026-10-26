@@ -1,0 +1,378 @@
+{
+ "variant": "v3-zoom",
+ "photo": "blurry",
+ "run": 3,
+ "latencyMs": 60057,
+ "promptTokens": 4958,
+ "candidatesTokens": 5239,
+ "thoughtsTokens": 0,
+ "calls": 2,
+ "callTimingsMs": [
+  27856,
+  26526
+ ],
+ "items": [
+  {
+   "name": "Whipped Cream",
+   "alternatives": [
+    "Oats",
+    "Chips"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Eggs",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Milk",
+   "alternatives": [
+    "Juice",
+    "Kefir"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Soup",
+   "alternatives": [
+    "Applesauce",
+    "Hummus"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Cut Fruit",
+   "alternatives": [
+    "Cheese",
+    "Leftovers"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Yogurt",
+   "alternatives": [
+    "Sour Cream",
+    "Cottage Cheese"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Butter",
+   "alternatives": [
+    "Cheese",
+    "Tofu"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Tomato Stew",
+   "alternatives": [
+    "Salsa",
+    "Cooked Meat"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Cooked Meal",
+   "alternatives": [
+    "Marinated Meat",
+    "Roasted Vegetables"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Salsa",
+   "alternatives": [
+    "Pasta sauce",
+    "Jam"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Pickles",
+   "alternatives": [
+    "Jam",
+    "Olives"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Vegetables",
+   "alternatives": [
+    "Leftovers",
+    "Salad"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Eggs",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Garlic",
+   "alternatives": [
+    "Mushrooms",
+    "Potatoes"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Juice boxes",
+   "alternatives": [
+    "Matcha milk",
+    "Soy milk"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Produce",
+   "alternatives": [
+    "Meat",
+    "Bread"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Leftovers",
+   "alternatives": [
+    "Cheese",
+    "Tofu"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Mustard",
+   "alternatives": [
+    "Peanut Butter",
+    "Honey"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Guacamole",
+   "alternatives": [
+    "Salsa Verde",
+    "Relish"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Orange Juice",
+   "alternatives": [
+    "Cheddar Cheese",
+    "Cantaloupe"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Sauce",
+   "alternatives": [
+    "Jam",
+    "Salsa"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Salad Dressing",
+   "alternatives": [
+    "Sauce",
+    "Syrup"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Soy Sauce",
+   "alternatives": [
+    "Vinegar",
+    "Salad Dressing"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Hot Sauce",
+   "alternatives": [
+    "Ketchup",
+    "Chili Oil"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Milk",
+   "alternatives": [
+    "Creamer",
+    "Yogurt Drink"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Pasta Sauce",
+   "alternatives": [
+    "Salsa",
+    "Peach Jam"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Hot Sauce",
+   "alternatives": [
+    "Ketchup",
+    "Salsa"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Dark Sauce",
+   "alternatives": [
+    "Soy Sauce",
+    "Balsamic Glaze"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Snacks",
+   "alternatives": [
+    "Cheese",
+    "Chocolate"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Condiment",
+   "alternatives": [
+    "Spice Paste",
+    "Mustard"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Cooked meal",
+   "alternatives": [
+    "Soup",
+    "Stew"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Dark liquid",
+   "alternatives": [
+    "Soy sauce",
+    "Juice"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Broth",
+   "alternatives": [
+    "Applesauce",
+    "Hummus"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Canned fish",
+   "alternatives": [
+    "Tuna",
+    "Cat food"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Tomato stew",
+   "alternatives": [
+    "Salsa",
+    "Marinara sauce"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Cooked food",
+   "alternatives": [
+    "Soup",
+    "Leftovers"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Pasta sauce",
+   "alternatives": [
+    "Jam",
+    "Salsa"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Prepared salad",
+   "alternatives": [
+    "Cut vegetables",
+    "Salsa"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Salad dressing",
+   "alternatives": [
+    "Sauce",
+    "Vinegar"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Condiment",
+   "alternatives": [
+    "Milk",
+    "Juice"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Spread",
+   "alternatives": [
+    "Salsa",
+    "Jam"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Green sauce",
+   "alternatives": [
+    "Pesto",
+    "Pickles"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Pickles",
+   "alternatives": [
+    "Relish",
+    "Olives"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Beverage",
+   "alternatives": [
+    "Sauce",
+    "Creamer"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Peanut butter",
+   "alternatives": [
+    "Tahini",
+    "Caramel"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Dark bottle",
+   "alternatives": [
+    "Soy sauce",
+    "Vinegar"
+   ],
+   "confidence": "guess"
+  }
+ ]
+}

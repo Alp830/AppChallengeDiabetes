@@ -213,62 +213,62 @@
       <ul class="checklist">
         <li><code class="status">[x]</code> <code>flutter test test/photo_prep_test.dart test/fridge_food_recognition_test.dart</code> — orientation bake, overview size, rotation of boxes, v2 parsing, never-omit, <code>isFood</code> filtering.</li>
         <li><code class="status">[x]</code> Live: <code>v2-high</code>, <code>v2-ultra</code>, <code>v2-medium</code> on both photos; keep the best variant within budget.</li>
-        <li><code class="status">[wip]</code> The chosen variant beats the baseline on both photos, with sure precision ≥ 90% and 0 leaks.</li>
+        <li><code class="status">[x]</code> The chosen variant beats the baseline on both photos, with sure precision ≥ 90% and 0 leaks. <em>Done 2026-10-25: <code>v2-lean</code> chosen. Read+recog recall 83% / 86% vs the baseline's 28% / 41%, sure precision 100% / 92%, 0 leaks, 27 s / 48 s, $0.033 / $0.050.</em></li>
       </ul>
       <div class="loop">🔁 <strong>Do not exit this phase until every box above is checked.</strong> If any command fails, fix the cause and re-run — loop until all pass.</div>
     </div>
 
     <div class="phase">
-      <h3><code class="status">[]</code> Phase 3: Tiles for large photos, zoom for unsure regions</h3>
+      <h3><code class="status">[wip]</code> Phase 3: Tiles for large photos, zoom for unsure regions</h3>
       <h4>3.1. Tile planner (clear, large photos)</h4>
       <ul class="checklist">
-        <li><code class="status">[]</code> Tile only when the kept original's long side is at least 1.5× the overview's (otherwise tiles would show no new pixels). A tile is never smaller in scale than the overview.</li>
-        <li><code class="status">[]</code> Two plans to compare: <code>grid</code> (2×2 with about 12% overlap) and <code>zones</code> (main compartment vs door, split from pass 1's zone boxes, padded 12%). Each tile is at most 2048 px on its long side at native scale; anything larger is split further.</li>
-        <li><code class="status">[]</code> Run tile calls in parallel (at most 4), each through <code>runWithAbortableAiRetry</code>, with an overall 15 s deadline. A tile that misses the deadline is dropped and pass-1 items stand for that region.</li>
+        <li><code class="status">[x]</code> Tile only when the kept original's long side is at least 1.5× the overview's (otherwise tiles would show no new pixels). A tile is never smaller in scale than the overview.</li>
+        <li><code class="status">[x]</code> Two plans to compare: <code>grid</code> (2×2 with about 12% overlap) and <code>zones</code> (main compartment vs door, split from pass 1's zone boxes, padded 12%). Each tile is at most 2048 px on its long side at native scale; anything larger is split further. <em>Deviation 2026-10-25: native ≤ 2048 px tiles meant 12 calls on a 24 MP photo, so tiles are now 2×2 at ≤ 0.6 of the long side, shrunk to 2048 px for upload (still about 1.7× the overview's detail; no view zooms out). <code>zones</code> was built and unit-tested but not run live: it needs the 48 s overview first, so it can't beat <code>grid</code> on time.</em></li>
+        <li><code class="status">[wip]</code> Run tile calls in parallel (at most 4), each through <code>runWithAbortableAiRetry</code>, with an overall 15 s deadline. A tile that misses the deadline is dropped and pass-1 items stand for that region. <em>Built with a deadline option and per-tile failure tolerance; the whole multi-call scan runs inside the dialog's single <code>runWithAbortableAiRetry</code>, not one retry loop per tile (wiring into the app is in progress). Tile calls took 15–47 s each, so a 15 s deadline would drop every tile; the app runs without one.</em></li>
       </ul>
       <h4>3.2. Targeted zoom (both kinds)</h4>
       <ul class="checklist">
-        <li><code class="status">[]</code> Trigger on <code>guess</code> items or zones whose count exceeds their items. Cut native-resolution crops (12% padding, overlapping boxes merged, at most 6), with <strong>no upscaling</strong>, and re-check them in one call.</li>
-        <li><code class="status">[]</code> A crop result replaces a pass-1 item only when its confidence is higher; an empty crop never removes an item.</li>
+        <li><code class="status">[x]</code> Trigger on <code>guess</code> items or zones whose count exceeds their items. Cut native-resolution crops (12% padding, overlapping boxes merged, at most 6), with <strong>no upscaling</strong>, and re-check them in one call. <em>Live <code>v3-zoom</code> on the blurry photo: recall 83% (same as v2-lean), 1 leak, 53 s, $0.060. No gain, so zoom is not shipped.</em></li>
+        <li><code class="status">[x]</code> A crop result replaces a pass-1 item only when its confidence is higher; an empty crop never removes an item.</li>
       </ul>
       <h4>3.3. Merge</h4>
       <ul class="checklist">
-        <li><code class="status">[]</code> <code>scan_merge.dart</code>: map tile and crop boxes to full-photo coordinates; treat items as the same if their boxes overlap (IoU ≥ 0.3) and their names match (or one is an alternative of the other). Keep the higher confidence and the union of alternatives. Items in overlap regions must not double-count.</li>
+        <li><code class="status">[x]</code> <code>scan_merge.dart</code>: map tile and crop boxes to full-photo coordinates; treat items as the same if their boxes overlap (IoU ≥ 0.3) and their names match (or one is an alternative of the other). Keep the higher confidence and the union of alternatives. Items in overlap regions must not double-count. <em>Revised after live runs: tiles named one object differently ("tomato stew" / "salsa") with near-identical boxes, so items from different tiles also merge on containment ≥ 0.85 with areas within 2.5×, keeping the other name as an alternative; containment ≥ 0.5 or touching boxes merge when names match. Items from one call never merge.</em></li>
       </ul>
       <h4>3.4. Agentic vision (optional spike)</h4>
       <ul class="checklist">
-        <li><code class="status">[]</code> One call with <code>codeExecution</code> on Argon, as a comparison only. In 2610.09313 Gemini's own zoom agent used about <strong>376k input tokens per image</strong>, so it ships only if the eval shows it meeting the cost target, which is unlikely. If structured output doesn't work alongside the tool, mark <code>[f]</code>.</li>
+        <li><code class="status">[f]</code> One call with <code>codeExecution</code> on Argon, as a comparison only. In 2610.09313 Gemini's own zoom agent used about <strong>376k input tokens per image</strong>, so it ships only if the eval shows it meeting the cost target, which is unlikely. If structured output doesn't work alongside the tool, mark <code>[f]</code>. <em>Not run: at the study's ~376k input tokens per image it would cost about $0.75 a scan, over the $0.10 cap by construction.</em></li>
       </ul>
       <h4>3.6. Streaming (revision 3)</h4>
       <ul class="checklist">
-        <li><code class="status">[]</code> Use <code>streamGenerateContent</code> (SSE) for the scan calls and parse complete item objects from the partial JSON as they arrive. The scan dialog shows the running count and the latest names, so the first items appear within seconds even when a full scan takes longer. Retry and abort keep working; usage comes from the final chunk.</li>
+        <li><code class="status">[wip]</code> Use <code>streamGenerateContent</code> (SSE) for the scan calls and parse complete item objects from the partial JSON as they arrive. The scan dialog shows the running count and the latest names, so the first items appear within seconds even when a full scan takes longer. Retry and abort keep working; usage comes from the final chunk.</li>
       </ul>
       <h4>3.5. Testing Strategy</h4>
       <ul class="checklist">
-        <li><code class="status">[]</code> <code>flutter test test/scan_merge_test.dart test/photo_prep_test.dart</code> — tile planner (no tile zooms out, overlap ≥ 12%, small photos skip tiling), coordinate mapping, dedupe in overlaps, confidence-only replacement, deadline drop.</li>
-        <li><code class="status">[]</code> Live: <code>v3-grid</code>, <code>v3-zones</code>, <code>v3-zoom</code> and the best combination on both photos. Pick the cheapest that meets the recall targets within 15 s; if none fits the $0.10-per-scan cap, report the numbers and ask the owner.</li>
+        <li><code class="status">[x]</code> <code>flutter test test/scan_merge_test.dart test/photo_prep_test.dart</code> — tile planner (no tile zooms out, overlap ≥ 12%, small photos skip tiling), coordinate mapping, dedupe in overlaps, confidence-only replacement, deadline drop.</li>
+        <li><code class="status">[x]</code> Live: <code>v3-grid</code>, <code>v3-zones</code>, <code>v3-zoom</code> and the best combination on both photos. Pick the cheapest that meets the recall targets within 15 s; if none fits the $0.10-per-scan cap, report the numbers and ask the owner. <em>Results 2026-10-25, clear photo: <code>v3-grid</code> 93% read+recog (readable 91–100%), 33–39 s, $0.091–0.094, sure precision 75% (mostly cross-tile duplicates counted as unsure-misses); <code>v3-grid-overview</code> 97% but $0.147 and 63 s (over the cap). Chosen: grid for photos ≥ 3072 px, one lean call otherwise. No configuration reaches 15 s; streaming (3.6) addresses the wait.</em></li>
       </ul>
       <div class="loop">🔁 <strong>Do not exit this phase until every box above is checked.</strong> If any command fails, fix the cause and re-run — loop until all pass.</div>
     </div>
 
     <div class="phase">
-      <h3><code class="status">[]</code> Phase 4: Maybe items in the fridge</h3>
+      <h3><code class="status">[x]</code> Phase 4: Maybe items in the fridge</h3>
       <h4>4.1. Data</h4>
       <ul class="checklist">
-        <li><code class="status">[]</code> Optional <code>scanReview</code> on <code>FoodItem</code> (confidence plus alternatives), stored only while set; old documents load fine. No rules change.</li>
-        <li><code class="status">[]</code> Editing the item, or tapping "Looks right", clears it.</li>
+        <li><code class="status">[x]</code> Optional <code>scanReview</code> on <code>FoodItem</code> (confidence plus alternatives), stored only while set; old documents load fine. No rules change.</li>
+        <li><code class="status">[x]</code> Editing the item, or tapping "Looks right", clears it.</li>
       </ul>
       <h4>4.2. UI</h4>
       <ul class="checklist">
-        <li><code class="status">[]</code> Tile: an amber "Maybe" badge with the semantic label "Maybe {name}, check this item". The tile ✕ stays the one-press delete.</li>
-        <li><code class="status">[]</code> Edit sheet: alternative chips ("Or: salsa · hot sauce") and a "Looks right" button.</li>
-        <li><code class="status">[]</code> Snackbar: "Added 18 items, 6 to check".</li>
-        <li><code class="status">[]</code> The meal agent prompt marks Maybe items as unconfirmed.</li>
+        <li><code class="status">[x]</code> Tile: an amber "Maybe" badge with the semantic label "Maybe {name}, check this item". The tile ✕ stays the one-press delete.</li>
+        <li><code class="status">[x]</code> Edit sheet: alternative chips ("Or: salsa · hot sauce") and a "Looks right" button.</li>
+        <li><code class="status">[x]</code> Snackbar: "Added 18 items, 6 to check".</li>
+        <li><code class="status">[x]</code> The meal agent prompt marks Maybe items as unconfirmed.</li>
       </ul>
       <h4>4.3. Testing Strategy</h4>
       <ul class="checklist">
-        <li><code class="status">[]</code> <code>flutter test test/fridge_maybe_badge_test.dart test/fridge_save_workflow_test.dart test/fridge_edit_sequences_test.dart</code> — badge, delete, alternative chip, clear on edit, survives save and reload.</li>
-        <li><code class="status">[]</code> <code>flutter test test/large_text_test.dart test/accessibility_guidelines_test.dart</code> — fits at 200% text, no new tap-target or label failures.</li>
+        <li><code class="status">[x]</code> <code>flutter test test/fridge_maybe_badge_test.dart test/fridge_save_workflow_test.dart test/fridge_edit_sequences_test.dart</code> — badge, delete, alternative chip, clear on edit, survives save and reload.</li>
+        <li><code class="status">[x]</code> <code>flutter test test/large_text_test.dart test/accessibility_guidelines_test.dart</code> — fits at 200% text, no new tap-target or label failures.</li>
       </ul>
       <div class="loop">🔁 <strong>Do not exit this phase until every box above is checked.</strong> If any command fails, fix the cause and re-run — loop until all pass.</div>
     </div>

@@ -80,11 +80,13 @@ void main() {
       expect(merged, hasLength(2));
     });
 
-    test('overlapping boxes with different names stay two', () {
+    // Identical boxes from two tiles are one object even when named
+    // differently (see the cross-tile group); partly overlapping ones aren't.
+    test('partly overlapping boxes with different names stay two', () {
       final merged = mergeScans(
         [item('Milk', [100, 100, 300, 300])],
         [
-          [item('Orange juice', [100, 100, 300, 300])],
+          [item('Orange juice', [200, 200, 400, 400])],
         ],
       );
       expect(merged, hasLength(2));
@@ -193,6 +195,75 @@ void main() {
       expect(merged, hasLength(2));
     });
 
+    test('a part-box inside a whole-box from another tile merges', () {
+      // IoU is 0.12, but the part lies fully inside the whole.
+      final merged = mergeScans(
+        [item('Mushrooms', [100, 100, 400, 400])],
+        [
+          [item('mushrooms', [100, 300, 200, 400])],
+        ],
+      );
+      expect(merged, hasLength(1));
+    });
+
+    test('touching boxes from different tiles with the same name merge', () {
+      final merged = mergeScans(
+        [item('Cucumber', [100, 100, 300, 300])],
+        [
+          // 10 apart on the 0-1000 grid, within 2%.
+          [item('Cucumber', [100, 310, 300, 500])],
+          // 100 apart: a separate object.
+          [item('Cucumber', [100, 600, 300, 800])],
+        ],
+      );
+      expect(merged, hasLength(2));
+      expect(merged[0].box2d, [100, 100, 300, 300]);
+      expect(merged[1].box2d, [100, 600, 300, 800]);
+    });
+
+    test('boxes just over 2% apart stay two', () {
+      final merged = mergeScans(
+        [item('Cucumber', [100, 100, 300, 300])],
+        [
+          [item('Cucumber', [100, 321, 300, 500])],
+        ],
+      );
+      expect(merged, hasLength(2));
+    });
+
+    test('touching boxes in one list stay two (two egg cartons)', () {
+      final merged = mergeScans(
+        const [],
+        [
+          [
+            item('Eggs', [100, 100, 300, 300]),
+            item('Eggs', [100, 300, 300, 500]),
+          ],
+        ],
+      );
+      expect(merged, hasLength(2));
+    });
+
+    test('touching boxes with different names stay two', () {
+      final merged = mergeScans(
+        [item('Milk', [100, 100, 300, 300])],
+        [
+          [item('Butter', [100, 300, 300, 500])],
+        ],
+      );
+      expect(merged, hasLength(2));
+    });
+
+    test('boxless same-name items across lists merge', () {
+      final merged = mergeScans(
+        [item('Milk', null, location: 'Shelf 1')],
+        [
+          [item('milks', null, location: '')],
+        ],
+      );
+      expect(merged, hasLength(1));
+    });
+
     test('is deterministic', () {
       List<String> run() => mergeScans(
         [item('A', [0, 0, 100, 100]), item('B', [200, 200, 300, 300])],
@@ -276,6 +347,51 @@ void main() {
       ]);
       expect(result, hasLength(1));
       expect(result.single.confidence, ScanConfidence.sure);
+    });
+  });
+
+  group('cross-tile merge without a name match', () {
+    ScannedItem it(String name, List<int> box,
+            {ScanConfidence c = ScanConfidence.likely}) =>
+        ScannedItem(
+          name: name,
+          foodType: FoodType.other,
+          confidence: c,
+          alternatives: const [],
+          location: 'shelf 2',
+          box2d: box,
+          photoIndex: 0,
+          isFood: true,
+        );
+
+    test('nearly identical boxes from two tiles merge; other name kept', () {
+      final merged = mergeScans(
+        [it('Tomato stew', [100, 100, 300, 300], c: ScanConfidence.sure)],
+        [
+          [it('Salsa', [105, 102, 298, 300])],
+        ],
+      );
+      expect(merged, hasLength(1));
+      expect(merged.single.name, 'Tomato stew');
+      expect(merged.single.alternatives.first, 'Salsa');
+    });
+
+    test('a small jar inside a big pot stays two items', () {
+      final merged = mergeScans(
+        [it('Pot of soup', [100, 100, 500, 500])],
+        [
+          [it('Jam', [200, 200, 260, 260])],
+        ],
+      );
+      expect(merged, hasLength(2));
+    });
+
+    test('different names in the same call never merge', () {
+      final merged = mergeScans([
+        it('Tomato stew', [100, 100, 300, 300]),
+        it('Salsa', [105, 102, 298, 300]),
+      ], const []);
+      expect(merged, hasLength(2));
     });
   });
 }

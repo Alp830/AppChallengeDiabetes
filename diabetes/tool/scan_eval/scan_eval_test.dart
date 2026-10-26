@@ -67,6 +67,7 @@ void _saveRaw(String photo, int run, VariantResult result, Duration latency) {
           'callTimingsMs': [
             for (final timing in result.callTimings!) timing.inMilliseconds,
           ],
+        if (result.perCall != null) 'perCall': result.perCall,
         'items': [
           for (final item in result.items)
             {

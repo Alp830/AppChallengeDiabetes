@@ -58,6 +58,8 @@ class PipelineResult {
     required this.calls,
     required this.callTimings,
     required this.droppedTiles,
+    required this.perCallItems,
+    required this.callIds,
   });
 
   final List<ScannedItem> items;
@@ -78,9 +80,23 @@ class PipelineResult {
 
   /// Ids of tiles/crops that missed the deadline, failed or were never sent.
   final List<String> droppedTiles;
+
+  /// The lists the final merge started from, boxes in photo space and before
+  /// merging, in call order (the overview first when it is the merge base).
+  /// A zoom stage is not included. Feeding them to [mergeScans] (first as
+  /// base, the rest as extra) redoes the merge offline.
+  final List<List<ScannedItem>> perCallItems;
+
+  /// Call ids ("overview" or tile ids) matching [perCallItems].
+  final List<String> callIds;
 }
 
-typedef _Stage = ({List<ScannedItem> items, List<ScanZone> zones});
+typedef _Stage = ({
+  List<ScannedItem> items,
+  List<ScanZone> zones,
+  List<String> ids,
+  List<List<ScannedItem>> lists,
+});
 
 /// Scan v2 split over several model calls. Makes no retries of its own.
 class FridgeScanPipeline {
@@ -114,7 +130,7 @@ class FridgeScanPipeline {
       case ScanPlan.grid:
         final grid = await _grid(run, photo);
         if (grid == null) return _overviewOnly(run, photo);
-        return run.result(grid.items, grid.zones, 0);
+        return run.result(grid.items, grid.zones, 0, grid.ids, grid.lists);
       case ScanPlan.gridPlusOverview:
         return _gridPlusOverview(run, photo);
       case ScanPlan.zones:
@@ -132,7 +148,13 @@ class FridgeScanPipeline {
   ) async {
     final overview = await run.overview(photo);
     if (overview == null) run.rethrowFirst();
-    return run.result(overview.items, overview.zones, overview.tiltDegrees);
+    return run.result(
+      overview.items,
+      overview.zones,
+      overview.tiltDegrees,
+      const ['overview'],
+      [overview.items],
+    );
   }
 
   static Future<_Stage?> _grid(_Run run, PreparedPhoto photo) async {
@@ -143,7 +165,7 @@ class FridgeScanPipeline {
     );
     if (rects.isEmpty) return null;
     final outcomes = await run.tiles(rects, photo.original);
-    return _mergeTiles(const [], const [], outcomes, photo.original);
+    return _mergeTiles(null, const [], outcomes, photo.original);
   }
 
   static Future<PipelineResult> _gridPlusOverview(
@@ -160,7 +182,7 @@ class FridgeScanPipeline {
     final outcomes = await run.tiles(rects, photo.original);
     final overview = await overviewFuture;
     final merged = _mergeTiles(
-      overview?.items ?? const [],
+      overview?.items,
       overview?.zones ?? const [],
       outcomes,
       photo.original,
@@ -169,6 +191,8 @@ class FridgeScanPipeline {
       merged.items,
       merged.zones,
       overview?.tiltDegrees ?? 0,
+      merged.ids,
+      merged.lists,
     );
   }
 
@@ -192,6 +216,8 @@ class FridgeScanPipeline {
         straightened.items,
         overview.zones,
         overview.tiltDegrees,
+        const ['overview'],
+        [straightened.items],
       );
     }
     final outcomes = await run.tiles(rects, working);
@@ -201,7 +227,13 @@ class FridgeScanPipeline {
       outcomes,
       working,
     );
-    return run.result(merged.items, merged.zones, overview.tiltDegrees);
+    return run.result(
+      merged.items,
+      merged.zones,
+      overview.tiltDegrees,
+      merged.ids,
+      merged.lists,
+    );
   }
 
   static Future<PipelineResult> _zoom(_Run run, PreparedPhoto photo) async {
@@ -218,7 +250,13 @@ class FridgeScanPipeline {
       straightened.items,
       overview.zones,
     );
-    return run.result(items, overview.zones, overview.tiltDegrees);
+    return run.result(
+      items,
+      overview.zones,
+      overview.tiltDegrees,
+      const ['overview'],
+      [straightened.items],
+    );
   }
 
   static Future<PipelineResult> _gridPlusZoom(
@@ -230,7 +268,7 @@ class FridgeScanPipeline {
     // Tile-local zone counts don't describe the merged items, so only the
     // guesses decide what to zoom on.
     final items = await _zoomStage(run, photo.original, grid.items, const []);
-    return run.result(items, grid.zones, 0);
+    return run.result(items, grid.zones, 0, grid.ids, grid.lists);
   }
 
   /// Plans close-ups on [source], scans them in ONE multi-image call and folds
@@ -261,20 +299,30 @@ class FridgeScanPipeline {
     return applyZoom(base, zoomed);
   }
 
+  /// [base] is the overview's items, or null when the plan has no overview
+  /// (or it failed).
   static _Stage _mergeTiles(
-    List<ScannedItem> base,
+    List<ScannedItem>? base,
     List<ScanZone> baseZones,
     List<({TileRect rect, ScanResponse response})> outcomes,
     img.Image source,
   ) {
-    final items = mergeScans(base, [
+    final tileLists = [
       for (final o in outcomes)
         [
           for (final item in o.response.items)
             _toPhotoSpace(item, o.rect, source.width, source.height),
         ],
-    ]);
-    if (baseZones.isNotEmpty) return (items: items, zones: baseZones);
+    ];
+    final items = mergeScans(base ?? const [], tileLists);
+    final ids = [
+      if (base != null) 'overview',
+      for (final o in outcomes) o.rect.id,
+    ];
+    final lists = [?base, ...tileLists];
+    if (baseZones.isNotEmpty) {
+      return (items: items, zones: baseZones, ids: ids, lists: lists);
+    }
     // No overview: the tiles' zones, by name, keeping the largest count.
     final counts = <String, int>{};
     for (final o in outcomes) {
@@ -287,6 +335,8 @@ class FridgeScanPipeline {
       zones: [
         for (final e in counts.entries) ScanZone(name: e.key, count: e.value),
       ],
+      ids: ids,
+      lists: lists,
     );
   }
 
@@ -474,6 +524,8 @@ class _Run {
     List<ScannedItem> items,
     List<ScanZone> zones,
     double tiltDegrees,
+    List<String> callIds,
+    List<List<ScannedItem>> perCallItems,
   ) {
     if (_responses.isEmpty) rethrowFirst();
     var prompt = 0, candidates = 0, thoughts = 0, total = 0, nonFood = 0;
@@ -498,6 +550,8 @@ class _Run {
       calls: _calls,
       callTimings: List.unmodifiable(_timings),
       droppedTiles: List.unmodifiable(_dropped),
+      perCallItems: List.unmodifiable(perCallItems),
+      callIds: List.unmodifiable(callIds),
     );
   }
 }

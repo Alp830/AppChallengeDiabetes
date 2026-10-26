@@ -1,0 +1,255 @@
+{
+ "variant": "v3-zoom",
+ "photo": "blurry",
+ "run": 1,
+ "latencyMs": 48661,
+ "promptTokens": 4963,
+ "candidatesTokens": 4214,
+ "thoughtsTokens": 0,
+ "calls": 2,
+ "callTimingsMs": [
+  22291,
+  20400
+ ],
+ "items": [
+  {
+   "name": "Oatmeal",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Eggs",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Juice",
+   "alternatives": [
+    "Milk",
+    "Water"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Soup",
+   "alternatives": [
+    "Hummus",
+    "Applesauce"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Yogurt",
+   "alternatives": [
+    "Sour cream",
+    "Cottage cheese"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Butter",
+   "alternatives": [
+    "Cheese",
+    "Tofu"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Tomato stew",
+   "alternatives": [
+    "Salsa",
+    "Cooked meat"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Cooked meal",
+   "alternatives": [
+    "Leftovers",
+    "Salad"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Jam",
+   "alternatives": [
+    "Salsa",
+    "Pasta sauce"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Pickles",
+   "alternatives": [
+    "Jam",
+    "Olives"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Butter",
+   "alternatives": [
+    "Cheese",
+    "Juice boxes"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Salad",
+   "alternatives": [
+    "Cut vegetables",
+    "Stew"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Eggs",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Cauliflower",
+   "alternatives": [
+    "Mushrooms",
+    "Chicken"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Produce",
+   "alternatives": [
+    "Meat",
+    "Cheese"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Vegetables",
+   "alternatives": [
+    "Fruit",
+    "Greens"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Mustard",
+   "alternatives": [
+    "Sauce",
+    "Condiment"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Lime juice",
+   "alternatives": [
+    "Guacamole",
+    "Dressing"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Orange juice",
+   "alternatives": [
+    "Cheese",
+    "Sauce"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Salad dressing",
+   "alternatives": [
+    "Sauce",
+    "Syrup"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Electrolyte drink",
+   "alternatives": [
+    "Water",
+    "Vinegar"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Hot sauce",
+   "alternatives": [
+    "Ketchup",
+    "Chili oil"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Apple sauce",
+   "alternatives": [
+    "Peanut butter",
+    "Salsa"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Hot sauce",
+   "alternatives": [
+    "Ketchup",
+    "Salsa"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Snacks",
+   "alternatives": [
+    "Cheese",
+    "Blueberries"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Bread",
+   "alternatives": [
+    "Tortillas",
+    "Pita"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Cooked dish",
+   "alternatives": [
+    "Stew",
+    "Sauce"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Condiment",
+   "alternatives": [
+    "Jam",
+    "Pickles"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Avocado",
+   "alternatives": [
+    "Green apple",
+    "Guacamole"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Pickle",
+   "alternatives": [
+    "Chutney",
+    "Paste"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Dark sauce",
+   "alternatives": [
+    "Soy sauce",
+    "Balsamic"
+   ],
+   "confidence": "guess"
+  }
+ ]
+}

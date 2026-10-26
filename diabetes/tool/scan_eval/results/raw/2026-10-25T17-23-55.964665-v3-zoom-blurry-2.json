@@ -1,0 +1,346 @@
+{
+ "variant": "v3-zoom",
+ "photo": "blurry",
+ "run": 2,
+ "latencyMs": 53028,
+ "promptTokens": 6078,
+ "candidatesTokens": 4804,
+ "thoughtsTokens": 0,
+ "calls": 2,
+ "callTimingsMs": [
+  20633,
+  26592
+ ],
+ "items": [
+  {
+   "name": "Yogurt",
+   "alternatives": [
+    "Oats",
+    "Ice cream"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Eggs",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Juice",
+   "alternatives": [
+    "Milk",
+    "Sauce"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Soup",
+   "alternatives": [
+    "Hummus",
+    "Applesauce"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Greek yogurt",
+   "alternatives": [
+    "Sour cream",
+    "Cottage cheese"
+   ],
+   "confidence": "sure"
+  },
+  {
+   "name": "Cheese",
+   "alternatives": [
+    "Butter",
+    "Tofu"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Tomato stew",
+   "alternatives": [
+    "Salsa",
+    "Pasta sauce"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Leftovers",
+   "alternatives": [
+    "Cooked meat",
+    "Stew"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Jam",
+   "alternatives": [
+    "Salsa",
+    "Chili paste"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Pickles",
+   "alternatives": [
+    "Jam",
+    "Olives"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Juice boxes",
+   "alternatives": [
+    "Butter",
+    "Matcha"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Vegetables",
+   "alternatives": [
+    "Salad",
+    "Leftovers"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Eggs",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Garlic",
+   "alternatives": [
+    "Potatoes",
+    "Mushrooms"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Condiment",
+   "alternatives": [
+    "Mustard",
+    "Butter"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Guacamole",
+   "alternatives": [
+    "Dressing",
+    "Lime juice"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Orange juice",
+   "alternatives": [
+    "Cheese",
+    "Cantaloupe"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Sauce",
+   "alternatives": [
+    "Dressing",
+    "Syrup"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Electrolyte drink",
+   "alternatives": [
+    "Water",
+    "Vinegar"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Hot sauce",
+   "alternatives": [
+    "Ketchup",
+    "Dressing"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Salsa",
+   "alternatives": [
+    "Pasta sauce",
+    "Jam"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Hot sauce",
+   "alternatives": [
+    "Ketchup",
+    "Dressing"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Snack bag",
+   "alternatives": [
+    "Cheese",
+    "Frozen fruit"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Cooking pot with food",
+   "alternatives": [
+    "Soup",
+    "Stew"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Oats canister",
+   "alternatives": [
+    "Breadcrumbs",
+    "Cornmeal"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Dark sauce bottle",
+   "alternatives": [
+    "Soy sauce",
+    "Vinegar"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Prepared food",
+   "alternatives": [
+    "Butter",
+    "Cheese"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Hummus",
+   "alternatives": [
+    "Soup",
+    "Mashed potatoes"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Canned food",
+   "alternatives": [
+    "Tuna",
+    "Cat food"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Lemon",
+   "alternatives": [
+    "Butter",
+    "Cheese"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Peanut butter",
+   "alternatives": [
+    "Honey",
+    "Jam"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Mixed salad",
+   "alternatives": [
+    "Cooked vegetables",
+    "Stew"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Condiment jar",
+   "alternatives": [
+    "Mustard",
+    "Mayonnaise"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Condiment bottle",
+   "alternatives": [
+    "Salad dressing",
+    "Vinegar"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Condiment bottle",
+   "alternatives": [
+    "Salad dressing",
+    "Syrup"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Dark jar",
+   "alternatives": [
+    "Jam",
+    "Supplements"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Green jar",
+   "alternatives": [
+    "Pesto",
+    "Pickles"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Small jar",
+   "alternatives": [
+    "Spice paste",
+    "Mustard"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Fruit puree",
+   "alternatives": [
+    "Jam",
+    "Honey"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Dark bottle",
+   "alternatives": [
+    "Soy sauce",
+    "Balsamic vinegar"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Blue pouch",
+   "alternatives": [
+    "Cheese",
+    "Dried fruit"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Canned drink",
+   "alternatives": [
+    "Condiment jar",
+    "Soda"
+   ],
+   "confidence": "guess"
+  }
+ ]
+}

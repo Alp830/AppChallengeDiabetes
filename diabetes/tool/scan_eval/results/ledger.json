@@ -241,5 +241,113 @@
     "promptTokens": 2344,
     "outputTokens": 4458,
     "costUsd": 0.049268
+  },
+  {
+    "timestamp": "2026-10-25T17:15:57.767396",
+    "variant": "v3-grid",
+    "photo": "clear",
+    "run": 1,
+    "promptTokens": 9724,
+    "outputTokens": 7530,
+    "costUsd": 0.094748
+  },
+  {
+    "timestamp": "2026-10-25T17:16:30.719832",
+    "variant": "v3-grid",
+    "photo": "clear",
+    "run": 2,
+    "promptTokens": 9724,
+    "outputTokens": 7491,
+    "costUsd": 0.094358
+  },
+  {
+    "timestamp": "2026-10-25T17:17:20.450301",
+    "variant": "v3-grid",
+    "photo": "clear",
+    "run": 3,
+    "promptTokens": 9724,
+    "outputTokens": 7325,
+    "costUsd": 0.092698
+  },
+  {
+    "timestamp": "2026-10-25T17:18:33.040759",
+    "variant": "v3-grid-overview",
+    "photo": "clear",
+    "run": 1,
+    "promptTokens": 12127,
+    "outputTokens": 12261,
+    "costUsd": 0.146864
+  },
+  {
+    "timestamp": "2026-10-25T17:19:47.104105",
+    "variant": "v3-grid-overview",
+    "photo": "clear",
+    "run": 2,
+    "promptTokens": 12127,
+    "outputTokens": 11941,
+    "costUsd": 0.14366400000000001
+  },
+  {
+    "timestamp": "2026-10-25T17:20:50.713675",
+    "variant": "v3-grid-overview",
+    "photo": "clear",
+    "run": 3,
+    "promptTokens": 12127,
+    "outputTokens": 12436,
+    "costUsd": 0.148614
+  },
+  {
+    "timestamp": "2026-10-25T17:23:02.728146",
+    "variant": "v3-zoom",
+    "photo": "blurry",
+    "run": 1,
+    "promptTokens": 4963,
+    "outputTokens": 4214,
+    "costUsd": 0.052066
+  },
+  {
+    "timestamp": "2026-10-25T17:23:55.961487",
+    "variant": "v3-zoom",
+    "photo": "blurry",
+    "run": 2,
+    "promptTokens": 6078,
+    "outputTokens": 4804,
+    "costUsd": 0.060196
+  },
+  {
+    "timestamp": "2026-10-25T17:24:56.147763",
+    "variant": "v3-zoom",
+    "photo": "blurry",
+    "run": 3,
+    "promptTokens": 4958,
+    "outputTokens": 5239,
+    "costUsd": 0.062306
+  },
+  {
+    "timestamp": "2026-10-25T17:26:35.954785",
+    "variant": "v3-grid",
+    "photo": "clear",
+    "run": 1,
+    "promptTokens": 9724,
+    "outputTokens": 7599,
+    "costUsd": 0.095438
+  },
+  {
+    "timestamp": "2026-10-25T17:27:16.259392",
+    "variant": "v3-grid",
+    "photo": "clear",
+    "run": 2,
+    "promptTokens": 9724,
+    "outputTokens": 7163,
+    "costUsd": 0.09107799999999999
+  },
+  {
+    "timestamp": "2026-10-25T17:27:55.011002",
+    "variant": "v3-grid",
+    "photo": "clear",
+    "run": 3,
+    "promptTokens": 9724,
+    "outputTokens": 7034,
+    "costUsd": 0.089788
   }
 ]

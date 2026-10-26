@@ -1,6 +1,6 @@
 {
  "version": 1,
- "status": "confirmed by owner 2026-10-25 (Kirkland green boxes = butter; top-right door shelf = medicine/supplements); names refined from native-resolution crops; 2026-10-25 owner: dark top-shelf bottle is medicine (was dark_sauce), blue drawer container is figs, MSC can accepts 'canned fish'",
+ "status": "confirmed by owner 2026-10-25 (Kirkland green boxes = butter; top-right door shelf = medicine/supplements); names refined from native-resolution crops; 2026-10-25 owner: dark top-shelf bottle is medicine (was dark_sauce), blue drawer container is figs, MSC can accepts 'canned fish'; brand 'fontana farms' accepted for the peppercorn dressing (its readable label)",
  "photos": {
   "blurry": {
    "file": "photos/blurry_webcam.jpg"
@@ -397,7 +397,8 @@
     "peppercorn dressing",
     "salad dressing",
     "dressing",
-    "vinaigrette"
+    "vinaigrette",
+    "fontana farms"
    ],
    "zone": "door",
    "isFood": true,

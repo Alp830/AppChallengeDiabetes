@@ -1,0 +1,489 @@
+{
+ "variant": "v3-grid",
+ "photo": "clear",
+ "run": 3,
+ "latencyMs": 49557,
+ "promptTokens": 9724,
+ "candidatesTokens": 7325,
+ "thoughtsTokens": 0,
+ "calls": 4,
+ "callTimingsMs": [
+  23899,
+  30904,
+  33050,
+  46940
+ ],
+ "items": [
+  {
+   "name": "Nordex Piknik White Cheese",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Cooked dish",
+   "alternatives": [
+    "Soup",
+    "Stew"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Liquid condiment",
+   "alternatives": [
+    "Oil",
+    "Syrup"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Eggs",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Dry staple",
+   "alternatives": [
+    "Sugar",
+    "Flour"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Pomegranate juice",
+   "alternatives": [
+    "Grape juice",
+    "Syrup"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Soft white cheese",
+   "alternatives": [
+    "Yogurt",
+    "Dough"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Hummus",
+   "alternatives": [
+    "Lentil soup",
+    "Tahini paste"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Stonyfield Organic Greek Yogurt",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Canned fish",
+   "alternatives": [
+    "Pate",
+    "Cat food"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Tomato stew",
+   "alternatives": [
+    "Pepper paste",
+    "Leftover curry"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Cooked meal",
+   "alternatives": [
+    "Soup",
+    "Rice dish"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Jam",
+   "alternatives": [
+    "Salsa",
+    "Pickled beets"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Honey",
+   "alternatives": [
+    "Broth",
+    "Fruit preserve"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Prepared condiment",
+   "alternatives": [
+    "Mustard",
+    "Butter"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Kirkland Grass-Fed Butter",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Vegetable salad",
+   "alternatives": [
+    "Cut fruit",
+    "Salsa"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Eggs",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Garlic",
+   "alternatives": [
+    "Mushrooms",
+    "Potatoes"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Cheese slices",
+   "alternatives": [
+    "Butter",
+    "Flatbread"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Frozen meat",
+   "alternatives": [
+    "Vegetables",
+    "Bread"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Cheese wheel",
+   "alternatives": [
+    "Tofu",
+    "Hummus"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Dark leafy greens",
+   "alternatives": [
+    "Mushrooms",
+    "Eggplant"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Cabbage",
+   "alternatives": [
+    "Melon",
+    "Lettuce"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Jarred condiment",
+   "alternatives": [
+    "Sauce",
+    "Spice"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Grated cheese",
+   "alternatives": [
+    "Seasoning",
+    "Drink mix"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Balsamic glaze",
+   "alternatives": [
+    "Soy sauce",
+    "Syrup"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Apple cider vinegar",
+   "alternatives": [
+    "Honey",
+    "Iced tea"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Sauce",
+   "alternatives": [
+    "Milk",
+    "Syrup"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Red sauce",
+   "alternatives": [
+    "Jam",
+    "Salsa"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Butter",
+   "alternatives": [
+    "Juice box",
+    "Cheese"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Condiment",
+   "alternatives": [
+    "Sauce",
+    "Pickles"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Mustard",
+   "alternatives": [
+    "Sauce",
+    "Honey"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Pickles",
+   "alternatives": [
+    "Condiment",
+    "Olives"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Beet kvass",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Broth",
+   "alternatives": [
+    "Honey",
+    "Applesauce"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Pepper sauce",
+   "alternatives": [
+    "Hot Sauce",
+    "Salsa"
+   ],
+   "confidence": "sure"
+  },
+  {
+   "name": "Flax seeds",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Mushrooms",
+   "alternatives": [
+    "Garlic",
+    "Small onions"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Lettuce",
+   "alternatives": [
+    "Cabbage",
+    "Celery"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Braised meat",
+   "alternatives": [
+    "Mushrooms",
+    "Sausages"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "White cheese",
+   "alternatives": [
+    "Tofu",
+    "Dough"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Pickled peppers",
+   "alternatives": [
+    "Yellow olives",
+    "Pickled garlic"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Green soup",
+   "alternatives": [
+    "Cooked greens",
+    "Stew"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Lemonade",
+   "alternatives": [
+    "Salad dressing",
+    "Green juice"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Dill",
+   "alternatives": [
+    "Fennel fronds",
+    "Parsley"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Peeled garlic",
+   "alternatives": [
+    "Chickpeas",
+    "Chestnuts"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Apple",
+   "alternatives": [
+    "Asian pear",
+    "Guava"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Bulgur",
+   "alternatives": [
+    "Couscous",
+    "Sesame seeds"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Chickpeas",
+   "alternatives": [
+    "Soybeans",
+    "Hummus"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Blueberries",
+   "alternatives": [
+    "Black olives",
+    "Plums"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Pomegranate",
+   "alternatives": [
+    "Red onion",
+    "Beet"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Cucumber",
+   "alternatives": [
+    "Zucchini",
+    "Green chili"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Melon",
+   "alternatives": [
+    "Asian pear",
+    "Pomelo"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Cucumbers",
+   "alternatives": [
+    "Zucchini",
+    "Green peppers"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Peanut butter",
+   "alternatives": [
+    "Tahini",
+    "Miso paste"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Ketchup",
+   "alternatives": [
+    "Chili sauce",
+    "Barbecue sauce"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Sauce",
+   "alternatives": [
+    "Spread",
+    "Condiment"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Organic Ketchup",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Cream Cheese",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Ranch Dressing",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Snack",
+   "alternatives": [
+    "Cheese",
+    "Butter"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Organic Lactose-Free 2% Milk",
+   "alternatives": [],
+   "confidence": "sure"
+  }
+ ]
+}

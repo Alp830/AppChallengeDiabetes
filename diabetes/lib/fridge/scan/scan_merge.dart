@@ -5,6 +5,22 @@ import 'scan_models.dart';
 /// Boxes must overlap at least this much (IoU) to be the same object.
 const _sameObjectIou = 0.3;
 
+/// Cross-tile items with different names merge when one box is this much
+/// inside the other and their areas are within [_unnamedMaxAreaRatio].
+const _unnamedContainment = 0.85;
+const _unnamedMaxAreaRatio = 2.5;
+
+/// One box mostly inside another (intersection over the smaller area) is
+/// the same object: one tile saw all of it, another only a part.
+const _sameObjectContainment = 0.5;
+
+/// Boxes from different tiles this close (as a fraction of the photo side)
+/// or overlapping are the same object cut by the tile edge.
+const _touchGapFraction = 0.02;
+
+/// Side of the 0–1000 box grid.
+const _gridSide = 1000;
+
 /// Most alternative names a merged item keeps.
 const _maxAlternatives = 2;
 
@@ -67,22 +83,67 @@ bool _hasBox(ScannedItem item) {
 
 String _locationKey(String location) => location.trim().toLowerCase();
 
-/// Whether [a] and [b] are the same physical object. Returns the IoU used to
-/// rank candidates, or null when they aren't the same.
-double? _matchScore(ScannedItem a, ScannedItem b) {
+/// Intersection over the smaller box's area; 0 when they don't overlap or
+/// either has no area.
+double _containment(List<int> a, List<int> b) {
+  final interH = math.min(a[2], b[2]) - math.max(a[0], b[0]);
+  final interW = math.min(a[3], b[3]) - math.max(a[1], b[1]);
+  if (interH <= 0 || interW <= 0) return 0;
+  final areaA = (a[2] - a[0]) * (a[3] - a[1]);
+  final areaB = (b[2] - b[0]) * (b[3] - b[1]);
+  final smaller = math.min(areaA, areaB);
+  if (smaller <= 0) return 0;
+  return interH * interW / smaller;
+}
+
+/// Whether the boxes overlap or are at most 2% of the photo side apart, in
+/// both directions.
+bool _touching(List<int> a, List<int> b) {
+  final gap = _gridSide * _touchGapFraction;
+  final gapY = math.max(a[0], b[0]) - math.min(a[2], b[2]);
+  final gapX = math.max(a[1], b[1]) - math.min(a[3], b[3]);
+  return gapY <= gap && gapX <= gap;
+}
+
+/// Whether [a] and [b] are the same physical object. Returns a score to rank
+/// candidates (higher is closer), or null when they aren't the same.
+///
+/// [crossTile] is for items from different calls: boxless items then also
+/// match when either location is empty, and boxes match when they merely
+/// touch or one is mostly inside the other.
+double? _matchScore(ScannedItem a, ScannedItem b, {bool crossTile = false}) {
   if (a.photoIndex != b.photoIndex) return null;
   if (!_hasBox(a) || !_hasBox(b)) {
-    final sameName = _normalize(a.name) == _normalize(b.name);
-    final sameLocation = _locationKey(a.location) == _locationKey(b.location);
-    return sameName && sameLocation && _normalize(a.name).isNotEmpty ? 0 : null;
+    final name = _normalize(a.name);
+    if (name.isEmpty || name != _normalize(b.name)) return null;
+    final la = _locationKey(a.location);
+    final lb = _locationKey(b.location);
+    final sameLocation =
+        la == lb || (crossTile && (la.isEmpty || lb.isEmpty));
+    return sameLocation ? 0 : null;
   }
-  final overlap = iou(a.box2d!, b.box2d!);
-  if (overlap < _sameObjectIou) return null;
   final named =
       _namesMatch(a.name, b.name) ||
       _inAlternatives(a.name, b) ||
       _inAlternatives(b.name, a);
-  return named ? overlap : null;
+  if (!named) {
+    // Two tiles often name one object differently ("tomato stew" vs
+    // "salsa"); live runs showed their boxes then nearly coincide. Merge
+    // those, scored below any name match, and keep the other name as an
+    // alternative. Similar size guards against a jar in front of a pot.
+    if (!crossTile) return null;
+    final contained = _containment(a.box2d!, b.box2d!);
+    if (contained < _unnamedContainment) return null;
+    final areaA = _area(a.box2d!), areaB = _area(b.box2d!);
+    final ratio = math.max(areaA, areaB) / math.max(1, math.min(areaA, areaB));
+    return ratio <= _unnamedMaxAreaRatio ? contained - 1 : null;
+  }
+  final overlap = iou(a.box2d!, b.box2d!);
+  if (overlap >= _sameObjectIou) return overlap;
+  if (!crossTile) return null;
+  final contained = _containment(a.box2d!, b.box2d!);
+  if (contained >= _sameObjectContainment) return contained;
+  return _touching(a.box2d!, b.box2d!) ? 0 : null;
 }
 
 /// Strictly more trusted? [ScanConfidence] is declared most-trusted first.
@@ -102,11 +163,18 @@ List<String> _unionAlternatives(ScannedItem primary, ScannedItem secondary) {
 }
 
 ScannedItem _combine(ScannedItem kept, ScannedItem other) {
+  var alternatives = _unionAlternatives(kept, other);
+  // A merge without a name match: the other tile's name is the most useful
+  // alternative to offer.
+  if (!_namesMatch(kept.name, other.name) &&
+      !alternatives.any((alt) => _normalize(alt) == _normalize(other.name))) {
+    alternatives = [other.name, ...alternatives].take(_maxAlternatives).toList();
+  }
   return ScannedItem(
     name: kept.name,
     foodType: kept.foodType,
     confidence: kept.confidence,
-    alternatives: _unionAlternatives(kept, other),
+    alternatives: alternatives,
     location: kept.location,
     box2d: kept.box2d ?? other.box2d,
     photoIndex: kept.photoIndex,
@@ -120,10 +188,12 @@ ScannedItem _combine(ScannedItem kept, ScannedItem other) {
 /// Folds the items from extra tile scans into [base]; all boxes must already
 /// be in full-photo space.
 ///
-/// An extra item is the same object as an existing one when their boxes reach
-/// IoU 0.3 and the names match (case, plural and word-subset tolerant) or one
-/// name is among the other's alternatives. Items without a box match only on
-/// the same name and location. The more confident of the pair is kept (the
+/// An extra item is the same object as an existing one when the names match
+/// (case, plural and word-subset tolerant) or one name is among the other's
+/// alternatives, and the boxes reach IoU 0.3, or one box is at least half
+/// inside the other, or they overlap or lie within 2% of the photo side of
+/// each other (the lists are different tiles). Items without a box match only
+/// on the same name and an equal or empty location. The more confident of the pair is kept (the
 /// earlier on a tie) with the alternatives of both, at most two. Unmatched
 /// items are appended, so an item seen in two overlapping tiles counts once.
 ///
@@ -142,7 +212,7 @@ List<ScannedItem> mergeScans(
       var bestScore = -1.0;
       for (var i = 0; i < result.length; i++) {
         if (sources[i].contains(k)) continue;
-        final score = _matchScore(result[i], item);
+        final score = _matchScore(result[i], item, crossTile: true);
         if (score != null && score > bestScore) {
           bestScore = score;
           bestIndex = i;
@@ -194,3 +264,5 @@ List<ScannedItem> applyZoom(List<ScannedItem> base, List<ScannedItem> zoomed) {
   }
   return result;
 }
+
+int _area(List<int> b) => math.max(0, b[2] - b[0]) * math.max(0, b[3] - b[1]);

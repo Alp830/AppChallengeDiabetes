@@ -51,5 +51,21 @@ Future<VariantResult> runV3(
     usage: result.usage,
     calls: result.calls,
     callTimings: result.callTimings,
+    perCall: [
+      for (var i = 0; i < result.perCallItems.length; i++)
+        {
+          'id': result.callIds[i],
+          'items': [
+            for (final item in result.perCallItems[i])
+              {
+                'name': item.name,
+                'alternatives': item.alternatives,
+                'confidence': item.confidence.label,
+                'box': item.box2d,
+                'location': item.location,
+              },
+          ],
+        },
+    ],
   );
 }

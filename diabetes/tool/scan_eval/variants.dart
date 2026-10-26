@@ -15,6 +15,7 @@ class VariantResult {
     required this.usage,
     this.calls,
     this.callTimings,
+    this.perCall,
   });
 
   final List<ScanOutputItem> items;
@@ -23,6 +24,11 @@ class VariantResult {
   /// Model calls made and how long each ran; null for single-call variants.
   final int? calls;
   final List<Duration>? callTimings;
+
+  /// Each call's items before merging, boxes in photo space, so a merge
+  /// change can be re-tested offline: {id, items: [{name, alternatives,
+  /// confidence, box, location}]}. Null when the variant doesn't keep them.
+  final List<Map<String, Object?>>? perCall;
 }
 
 /// A scan pipeline: raw photo bytes in, scan output and token usage out.
