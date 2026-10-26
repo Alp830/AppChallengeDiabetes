@@ -91,6 +91,29 @@ class PipelineResult {
   final List<String> callIds;
 }
 
+/// How far a streamed scan has got, across all of its calls.
+class ScanProgress {
+  const ScanProgress({
+    required this.itemsSoFar,
+    required this.latestNames,
+    required this.callsDone,
+    required this.callsTotal,
+  });
+
+  /// Items streamed so far, summed over every call and before merging, so a
+  /// food seen in two overlapping tiles counts twice.
+  final int itemsSoFar;
+
+  /// The names of the last (up to three) items streamed, oldest first.
+  final List<String> latestNames;
+
+  /// Calls that have finished (returned, failed or been dropped).
+  final int callsDone;
+
+  /// Calls the scan has planned so far; it can grow as later stages start.
+  final int callsTotal;
+}
+
 typedef _Stage = ({
   List<ScannedItem> items,
   List<ScanZone> zones,
@@ -104,6 +127,9 @@ class FridgeScanPipeline {
   /// not done in time; the overview call is never dropped. The scan throws
   /// the first error only when every call failed. [abortTrigger] cancels all
   /// in-flight calls. At most [maxParallel] tile calls run at once.
+  ///
+  /// With [onProgress] the calls stream their replies and report each item as
+  /// it completes; without it they use the plain request.
   static Future<PipelineResult> scan(
     PreparedPhoto photo, {
     required ScanPlan plan,
@@ -114,8 +140,10 @@ class FridgeScanPipeline {
     String? apiKey,
     Future<void>? abortTrigger,
     int maxParallel = 4,
+    void Function(ScanProgress progress)? onProgress,
   }) async {
     final run = _Run(
+      onProgress: onProgress,
       style: style,
       thinkingLevel: thinkingLevel,
       deadline: deadline,
@@ -282,6 +310,7 @@ class FridgeScanPipeline {
   ) async {
     final crops = planZoomCrops(source.width, source.height, base, zones);
     if (crops.isEmpty) return base;
+    run.plan(1);
     final response = await run.call(
       'zoom',
       () => [for (final crop in crops) encodeTile(cutTile(source, crop))],
@@ -376,6 +405,7 @@ class _Run {
     required this.client,
     required this.apiKey,
     required this.maxParallel,
+    this.onProgress,
     Future<void>? abortTrigger,
   }) {
     if (abortTrigger != null) {
@@ -399,6 +429,36 @@ class _Run {
   final http.Client? client;
   final String? apiKey;
   final int maxParallel;
+  final void Function(ScanProgress progress)? onProgress;
+
+  var _itemsSoFar = 0;
+  var _callsDone = 0;
+  var _callsTotal = 0;
+  final _latestNames = <String>[];
+
+  void _report() {
+    onProgress?.call(
+      ScanProgress(
+        itemsSoFar: _itemsSoFar,
+        latestNames: List.unmodifiable(_latestNames),
+        callsDone: _callsDone,
+        callsTotal: _callsTotal,
+      ),
+    );
+  }
+
+  void _onItem(ScannedItem item) {
+    _itemsSoFar++;
+    _latestNames.add(item.name);
+    if (_latestNames.length > 3) _latestNames.removeAt(0);
+    _report();
+  }
+
+  /// Announces [count] more planned calls.
+  void plan(int count) {
+    _callsTotal += count;
+    _report();
+  }
 
   final _clock = Stopwatch()..start();
   final _cancels = <Completer<void>>[];
@@ -410,14 +470,30 @@ class _Run {
   (Object, StackTrace)? _firstError;
 
   /// The overview call. Never dropped by the deadline.
-  Future<ScanResponse?> overview(PreparedPhoto photo) =>
-      call('overview', () => [photo.overviewJpeg], droppable: false);
+  Future<ScanResponse?> overview(PreparedPhoto photo) {
+    plan(1);
+    return call('overview', () => [photo.overviewJpeg], droppable: false);
+  }
 
   /// One model call. [images] runs lazily, inside the guarded section, so
   /// cutting and encoding is skipped for a dropped call and a failure there
   /// counts as a failed call. The first image is the main one, the rest are
   /// sent as extra images. Returns null when the call was dropped or failed.
   Future<ScanResponse?> call(
+    String id,
+    List<Uint8List> Function() images, {
+    String? note,
+    bool droppable = true,
+  }) async {
+    try {
+      return await _call(id, images, note: note, droppable: droppable);
+    } finally {
+      _callsDone++;
+      _report();
+    }
+  }
+
+  Future<ScanResponse?> _call(
     String id,
     List<Uint8List> Function() images, {
     String? note,
@@ -456,16 +532,28 @@ class _Run {
       final remaining = remainingTime();
       started = true;
       _calls++;
-      final future = FridgeScanService.scanV2(
-        jpegs.first,
-        client: client,
-        apiKey: apiKey,
-        abortTrigger: cancel.future,
-        thinkingLevel: thinkingLevel,
-        style: style,
-        contextNote: note,
-        extraImages: jpegs.skip(1).toList(),
-      );
+      final future = onProgress == null
+          ? FridgeScanService.scanV2(
+              jpegs.first,
+              client: client,
+              apiKey: apiKey,
+              abortTrigger: cancel.future,
+              thinkingLevel: thinkingLevel,
+              style: style,
+              contextNote: note,
+              extraImages: jpegs.skip(1).toList(),
+            )
+          : FridgeScanService.scanV2Stream(
+              jpegs.first,
+              client: client,
+              apiKey: apiKey,
+              abortTrigger: cancel.future,
+              thinkingLevel: thinkingLevel,
+              style: style,
+              contextNote: note,
+              extraImages: jpegs.skip(1).toList(),
+              onItem: _onItem,
+            );
       final response = remaining == null
           ? await future
           : await future.timeout(remaining);
@@ -491,6 +579,7 @@ class _Run {
     List<TileRect> rects,
     img.Image source,
   ) async {
+    plan(rects.length);
     final responses = List<ScanResponse?>.filled(rects.length, null);
     var next = 0;
     Future<void> worker() async {

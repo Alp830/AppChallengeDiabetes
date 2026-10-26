@@ -234,9 +234,9 @@ PhotoScore scorePhoto(
   List<ScanOutputItem> output,
 ) {
   bool inScope(KeyItem k) =>
-      k.isFood && (photo != 'blurry' || k.visibleInBlurryPhoto);
+      k.isFood && (!_blurryScope(photo) || k.visibleInBlurryPhoto);
   final scoped = key.items.where(inScope).toList();
-  final blurry = photo == 'blurry';
+  final blurry = _blurryScope(photo);
 
   // 1. Identity: each output's candidates are the key items (food or not,
   // visible or not) at its single best strength.
@@ -394,3 +394,7 @@ void _stableSort<T>(List<T> list, {required int Function(T, T) compare}) {
     list[j + 1] = value;
   }
 }
+
+/// Photos of the blurry webcam shot: the still, and frames from the same
+/// clip (ids starting "blurry"), share its visibility flags.
+bool _blurryScope(String photo) => photo.startsWith('blurry');

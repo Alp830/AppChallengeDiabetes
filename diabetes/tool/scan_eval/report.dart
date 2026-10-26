@@ -50,7 +50,7 @@ String buildReport({
       ..writeln()
       ..writeln(
         '${good.length}/${runs.length} runs succeeded.'
-        '${id == 'blurry' ? ' Recall counts only items with '
+        '${id.startsWith('blurry') ? ' Recall counts only items with '
                   'visibleInBlurryPhoto=true.' : ''}',
       )
       ..writeln()

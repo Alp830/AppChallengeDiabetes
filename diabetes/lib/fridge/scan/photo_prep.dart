@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
 import 'package:image/image.dart' as img;
@@ -10,6 +11,11 @@ import 'scan_models.dart';
 /// it at full detail.
 const overviewMaxSide = 2048;
 const overviewJpegQuality = 85;
+
+/// Longest side of the pixels [preparePhotoAsync] keeps by default. The kept
+/// original only feeds tile crops, and a 2x2 grid of a 4096 px photo still
+/// gives tiles of about 2300 px, more than the 2048 px upload.
+const defaultMaxKeptSide = 4096;
 
 /// Tilts at or below this many degrees are left alone: rotating resamples the
 /// pixels, which costs more sharpness than a slight lean costs accuracy.
@@ -108,12 +114,202 @@ class _PrepareRequest {
 PreparedPhoto _prepareInIsolate(_PrepareRequest request) =>
     preparePhoto(request.bytes, maxKeptSide: request.maxKeptSide);
 
-/// [preparePhoto] off the UI isolate, so decoding a 12–24 MP photo with the
-/// pure-Dart decoder doesn't freeze the app. On web `compute` runs inline.
+/// Like [preparePhoto], but decodes with the engine's image codec (native on
+/// mobile, browser-native on web), which is several times faster than the
+/// pure-Dart decoder and, with a target size, never materialises the full
+/// 24 MP bitmap. Falls back to [preparePhoto] in an isolate (inline on web) if
+/// the codec path throws, e.g. for formats the engine can't decode.
+///
+/// [maxKeptSide] caps the longest side of the kept pixels (0 = no cap).
 Future<PreparedPhoto> preparePhotoAsync(
   Uint8List bytes, {
-  int maxKeptSide = 0,
-}) => compute(_prepareInIsolate, _PrepareRequest(bytes, maxKeptSide));
+  int maxKeptSide = defaultMaxKeptSide,
+}) async {
+  try {
+    return await _prepareWithCodec(bytes, maxKeptSide);
+  } on Object {
+    return compute(_prepareInIsolate, _PrepareRequest(bytes, maxKeptSide));
+  }
+}
+
+/// The engine codec's EXIF handling isn't documented, so [_engineAppliesExif]
+/// checks it once with a tiny orientation-6 JPEG and we bake in Dart only if
+/// the codec didn't rotate.
+Future<PreparedPhoto> _prepareWithCodec(Uint8List bytes, int maxKeptSide) async {
+  final (srcW, srcH) = await _intrinsicSize(bytes);
+  final srcLong = math.max(srcW, srcH);
+
+  final orientation = _exifOrientation(bytes);
+  final needsBake = orientation > 1 && !await _engineAppliesExif();
+
+  final keptLong = maxKeptSide > 0 ? math.min(srcLong, maxKeptSide) : srcLong;
+  final kept = await _decodeScaled(bytes, srcW, srcH, keptLong / srcLong);
+
+  final keptImage = img.Image.fromBytes(
+    width: kept.width,
+    height: kept.height,
+    bytes: kept.rgba.buffer,
+    bytesOffset: kept.rgba.offsetInBytes,
+    numChannels: 4,
+    order: img.ChannelOrder.rgba,
+  );
+
+  if (needsBake) {
+    // Rare: the engine ignores EXIF. Bake the capped pixels and derive the
+    // overview in Dart; the kept image is at most maxKeptSide so this is cheap.
+    keptImage.exif.imageIfd.orientation = orientation;
+    final baked = img.bakeOrientation(keptImage);
+    final swapped = _swapsSides(orientation);
+    return _prepareFromImage(
+      baked,
+      sourceWidth: swapped ? srcH : srcW,
+      sourceHeight: swapped ? srcW : srcH,
+    );
+  }
+
+  // Size as taken, orientation applied: the engine already rotated, so it is
+  // the intrinsic size with the sides swapped when the decode came out swapped.
+  final decodedSwapped =
+      srcW != srcH && (kept.width > kept.height) != (srcW > srcH);
+  final originalWidth = decodedSwapped ? srcH : srcW;
+  final originalHeight = decodedSwapped ? srcW : srcH;
+
+  final overviewLong = math.min(keptLong, overviewMaxSide);
+  final _Decoded overview = overviewLong == keptLong
+      ? kept
+      : await _decodeScaled(bytes, srcW, srcH, overviewLong / srcLong);
+
+  final jpeg = await compute(
+    _encodeOverview,
+    _EncodeRequest(overview.rgba, overview.width, overview.height),
+  );
+  return PreparedPhoto(
+    original: keptImage,
+    overviewJpeg: jpeg,
+    originalWidth: originalWidth,
+    originalHeight: originalHeight,
+    overviewWidth: overview.width,
+    overviewHeight: overview.height,
+  );
+}
+
+class _Decoded {
+  const _Decoded(this.rgba, this.width, this.height);
+
+  final Uint8List rgba;
+  final int width;
+  final int height;
+}
+
+/// Width and height from the container header, without decoding pixels.
+Future<(int, int)> _intrinsicSize(Uint8List bytes) async {
+  final buffer = await ui.ImmutableBuffer.fromUint8List(bytes);
+  try {
+    final descriptor = await ui.ImageDescriptor.encoded(buffer);
+    try {
+      return (descriptor.width, descriptor.height);
+    } finally {
+      descriptor.dispose();
+    }
+  } finally {
+    buffer.dispose();
+  }
+}
+
+/// Decodes at [scale] (<= 1) of the intrinsic size; the codec downsamples
+/// while decoding. Throws if the result's aspect ratio doesn't match the
+/// intrinsic one (an engine that applied the target before rotating), so the
+/// caller falls back to the pure-Dart path instead of using a distorted photo.
+Future<_Decoded> _decodeScaled(
+  Uint8List bytes,
+  int srcW,
+  int srcH,
+  double scale,
+) async {
+  final scaled = scale < 1;
+  final codec = await ui.instantiateImageCodec(
+    bytes,
+    targetWidth: scaled ? math.max(1, (srcW * scale).round()) : null,
+    targetHeight: scaled ? math.max(1, (srcH * scale).round()) : null,
+  );
+  try {
+    final frame = await codec.getNextFrame();
+    final image = frame.image;
+    try {
+      final data = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
+      if (data == null) throw const FormatException('No pixel data');
+      final ratio = image.width / image.height;
+      final srcRatio = srcW / srcH;
+      if ((ratio / srcRatio - 1).abs() > 0.03 &&
+          (ratio * srcRatio - 1).abs() > 0.03) {
+        throw const FormatException('Codec distorted the photo');
+      }
+      return _Decoded(
+        data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes),
+        image.width,
+        image.height,
+      );
+    } finally {
+      image.dispose();
+    }
+  } finally {
+    codec.dispose();
+  }
+}
+
+/// EXIF orientation (1-8) of a JPEG, 1 when absent or not a JPEG.
+int _exifOrientation(Uint8List bytes) {
+  try {
+    return img.decodeJpgExif(bytes)?.imageIfd.orientation ?? 1;
+  } on Object {
+    return 1;
+  }
+}
+
+bool _swapsSides(int orientation) => orientation >= 5 && orientation <= 8;
+
+Future<bool>? _engineAppliesExifProbe;
+
+/// Whether the engine codec returns pixels already rotated by EXIF. Decides
+/// once per process by decoding a 2x1 JPEG tagged orientation 6: upright
+/// output is 1x2.
+Future<bool> _engineAppliesExif() => _engineAppliesExifProbe ??= () async {
+  final probe = img.Image(width: 2, height: 1)
+    ..exif.imageIfd.orientation = 6;
+  final codec = await ui.instantiateImageCodec(
+    Uint8List.fromList(img.encodeJpg(probe)),
+  );
+  try {
+    final frame = await codec.getNextFrame();
+    final applied = frame.image.height > frame.image.width;
+    frame.image.dispose();
+    return applied;
+  } finally {
+    codec.dispose();
+  }
+}();
+
+class _EncodeRequest {
+  const _EncodeRequest(this.rgba, this.width, this.height);
+
+  final Uint8List rgba;
+  final int width;
+  final int height;
+}
+
+Uint8List _encodeOverview(_EncodeRequest request) {
+  final image = img.Image.fromBytes(
+    width: request.width,
+    height: request.height,
+    bytes: request.rgba.buffer,
+    bytesOffset: request.rgba.offsetInBytes,
+    numChannels: 4,
+    order: img.ChannelOrder.rgba,
+  );
+  return Uint8List.fromList(
+    img.encodeJpg(image, quality: overviewJpegQuality),
+  );
+}
 
 /// Rotates [image] clockwise by [clockwiseDegrees] (bicubic) on a canvas
 /// grown to hold the whole rotated photo; the corners it leaves are empty.

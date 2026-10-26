@@ -72,6 +72,76 @@ void main() {
     });
   });
 
+  group('preparePhotoAsync (engine codec)', () {
+    testWidgets('decodes to the right sizes with an overview <= 2048',
+        (tester) async {
+      await tester.runAsync(() async {
+        final photo = await preparePhotoAsync(_jpeg(2600, 1300));
+
+        expect(photo.original.width, 2600);
+        expect(photo.original.height, 1300);
+        expect(photo.originalWidth, 2600);
+        expect(photo.originalHeight, 1300);
+        expect(photo.overviewWidth, closeTo(2048, 1));
+        expect(photo.overviewHeight, closeTo(1024, 1));
+        expect(photo.overviewJpeg.sublist(0, 2), [0xFF, 0xD8]);
+        final decoded = img.decodeJpg(photo.overviewJpeg)!;
+        expect(decoded.width, photo.overviewWidth);
+        expect(decoded.height, photo.overviewHeight);
+      });
+    });
+
+    testWidgets('maxKeptSide caps the kept pixels, not the reported size',
+        (tester) async {
+      await tester.runAsync(() async {
+        final photo = await preparePhotoAsync(
+          _jpeg(400, 200),
+          maxKeptSide: 100,
+        );
+
+        expect(photo.original.width, closeTo(100, 1));
+        expect(photo.original.height, closeTo(50, 1));
+        expect(photo.originalWidth, 400);
+        expect(photo.originalHeight, 200);
+        expect(photo.overviewWidth, photo.original.width);
+      });
+    });
+
+    testWidgets('never upscales a small photo', (tester) async {
+      await tester.runAsync(() async {
+        final photo = await preparePhotoAsync(_jpeg(300, 200));
+
+        expect(photo.original.width, 300);
+        expect(photo.overviewWidth, 300);
+        expect(photo.overviewHeight, 200);
+        expect(photo.overviewScale, 1);
+      });
+    });
+
+    testWidgets('delivers an upright photo whatever the EXIF orientation',
+        (tester) async {
+      await tester.runAsync(() async {
+        final photo = await preparePhotoAsync(_jpeg(40, 20, orientation: 6));
+
+        expect(photo.original.width, 20);
+        expect(photo.original.height, 40);
+        expect(photo.originalWidth, 20);
+        expect(photo.originalHeight, 40);
+        expect(photo.overviewWidth, 20);
+        expect(photo.overviewHeight, 40);
+      });
+    });
+
+    testWidgets('rejects bytes that are not an image', (tester) async {
+      await tester.runAsync(() async {
+        await expectLater(
+          preparePhotoAsync(Uint8List.fromList([1, 2, 3])),
+          throwsFormatException,
+        );
+      });
+    });
+  });
+
   group('rotateForTilt', () {
     test('90 degrees swaps the sides; a small angle grows the canvas', () {
       final image = img.Image(width: 100, height: 50);

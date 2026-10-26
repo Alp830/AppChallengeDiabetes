@@ -7,6 +7,9 @@
   },
   "clear": {
    "file": "photos/clear_phone.jpg"
+  },
+  "blurry_burst": {
+   "file": "photos/clip_frames/f04.jpg"
   }
  },
  "items": [

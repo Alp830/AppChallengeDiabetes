@@ -9,6 +9,7 @@ import '../../ai/ai_retry.dart';
 // re-exports this file, so the import is circular, which Dart allows.
 import '../../main.dart';
 import 'scan_models.dart';
+import 'scan_stream.dart';
 
 /// Gemini `usageMetadata` token counts for one scan call. Missing fields are 0.
 class FridgeScanUsage {
@@ -63,6 +64,10 @@ class FridgePhotoFoodAgent {
   static const model = 'gemini-4-argon';
   static const endpoint =
       'https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent';
+
+  /// Same model, but the reply arrives as server-sent events.
+  static const streamEndpoint =
+      'https://generativelanguage.googleapis.com/v1beta/models/$model:streamGenerateContent?alt=sse';
 
   /// [abortTrigger] stops the request when the retry loop gives up on this
   /// attempt (see `runWithAbortableAiRetry`).
@@ -459,6 +464,157 @@ class FridgeScanService {
       return parseScanResponse(
         jsonDecode(FridgePhotoFoodAgent._stripJsonFence(text)),
         usage: FridgeScanUsage.fromJson(data['usageMetadata']),
+        style: style,
+      );
+    } on TypeError catch (error) {
+      throw FormatException('Gemini food scan returned an odd shape: $error');
+    }
+  }
+
+  /// [scanV2] over `streamGenerateContent`: the same request body, but the
+  /// reply is read as it arrives and [onItem] gets each item the moment its
+  /// JSON object is complete. The returned [ScanResponse] is parsed from the
+  /// complete text, so it equals what [scanV2] would return; [onItem] is only
+  /// a preview. Errors follow [scanV2]: a bad HTTP status is an
+  /// [AiRequestException.fromStatus], a block or refusal is not retryable,
+  /// and a reply that is empty or cut off is a [FormatException].
+  static Future<ScanResponse> scanV2Stream(
+    Uint8List overviewJpeg, {
+    http.Client? client,
+    String? apiKey,
+    Future<void>? abortTrigger,
+    String mediaResolution = 'MEDIA_RESOLUTION_HIGH',
+    bool perPartUltraHigh = false,
+    String thinkingLevel = 'low',
+    ScanStyle style = ScanStyle.full,
+    String? contextNote,
+    List<Uint8List> extraImages = const [],
+    void Function(ScannedItem item)? onItem,
+  }) async {
+    final token = apiKey ?? FridgePhotoFoodAgent._apiKey;
+    if (token.isEmpty) {
+      throw const AiRequestException(
+        'Missing GEMINI_API_KEY',
+        retryable: false,
+      );
+    }
+
+    final request =
+        http.AbortableRequest(
+            'POST',
+            Uri.parse(FridgePhotoFoodAgent.streamEndpoint),
+            abortTrigger: abortTrigger,
+          )
+          ..headers.addAll({
+            'Content-Type': 'application/json',
+            'x-goog-api-key': token,
+          })
+          ..body = jsonEncode(
+            buildRequestBody(
+              overviewJpeg,
+              mediaResolution: mediaResolution,
+              perPartUltraHigh: perPartUltraHigh,
+              thinkingLevel: thinkingLevel,
+              style: style,
+              contextNote: contextNote,
+              extraImages: extraImages,
+            ),
+          );
+
+    final httpClient = client ?? http.Client();
+    try {
+      final streamed = await httpClient.send(request);
+      if (streamed.statusCode < 200 || streamed.statusCode >= 300) {
+        throw AiRequestException.fromStatus(
+          streamed.statusCode,
+          await streamed.stream.bytesToString(),
+        );
+      }
+      return await readScanStream(streamed.stream, style: style, onItem: onItem);
+    } finally {
+      if (client == null) httpClient.close();
+    }
+  }
+
+  /// Reads a Gemini server-sent-events body (`data: {GenerateContentResponse}`
+  /// events). Public so tests can feed it chunks directly.
+  static Future<ScanResponse> readScanStream(
+    Stream<List<int>> body, {
+    ScanStyle style = ScanStyle.full,
+    void Function(ScannedItem item)? onItem,
+  }) async {
+    final scanner = ScanItemScanner();
+    final text = StringBuffer();
+    var usage = const FridgeScanUsage();
+
+    void handle(String payload) {
+      if (payload.isEmpty || payload == '[DONE]') return;
+      final data = jsonDecode(payload) as Map<String, dynamic>;
+      final error = data['error'];
+      if (error is Map<String, dynamic>) {
+        final code = error['code'];
+        throw AiRequestException.fromStatus(code is int ? code : 500, payload);
+      }
+      final blockReason = FridgePhotoFoodAgent._blockReason(data);
+      if (blockReason != null) {
+        throw AiRequestException(
+          'Gemini food scan was blocked: $blockReason',
+          retryable: false,
+        );
+      }
+      if (data['usageMetadata'] != null) {
+        usage = FridgeScanUsage.fromJson(data['usageMetadata']);
+      }
+      final candidates = data['candidates'] as List<dynamic>? ?? const [];
+      if (candidates.isEmpty) return;
+      final first = candidates.first as Map<String, dynamic>;
+      final finishReason = first['finishReason'];
+      if (_refusalReasons.contains(finishReason)) {
+        throw AiRequestException(
+          'Gemini food scan was blocked: $finishReason',
+          retryable: false,
+        );
+      }
+      final content = first['content'] as Map<String, dynamic>?;
+      for (final part in content?['parts'] as List<dynamic>? ?? const []) {
+        final map = part as Map<String, dynamic>;
+        final slice = map['text'];
+        if (map['thought'] == true || slice is! String) continue;
+        text.write(slice);
+        for (final json in scanner.add(slice)) {
+          final item = parseScanResponse({
+            'items': [json],
+          }, style: style).items;
+          if (onItem != null) item.forEach(onItem);
+        }
+      }
+    }
+
+    try {
+      var event = <String>[];
+      void flush() {
+        if (event.isEmpty) return;
+        handle(event.join('\n'));
+        event = [];
+      }
+
+      await for (final line
+          in body.transform(utf8.decoder).transform(const LineSplitter())) {
+        if (line.isEmpty) {
+          flush();
+        } else if (line.startsWith('data:')) {
+          event.add(line.substring(5).trim());
+        }
+      }
+      flush();
+
+      final full = text.toString();
+      if (full.trim().isEmpty) {
+        throw const FormatException('Gemini food scan returned no text');
+      }
+      return parseScanResponse(
+        jsonDecode(FridgePhotoFoodAgent._stripJsonFence(full)),
+        usage: usage,
         style: style,
       );
     } on TypeError catch (error) {

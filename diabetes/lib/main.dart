@@ -29,6 +29,7 @@ import 'design/undo_snack_bar.dart';
 import 'firebase_options.dart';
 import 'fridge/freshness.dart';
 import 'fridge/fridge_scan_dialog.dart';
+import 'fridge/scan/fridge_scan_pipeline.dart';
 import 'fridge/scan/fridge_scan_service.dart';
 import 'fridge/scan/photo_prep.dart';
 import 'fridge/scan/scan_models.dart';
@@ -1635,7 +1636,7 @@ class FridgePageState extends State<FridgePage> {
       barrierDismissible: false,
       builder: (context) => FridgeScanDialog(
         imageBytes: imageBytes,
-        detect: (imageBytes, abort) async {
+        detectWithProgress: (imageBytes, abort, onProgress) async {
           final PreparedPhoto photo;
           try {
             photo = await (preparedPhoto ??= preparePhotoAsync(imageBytes));
@@ -1647,12 +1648,18 @@ class FridgePageState extends State<FridgePage> {
               retryable: false,
             );
           }
-          final response = await FridgeScanService.scanV2(
-            photo.overviewJpeg,
+          // Measured: one lean call takes ~27 s on a 1080p photo, a 2×2 grid
+          // 33–39 s on a 24 MP one. Photos under 3072 px fall back to one
+          // overview call. Replies stream so the dialog can show items early.
+          final scan = await FridgeScanPipeline.scan(
+            photo,
+            plan: ScanPlan.grid,
+            style: ScanStyle.lean,
             abortTrigger: abort,
+            onProgress: onProgress,
           );
           // Every item is added; unsure ones carry a review ("Maybe" badge).
-          return [for (final item in response.items) item.toFoodItem()];
+          return [for (final item in scan.items) item.toFoodItem()];
         },
       ),
     );

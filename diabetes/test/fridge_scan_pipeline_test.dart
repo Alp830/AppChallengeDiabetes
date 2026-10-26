@@ -611,4 +611,81 @@ void main() {
       );
     });
   });
+
+  group('onProgress', () {
+    http.StreamedResponse sse(String text) {
+      final events = <String>[];
+      for (var i = 0; i < text.length; i += 40) {
+        final slice = text.substring(i, i + 40 > text.length ? text.length : i + 40);
+        events.add(
+          'data: ${jsonEncode({
+            'candidates': [
+              {
+                'content': {
+                  'parts': [
+                    {'text': slice},
+                  ],
+                },
+              },
+            ],
+          })}\n\n',
+        );
+      }
+      return http.StreamedResponse(
+        Stream.fromIterable([for (final e in events) utf8.encode(e)]),
+        200,
+      );
+    }
+
+    test('counts items and calls across 4 tiles', () async {
+      final urls = <Uri>[];
+      var next = 0;
+      final client = MockClient.streaming((request, _) async {
+        urls.add(request.url);
+        final index = next++;
+        return sse(
+          jsonEncode({
+            'zones': <Object>[],
+            'items': [
+              _item('A$index', [100, 100, 200, 200]),
+              _item('B$index', [600, 600, 700, 700]),
+            ],
+            'tilt': 0,
+          }),
+        );
+      });
+      final updates = <ScanProgress>[];
+      final result = await FridgeScanPipeline.scan(
+        _big,
+        plan: ScanPlan.grid,
+        client: client,
+        apiKey: 'test-token',
+        onProgress: updates.add,
+      );
+
+      expect(urls, hasLength(4));
+      expect(urls.every((u) => u.path.endsWith(':streamGenerateContent')), isTrue);
+      expect(urls.every((u) => u.queryParameters['alt'] == 'sse'), isTrue);
+      expect(result.calls, 4);
+
+      final last = updates.last;
+      expect(last.itemsSoFar, 8);
+      expect(last.callsDone, 4);
+      expect(last.callsTotal, 4);
+      expect(last.latestNames, hasLength(3));
+      for (var i = 1; i < updates.length; i++) {
+        expect(updates[i].itemsSoFar, greaterThanOrEqualTo(updates[i - 1].itemsSoFar));
+        expect(updates[i].callsDone, greaterThanOrEqualTo(updates[i - 1].callsDone));
+        expect(updates[i].latestNames.length, lessThanOrEqualTo(3));
+      }
+      expect(updates.first.callsTotal, 4);
+      expect(updates.first.itemsSoFar, 0);
+    });
+
+    test('without onProgress the plain request is used', () async {
+      final recorder = _Recorder((_, _) => _ok([_item('Milk', [10, 10, 100, 100])]));
+      await _scan(_small, ScanPlan.grid, recorder);
+      expect(recorder.bodies, hasLength(1));
+    });
+  });
 }

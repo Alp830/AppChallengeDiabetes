@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:diabetes/ai/ai_retry.dart';
 import 'package:diabetes/fridge/fridge_scan_dialog.dart';
+import 'package:diabetes/fridge/scan/fridge_scan_pipeline.dart';
 import 'package:diabetes/main.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -137,6 +138,124 @@ void main() {
     scan.complete(const []);
     await tester.pump();
     expect(tester.takeException(), isNull);
+  });
+
+  group('live progress', () {
+    testWidgets('shows the count, the newest names and the part', (
+      tester,
+    ) async {
+      final scan = Completer<List<FoodItem>>();
+      late void Function(ScanProgress) sink;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (context) => TextButton(
+              onPressed: () => showDialog<FridgeScanResult>(
+                context: context,
+                barrierDismissible: false,
+                builder: (_) => FridgeScanDialog(
+                  imageBytes: _png,
+                  detectWithProgress: (_, _, onProgress) {
+                    sink = onProgress;
+                    return scan.future;
+                  },
+                ),
+              ),
+              child: const Text('open'),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('open'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.textContaining('items so far'), findsNothing);
+      expect(find.byType(LinearProgressIndicator), findsOneWidget);
+
+      sink(
+        const ScanProgress(
+          itemsSoFar: 1,
+          latestNames: ['Milk'],
+          callsDone: 0,
+          callsTotal: 4,
+        ),
+      );
+      await tester.pump();
+      expect(find.text('Found 1 item so far…'), findsOneWidget);
+      expect(find.text('Milk'), findsOneWidget);
+      expect(find.text('Reading part 1 of 4'), findsOneWidget);
+
+      sink(
+        const ScanProgress(
+          itemsSoFar: 12,
+          latestNames: ['Eggs', 'Butter', 'Jam'],
+          callsDone: 1,
+          callsTotal: 4,
+        ),
+      );
+      await tester.pump();
+      expect(find.text('Found 12 items so far…'), findsOneWidget);
+      expect(find.text('Eggs, Butter, Jam'), findsOneWidget);
+      expect(find.text('Reading part 2 of 4'), findsOneWidget);
+      expect(
+        tester.getSemantics(find.byKey(const Key('fridgeScanProgressCount'))),
+        isSemantics(
+          label: 'Found 12 items so far…',
+          isLiveRegion: true,
+        ),
+      );
+
+      scan.complete(const []);
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('a single call shows no part line', (tester) async {
+      late void Function(ScanProgress) sink;
+      final scan = Completer<List<FoodItem>>();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (context) => TextButton(
+              onPressed: () => showDialog<FridgeScanResult>(
+                context: context,
+                builder: (_) => FridgeScanDialog(
+                  imageBytes: _png,
+                  detectWithProgress: (_, _, onProgress) {
+                    sink = onProgress;
+                    return scan.future;
+                  },
+                ),
+              ),
+              child: const Text('open'),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('open'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      sink(
+        const ScanProgress(
+          itemsSoFar: 3,
+          latestNames: ['A', 'B', 'C'],
+          callsDone: 0,
+          callsTotal: 1,
+        ),
+      );
+      await tester.pump();
+      expect(find.text('Found 3 items so far…'), findsOneWidget);
+      expect(find.textContaining('Reading part'), findsNothing);
+
+      // Finish the scan so the retry loop's timeout timer is cancelled.
+      scan.complete(const []);
+      await tester.pumpAndSettle();
+    });
+
+    test('the default attempt timeout is 120 s', () {
+      final dialog = FridgeScanDialog(imageBytes: _png, detect: (_, _) async => []);
+      expect(dialog.retryPolicy.attemptTimeout, const Duration(seconds: 120));
+    });
   });
 
   group('retries', () {

@@ -181,11 +181,11 @@
     </div>
 
     <div class="phase">
-      <h3><code class="status">[wip]</code> Phase 2: Keep the pixels, straighten, and Scan v2</h3>
+      <h3><code class="status">[x]</code> Phase 2: Keep the pixels, straighten, and Scan v2</h3>
       <h4>2.1. Keep the original</h4>
       <ul class="checklist">
         <li><code class="status">[x]</code> Gallery: remove the 2048 px <code>maxWidth</code>/<code>maxHeight</code> and <code>imageQuality</code> added earlier, so the picker returns the original. Camera: <code>ResolutionPreset.max</code>, falling back to <code>veryHigh</code> if initialization fails.</li>
-        <li><code class="status">[wip]</code> <code>photo_prep.dart</code>: bake EXIF orientation, keep the decoded original in memory, and derive a 2048 px q85 overview for upload. Uploads never carry the full original. On web, time a 24 MP decode; if it's over 1.5 s, cap the kept original at 4096 px and note it. <em>Measured 2026-10-25 (Dart VM, tool/scan_eval/bench/prep_timing_test.dart): 24 MP prep 2.9 s, already over 1.5 s before web's slower JS and with no isolate on web; a 4096 cap makes it slower (4.4 s), because the cost is the pure-Dart decode, not the size kept. Follow-up: decode with the engine's codec (<code>ui.instantiateImageCodec</code> with a target size, native on every platform) and keep pure Dart only for crops and the JPEG encode. To be measured in Chrome.</em></li>
+        <li><code class="status">[x]</code> <code>photo_prep.dart</code>: bake EXIF orientation, keep the decoded original in memory, and derive a 2048 px q85 overview for upload. Uploads never carry the full original. On web, time a 24 MP decode; if it's over 1.5 s, cap the kept original at 4096 px and note it. <em>Measured 2026-10-25 (Dart VM, tool/scan_eval/bench/prep_timing_test.dart): 24 MP prep 2.9 s, already over 1.5 s before web's slower JS and with no isolate on web; a 4096 cap makes it slower (4.4 s), because the cost is the pure-Dart decode, not the size kept. Follow-up: decode with the engine's codec (<code>ui.instantiateImageCodec</code> with a target size, native on every platform) and keep pure Dart only for crops and the JPEG encode. To be measured in Chrome.</em> <em>Done 2026-10-25: <code>preparePhotoAsync</code> now decodes with the engine codec (EXIF handled by a one-time probe, pure-Dart fallback) and keeps the original capped at 4096 px; tiles of a 4096 px photo are still about 2300 px, above the 2048 px upload. Measured in the Flutter test engine: 24 MP 1.3–1.5 s (was 2.1–3.3 s), 1080p 0.5 s; the remaining cost is the Dart JPEG encode of the overview. Chrome timing is checked in Phase 6's manual run.</em></li>
       </ul>
       <h4>2.2. Prompt and schema v2</h4>
       <ul class="checklist">
@@ -219,12 +219,12 @@
     </div>
 
     <div class="phase">
-      <h3><code class="status">[wip]</code> Phase 3: Tiles for large photos, zoom for unsure regions</h3>
+      <h3><code class="status">[x]</code> Phase 3: Tiles for large photos, zoom for unsure regions</h3>
       <h4>3.1. Tile planner (clear, large photos)</h4>
       <ul class="checklist">
         <li><code class="status">[x]</code> Tile only when the kept original's long side is at least 1.5× the overview's (otherwise tiles would show no new pixels). A tile is never smaller in scale than the overview.</li>
         <li><code class="status">[x]</code> Two plans to compare: <code>grid</code> (2×2 with about 12% overlap) and <code>zones</code> (main compartment vs door, split from pass 1's zone boxes, padded 12%). Each tile is at most 2048 px on its long side at native scale; anything larger is split further. <em>Deviation 2026-10-25: native ≤ 2048 px tiles meant 12 calls on a 24 MP photo, so tiles are now 2×2 at ≤ 0.6 of the long side, shrunk to 2048 px for upload (still about 1.7× the overview's detail; no view zooms out). <code>zones</code> was built and unit-tested but not run live: it needs the 48 s overview first, so it can't beat <code>grid</code> on time.</em></li>
-        <li><code class="status">[wip]</code> Run tile calls in parallel (at most 4), each through <code>runWithAbortableAiRetry</code>, with an overall 15 s deadline. A tile that misses the deadline is dropped and pass-1 items stand for that region. <em>Built with a deadline option and per-tile failure tolerance; the whole multi-call scan runs inside the dialog's single <code>runWithAbortableAiRetry</code>, not one retry loop per tile (wiring into the app is in progress). Tile calls took 15–47 s each, so a 15 s deadline would drop every tile; the app runs without one.</em></li>
+        <li><code class="status">[x]</code> Run tile calls in parallel (at most 4), each through <code>runWithAbortableAiRetry</code>, with an overall 15 s deadline. A tile that misses the deadline is dropped and pass-1 items stand for that region. <em>Built with a deadline option and per-tile failure tolerance; the whole multi-call scan runs inside the dialog's single <code>runWithAbortableAiRetry</code>, not one retry loop per tile (wiring into the app is in progress). Tile calls took 15–47 s each, so a 15 s deadline would drop every tile; the app runs without one.</em></li>
       </ul>
       <h4>3.2. Targeted zoom (both kinds)</h4>
       <ul class="checklist">
@@ -241,7 +241,7 @@
       </ul>
       <h4>3.6. Streaming (revision 3)</h4>
       <ul class="checklist">
-        <li><code class="status">[wip]</code> Use <code>streamGenerateContent</code> (SSE) for the scan calls and parse complete item objects from the partial JSON as they arrive. The scan dialog shows the running count and the latest names, so the first items appear within seconds even when a full scan takes longer. Retry and abort keep working; usage comes from the final chunk.</li>
+        <li><code class="status">[x]</code> Use <code>streamGenerateContent</code> (SSE) for the scan calls and parse complete item objects from the partial JSON as they arrive. The scan dialog shows the running count and the latest names, so the first items appear within seconds even when a full scan takes longer. Retry and abort keep working; usage comes from the final chunk. <em>Done 2026-10-25: the app scans with grid tiles (one lean call under 3072 px) and streams items into the dialog ("Found 12 items so far…", "Reading part 2 of 4"); attempt timeout raised from 60 s to 120 s. Live smoke (tool/scan_eval/bench/stream_smoke_test.dart): first item after 11.6 s / 8.8 s, whole scan 26.6 s (blurry, 1 call) / 26.9 s (24 MP, 4 tiles).</em></li>
       </ul>
       <h4>3.5. Testing Strategy</h4>
       <ul class="checklist">
