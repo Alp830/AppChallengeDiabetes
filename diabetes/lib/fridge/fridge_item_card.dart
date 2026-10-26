@@ -7,6 +7,50 @@ import '../design/text_scale.dart';
 import '../main.dart' show FoodItem;
 import 'freshness.dart';
 
+/// The amber "Maybe" mark on an item the scan was unsure of. Outlined with
+/// an icon so it reads differently from the filled freshness pill.
+class _MaybeBadge extends StatelessWidget {
+  const _MaybeBadge({required this.name, required this.color});
+
+  final String name;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: 'Maybe $name, check this item',
+      excludeSemantics: true,
+      child: Container(
+        key: const Key('fridgeMaybeBadge'),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+        decoration: BoxDecoration(
+          color: AppStatusColors.tint(color),
+          border: Border.all(color: color),
+          borderRadius: BorderRadius.circular(AppRadius.full),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.help_outline, size: 14, color: color),
+            const SizedBox(width: Spacing.s4),
+            Flexible(
+              child: Text(
+                'Maybe',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  color: color,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 /// Compact inventory tile. Tapping edits the item, and a top-right delete
 /// button offers a quick staged delete; in selection mode tapping toggles
 /// selection instead and the delete button is hidden.
@@ -91,6 +135,13 @@ class FridgeItemCard extends StatelessWidget {
                           fontWeight: FontWeight.w700,
                         ),
                       ),
+                      if (foodItem.scanReview != null) ...[
+                        const SizedBox(height: Spacing.s4),
+                        _MaybeBadge(
+                          name: foodItem.name,
+                          color: AppStatusColors.of(context).expiringSoon,
+                        ),
+                      ],
                       const SizedBox(height: Spacing.s4),
                       Container(
                         padding: const EdgeInsets.symmetric(

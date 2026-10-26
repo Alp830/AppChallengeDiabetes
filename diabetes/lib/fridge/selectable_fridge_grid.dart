@@ -169,6 +169,7 @@ class _SelectableFridgeGridState extends State<SelectableFridgeGrid> {
 
   /// Tile height from the real text metrics, so names and pills never clip.
   double _tileExtent(BuildContext context, bool largeText) {
+    final hasMaybe = widget.items.any((e) => e.value.scanReview != null);
     final textTheme = Theme.of(context).textTheme;
     final scaler = MediaQuery.textScalerOf(context);
     double line(TextStyle style) =>
@@ -187,7 +188,10 @@ class _SelectableFridgeGridState extends State<SelectableFridgeGrid> {
         line(textTheme.bodyLarge!) * (largeText ? 2 : 1) +
         Spacing.s4 +
         line(textTheme.labelLarge!) +
-        Spacing.s4; // pill text + its padding
+        Spacing.s4 + // pill text + its padding
+        (hasMaybe
+            ? line(textTheme.labelLarge!) + Spacing.s4 + 4 + 2 // Maybe badge
+            : 0);
   }
 
   /// Buckets the (already expiry-sorted) items by food type, in `FoodType`

@@ -378,6 +378,8 @@ class FridgeScanService {
     bool perPartUltraHigh = false,
     String thinkingLevel = 'low',
     ScanStyle style = ScanStyle.full,
+    String? contextNote,
+    List<Uint8List> extraImages = const [],
   }) async {
     final token = apiKey ?? FridgePhotoFoodAgent._apiKey;
     if (token.isEmpty) {
@@ -404,6 +406,8 @@ class FridgeScanService {
               perPartUltraHigh: perPartUltraHigh,
               thinkingLevel: thinkingLevel,
               style: style,
+              contextNote: contextNote,
+              extraImages: extraImages,
             ),
           );
 
@@ -463,25 +467,32 @@ class FridgeScanService {
   }
 
   /// The request JSON. Public so tests can check its shape.
+  ///
+  /// [contextNote] is put in front of the prompt (for tiles and close-ups).
+  /// [extraImages] are sent after [overviewJpeg], in order, as image 1, 2, ...;
+  /// with any, the lean schema also asks for each item's "photoIndex".
   static Map<String, dynamic> buildRequestBody(
     Uint8List overviewJpeg, {
     String mediaResolution = 'MEDIA_RESOLUTION_HIGH',
     bool perPartUltraHigh = false,
     String thinkingLevel = 'low',
     ScanStyle style = ScanStyle.full,
+    String? contextNote,
+    List<Uint8List> extraImages = const [],
   }) {
     return {
       'contents': [
         {
           'parts': [
-            {
-              'inlineData': {
-                'mimeType': 'image/jpeg',
-                'data': base64Encode(overviewJpeg),
+            for (final image in [overviewJpeg, ...extraImages])
+              {
+                'inlineData': {
+                  'mimeType': 'image/jpeg',
+                  'data': base64Encode(image),
+                },
+                if (perPartUltraHigh) 'mediaResolution': {'level': _ultraHigh},
               },
-              if (perPartUltraHigh) 'mediaResolution': {'level': _ultraHigh},
-            },
-            {'text': buildPrompt(style: style)},
+            {'text': buildPrompt(style: style, contextNote: contextNote)},
           ],
         },
       ],
@@ -494,10 +505,22 @@ class FridgeScanService {
         'maxOutputTokens': 32768,
         'responseMimeType': 'application/json',
         'responseSchema': style == ScanStyle.lean
-            ? leanScanResponseSchema()
+            ? _leanSchema(withPhotoIndex: extraImages.isNotEmpty)
             : scanResponseSchema(),
       },
     };
+  }
+
+  /// [leanScanResponseSchema], plus an optional "photoIndex" per item when
+  /// several images are sent. The default schema is returned unchanged.
+  static Map<String, dynamic> _leanSchema({required bool withPhotoIndex}) {
+    final schema = leanScanResponseSchema();
+    if (!withPhotoIndex) return schema;
+    final item =
+        ((schema['properties'] as Map)['items'] as Map)['items'] as Map;
+    (item['properties'] as Map)['photoIndex'] = {'type': 'INTEGER'};
+    (item['propertyOrdering'] as List).add('photoIndex');
+    return schema;
   }
 
   /// Turns the decoded model JSON into a [ScanResponse]. Accepts a bare list
@@ -553,7 +576,7 @@ class FridgeScanService {
           ),
           location: (json[lean ? 'zone' : 'location'] ?? '').toString().trim(),
           box2d: _box(lean ? json['box'] : json['box_2d'] ?? json['box2d']),
-          photoIndex: lean ? 0 : _toInt(json['photoIndex']) ?? 0,
+          photoIndex: _toInt(json['photoIndex']) ?? 0,
           description: description.isEmpty ? null : description,
           expiryEstimateDays: _toInt(
             json[lean ? 'days' : 'expiryEstimateDays'],
@@ -611,7 +634,18 @@ class FridgeScanService {
   }
 
   /// The v2 prompt. Public so tests can check what it asks for.
-  static String buildPrompt({ScanStyle style = ScanStyle.full}) {
+  ///
+  /// [contextNote] goes in front of the prompt: it tells the model the image is
+  /// only part of the fridge.
+  static String buildPrompt({
+    ScanStyle style = ScanStyle.full,
+    String? contextNote,
+  }) {
+    final prompt = _basePrompt(style);
+    return contextNote == null ? prompt : '$contextNote\n\n$prompt';
+  }
+
+  static String _basePrompt(ScanStyle style) {
     final foodTypes = FoodType.values
         .map((foodType) => foodType.label)
         .join(', ');
@@ -679,6 +713,7 @@ Rules:
 - Check every bag, jar, box and container, including partly visible, opaque or nested ones and items at the image edges.
 - Name the contents, not the container: "tomato stew", not "glass dish". If the contents are hidden, give your best guess.
 - READ any visible label and identify the product from it, not from shape or colour.
+- For bottles, jars and cartons, read the label or printed description whenever any text is legible and name the product from it. If nothing is legible, name an unlabeled dark bottle or carton with a generic drink such as "juice", conf "guess", rather than inventing a specific product.
 - Consider dried herbs, herbal teas (linden/ihlamur, chamomile, mint), spices and regional foods. Never call dried herbs "bread".
 - Unlabeled dry staples: fine matte white powder = flour; crystalline white = sugar or salt; small oblong translucent grains = rice; golden cracked grains = bulgur; round dried seeds = beans, chickpeas or lentils; also pasta, semolina, oats.
 - "sure" only when you can read the label or the item is unmistakable from its shape. Anything inferred from colour, a container or a partial view is "likely" or "guess".

@@ -6,13 +6,23 @@ import 'package:image/image.dart' as img;
 
 import 'scorer.dart';
 import 'variants_v2.dart';
+import 'variants_v3.dart';
 
 /// What one variant run produced.
 class VariantResult {
-  const VariantResult({required this.items, required this.usage});
+  const VariantResult({
+    required this.items,
+    required this.usage,
+    this.calls,
+    this.callTimings,
+  });
 
   final List<ScanOutputItem> items;
   final FridgeScanUsage usage;
+
+  /// Model calls made and how long each ran; null for single-call variants.
+  final int? calls;
+  final List<Duration>? callTimings;
 }
 
 /// A scan pipeline: raw photo bytes in, scan output and token usage out.
@@ -25,6 +35,7 @@ typedef ScanVariant =
 final Map<String, ScanVariant> scanVariants = {
   'baseline': runBaseline,
   ...v2Variants,
+  ...v3Variants,
 };
 
 /// The gallery picker's limits in lib/main.dart (`_uploadPhoto`).

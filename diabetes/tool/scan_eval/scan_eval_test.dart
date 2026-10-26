@@ -34,7 +34,18 @@ const _evalDir = 'tool/scan_eval';
 
 /// Paid model calls one run of each variant makes. A multi-call variant must
 /// declare its count here so the budget check reserves for all of them.
-const _callsPerRun = <String, int>{'baseline': 1};
+const _callsPerRun = <String, int>{
+  'baseline': 1,
+  'v2-high': 1,
+  'v2-ultra': 1,
+  'v2-medium': 1,
+  'v2-lean': 1,
+  'v3-grid': 4,
+  'v3-grid-overview': 5,
+  'v3-zones': 1 + 4,
+  'v3-zoom': 2,
+  'v3-grid-zoom': 5,
+};
 
 /// Keeps each run's raw output so a scorer or key fix can re-score old runs
 /// without paying for new calls.
@@ -51,6 +62,11 @@ void _saveRaw(String photo, int run, VariantResult result, Duration latency) {
         'promptTokens': result.usage.promptTokenCount,
         'candidatesTokens': result.usage.candidatesTokenCount,
         'thoughtsTokens': result.usage.thoughtsTokenCount,
+        if (result.calls != null) 'calls': result.calls,
+        if (result.callTimings != null)
+          'callTimingsMs': [
+            for (final timing in result.callTimings!) timing.inMilliseconds,
+          ],
         'items': [
           for (final item in result.items)
             {

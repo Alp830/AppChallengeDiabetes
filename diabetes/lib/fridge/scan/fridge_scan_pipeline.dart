@@ -1,0 +1,503 @@
+import 'dart:async';
+import 'dart:math' as math;
+import 'dart:typed_data';
+
+import 'package:http/http.dart' as http;
+import 'package:image/image.dart' as img;
+
+import '../../ai/ai_retry.dart';
+import 'fridge_scan_service.dart';
+import 'photo_prep.dart';
+import 'scan_merge.dart';
+import 'scan_models.dart';
+import 'tile_planner.dart';
+
+/// How [FridgeScanPipeline] splits a photo across model calls.
+enum ScanPlan {
+  /// One call on the overview.
+  overviewOnly,
+
+  /// Overlapping native-resolution tiles in parallel; no overview call.
+  grid,
+
+  /// The grid tiles and the overview, all in parallel; the overview is the
+  /// merge base.
+  gridPlusOverview,
+
+  /// Overview first, then tiles around where it found food.
+  zones,
+
+  /// Overview first, then one call with close-ups of what it was unsure of.
+  zoom,
+
+  /// Grid, then one call with close-ups of what the merged grid was unsure of.
+  gridPlusZoom,
+}
+
+/// Prompt note for a tile of a larger photo.
+const tileContextNote =
+    'This image is one part of a larger fridge photo; list only what is in '
+    'this part, including items cut off at its edges.';
+
+/// Prompt note for the single multi-image zoom call.
+const zoomContextNote =
+    'These are close-ups of parts of one fridge photo; image i has photoIndex '
+    'i (the first image is photoIndex 0). List only what is in the close-ups, '
+    'including items cut off at their edges. Give each item the photoIndex of '
+    'the image it is in, and a box on the 0 to 1000 grid of that image.';
+
+/// What a multi-call scan found. Item boxes are on the 0–1000 grid of the
+/// photo (the straightened one when a zones/zoom plan levelled it).
+class PipelineResult {
+  const PipelineResult({
+    required this.items,
+    required this.zones,
+    required this.tiltDegrees,
+    required this.droppedNonFood,
+    required this.usage,
+    required this.calls,
+    required this.callTimings,
+    required this.droppedTiles,
+  });
+
+  final List<ScannedItem> items;
+  final List<ScanZone> zones;
+
+  /// From the overview call, or 0 when the plan has none.
+  final double tiltDegrees;
+  final int droppedNonFood;
+
+  /// Summed over every call that returned.
+  final FridgeScanUsage usage;
+
+  /// Calls started (cancelled and failed ones included).
+  final int calls;
+
+  /// How long each started call ran, in the order they finished.
+  final List<Duration> callTimings;
+
+  /// Ids of tiles/crops that missed the deadline, failed or were never sent.
+  final List<String> droppedTiles;
+}
+
+typedef _Stage = ({List<ScannedItem> items, List<ScanZone> zones});
+
+/// Scan v2 split over several model calls. Makes no retries of its own.
+class FridgeScanPipeline {
+  /// [deadline] (from the start of the scan) drops tiles and crops that are
+  /// not done in time; the overview call is never dropped. The scan throws
+  /// the first error only when every call failed. [abortTrigger] cancels all
+  /// in-flight calls. At most [maxParallel] tile calls run at once.
+  static Future<PipelineResult> scan(
+    PreparedPhoto photo, {
+    required ScanPlan plan,
+    ScanStyle style = ScanStyle.lean,
+    String thinkingLevel = 'low',
+    Duration? deadline,
+    http.Client? client,
+    String? apiKey,
+    Future<void>? abortTrigger,
+    int maxParallel = 4,
+  }) async {
+    final run = _Run(
+      style: style,
+      thinkingLevel: thinkingLevel,
+      deadline: deadline,
+      client: client,
+      apiKey: apiKey,
+      abortTrigger: abortTrigger,
+      maxParallel: math.max(1, maxParallel),
+    );
+    switch (plan) {
+      case ScanPlan.overviewOnly:
+        return _overviewOnly(run, photo);
+      case ScanPlan.grid:
+        final grid = await _grid(run, photo);
+        if (grid == null) return _overviewOnly(run, photo);
+        return run.result(grid.items, grid.zones, 0);
+      case ScanPlan.gridPlusOverview:
+        return _gridPlusOverview(run, photo);
+      case ScanPlan.zones:
+        return _zones(run, photo);
+      case ScanPlan.zoom:
+        return _zoom(run, photo);
+      case ScanPlan.gridPlusZoom:
+        return _gridPlusZoom(run, photo);
+    }
+  }
+
+  static Future<PipelineResult> _overviewOnly(
+    _Run run,
+    PreparedPhoto photo,
+  ) async {
+    final overview = await run.overview(photo);
+    if (overview == null) run.rethrowFirst();
+    return run.result(overview.items, overview.zones, overview.tiltDegrees);
+  }
+
+  static Future<_Stage?> _grid(_Run run, PreparedPhoto photo) async {
+    final rects = planGridTiles(
+      photo.original.width,
+      photo.original.height,
+      overviewMaxSide: overviewMaxSide,
+    );
+    if (rects.isEmpty) return null;
+    final outcomes = await run.tiles(rects, photo.original);
+    return _mergeTiles(const [], const [], outcomes, photo.original);
+  }
+
+  static Future<PipelineResult> _gridPlusOverview(
+    _Run run,
+    PreparedPhoto photo,
+  ) async {
+    final rects = planGridTiles(
+      photo.original.width,
+      photo.original.height,
+      overviewMaxSide: overviewMaxSide,
+    );
+    if (rects.isEmpty) return _overviewOnly(run, photo);
+    final overviewFuture = run.overview(photo);
+    final outcomes = await run.tiles(rects, photo.original);
+    final overview = await overviewFuture;
+    final merged = _mergeTiles(
+      overview?.items ?? const [],
+      overview?.zones ?? const [],
+      outcomes,
+      photo.original,
+    );
+    return run.result(
+      merged.items,
+      merged.zones,
+      overview?.tiltDegrees ?? 0,
+    );
+  }
+
+  static Future<PipelineResult> _zones(_Run run, PreparedPhoto photo) async {
+    final overview = await run.overview(photo);
+    if (overview == null) run.rethrowFirst();
+    final straightened = straightenIfTilted(
+      photo,
+      overview.tiltDegrees,
+      items: overview.items,
+    );
+    final working = straightened.photo.original;
+    final rects = planZoneTiles(
+      working.width,
+      working.height,
+      straightened.items,
+      overviewMaxSide: overviewMaxSide,
+    );
+    if (rects.isEmpty) {
+      return run.result(
+        straightened.items,
+        overview.zones,
+        overview.tiltDegrees,
+      );
+    }
+    final outcomes = await run.tiles(rects, working);
+    final merged = _mergeTiles(
+      straightened.items,
+      overview.zones,
+      outcomes,
+      working,
+    );
+    return run.result(merged.items, merged.zones, overview.tiltDegrees);
+  }
+
+  static Future<PipelineResult> _zoom(_Run run, PreparedPhoto photo) async {
+    final overview = await run.overview(photo);
+    if (overview == null) run.rethrowFirst();
+    final straightened = straightenIfTilted(
+      photo,
+      overview.tiltDegrees,
+      items: overview.items,
+    );
+    final items = await _zoomStage(
+      run,
+      straightened.photo.original,
+      straightened.items,
+      overview.zones,
+    );
+    return run.result(items, overview.zones, overview.tiltDegrees);
+  }
+
+  static Future<PipelineResult> _gridPlusZoom(
+    _Run run,
+    PreparedPhoto photo,
+  ) async {
+    final grid = await _grid(run, photo);
+    if (grid == null) return _overviewOnly(run, photo);
+    // Tile-local zone counts don't describe the merged items, so only the
+    // guesses decide what to zoom on.
+    final items = await _zoomStage(run, photo.original, grid.items, const []);
+    return run.result(items, grid.zones, 0);
+  }
+
+  /// Plans close-ups on [source], scans them in ONE multi-image call and folds
+  /// the result into [base]. Returns [base] when there is nothing to zoom on
+  /// or the call is dropped or fails.
+  static Future<List<ScannedItem>> _zoomStage(
+    _Run run,
+    img.Image source,
+    List<ScannedItem> base,
+    List<ScanZone> zones,
+  ) async {
+    final crops = planZoomCrops(source.width, source.height, base, zones);
+    if (crops.isEmpty) return base;
+    final response = await run.call(
+      'zoom',
+      () => [for (final crop in crops) encodeTile(cutTile(source, crop))],
+      note: zoomContextNote,
+      droppable: true,
+    );
+    if (response == null) return base;
+    final zoomed = <ScannedItem>[];
+    for (final item in response.items) {
+      if (item.photoIndex < 0 || item.photoIndex >= crops.length) continue;
+      zoomed.add(
+        _toPhotoSpace(item, crops[item.photoIndex], source.width, source.height),
+      );
+    }
+    return applyZoom(base, zoomed);
+  }
+
+  static _Stage _mergeTiles(
+    List<ScannedItem> base,
+    List<ScanZone> baseZones,
+    List<({TileRect rect, ScanResponse response})> outcomes,
+    img.Image source,
+  ) {
+    final items = mergeScans(base, [
+      for (final o in outcomes)
+        [
+          for (final item in o.response.items)
+            _toPhotoSpace(item, o.rect, source.width, source.height),
+        ],
+    ]);
+    if (baseZones.isNotEmpty) return (items: items, zones: baseZones);
+    // No overview: the tiles' zones, by name, keeping the largest count.
+    final counts = <String, int>{};
+    for (final o in outcomes) {
+      for (final zone in o.response.zones) {
+        counts[zone.name] = math.max(counts[zone.name] ?? 0, zone.count);
+      }
+    }
+    return (
+      items: items,
+      zones: [
+        for (final e in counts.entries) ScanZone(name: e.key, count: e.value),
+      ],
+    );
+  }
+
+  /// [item] with its box moved from [rect]'s grid to the whole photo's, and
+  /// photoIndex reset to 0 (the photo itself).
+  static ScannedItem _toPhotoSpace(
+    ScannedItem item,
+    TileRect rect,
+    int w,
+    int h,
+  ) {
+    final box = item.box2d;
+    return ScannedItem(
+      name: item.name,
+      foodType: item.foodType,
+      confidence: item.confidence,
+      alternatives: item.alternatives,
+      location: item.location,
+      box2d: box == null || box.length != 4
+          ? null
+          : tileBoxToPhoto(box, rect, w, h),
+      photoIndex: 0,
+      isFood: item.isFood,
+      amount: item.amount,
+      description: item.description,
+      expiryEstimateDays: item.expiryEstimateDays,
+    );
+  }
+}
+
+/// State shared by the calls of one scan.
+class _Run {
+  _Run({
+    required this.style,
+    required this.thinkingLevel,
+    required this.deadline,
+    required this.client,
+    required this.apiKey,
+    required this.maxParallel,
+    Future<void>? abortTrigger,
+  }) {
+    if (abortTrigger != null) {
+      unawaited(
+        abortTrigger.then<void>(
+          (_) {
+            _aborted = true;
+            for (final cancel in _cancels.toList()) {
+              if (!cancel.isCompleted) cancel.complete();
+            }
+          },
+          onError: (Object _) {},
+        ),
+      );
+    }
+  }
+
+  final ScanStyle style;
+  final String thinkingLevel;
+  final Duration? deadline;
+  final http.Client? client;
+  final String? apiKey;
+  final int maxParallel;
+
+  final _clock = Stopwatch()..start();
+  final _cancels = <Completer<void>>[];
+  final _responses = <ScanResponse>[];
+  final _timings = <Duration>[];
+  final _dropped = <String>[];
+  var _calls = 0;
+  var _aborted = false;
+  (Object, StackTrace)? _firstError;
+
+  /// The overview call. Never dropped by the deadline.
+  Future<ScanResponse?> overview(PreparedPhoto photo) =>
+      call('overview', () => [photo.overviewJpeg], droppable: false);
+
+  /// One model call. [images] runs lazily, inside the guarded section, so
+  /// cutting and encoding is skipped for a dropped call and a failure there
+  /// counts as a failed call. The first image is the main one, the rest are
+  /// sent as extra images. Returns null when the call was dropped or failed.
+  Future<ScanResponse?> call(
+    String id,
+    List<Uint8List> Function() images, {
+    String? note,
+    bool droppable = true,
+  }) async {
+    // Time left for a droppable call; null means no limit. Checked before and
+    // after the images are cut, because encoding takes real time.
+    Duration? remainingTime() {
+      final limit = deadline;
+      return droppable && limit != null ? limit - _clock.elapsed : null;
+    }
+
+    bool outOfTime() {
+      if (!droppable) return false;
+      if (_aborted) return true;
+      final left = remainingTime();
+      return left != null && left <= Duration.zero;
+    }
+
+    if (outOfTime()) {
+      _dropped.add(id);
+      return null;
+    }
+
+    final cancel = Completer<void>();
+    if (_aborted) cancel.complete();
+    _cancels.add(cancel);
+    final watch = Stopwatch()..start();
+    var started = false;
+    try {
+      final jpegs = images();
+      if (outOfTime()) {
+        _dropped.add(id);
+        return null;
+      }
+      final remaining = remainingTime();
+      started = true;
+      _calls++;
+      final future = FridgeScanService.scanV2(
+        jpegs.first,
+        client: client,
+        apiKey: apiKey,
+        abortTrigger: cancel.future,
+        thinkingLevel: thinkingLevel,
+        style: style,
+        contextNote: note,
+        extraImages: jpegs.skip(1).toList(),
+      );
+      final response = remaining == null
+          ? await future
+          : await future.timeout(remaining);
+      _responses.add(response);
+      return response;
+    } on TimeoutException {
+      if (!cancel.isCompleted) cancel.complete();
+      _dropped.add(id);
+      return null;
+    } catch (error, stack) {
+      _firstError ??= (error, stack);
+      _dropped.add(id);
+      return null;
+    } finally {
+      if (started) _timings.add(watch.elapsed);
+      _cancels.remove(cancel);
+    }
+  }
+
+  /// Scans [rects] cut from [source], at most [maxParallel] at a time. Only
+  /// the tiles that returned are in the result, in [rects] order.
+  Future<List<({TileRect rect, ScanResponse response})>> tiles(
+    List<TileRect> rects,
+    img.Image source,
+  ) async {
+    final responses = List<ScanResponse?>.filled(rects.length, null);
+    var next = 0;
+    Future<void> worker() async {
+      while (next < rects.length) {
+        final i = next++;
+        responses[i] = await call(
+          rects[i].id,
+          () => [encodeTile(cutTile(source, rects[i]))],
+          note: tileContextNote,
+        );
+      }
+    }
+
+    await Future.wait([
+      for (var w = 0; w < math.min(maxParallel, rects.length); w++) worker(),
+    ]);
+    return [
+      for (var i = 0; i < rects.length; i++)
+        if (responses[i] != null) (rect: rects[i], response: responses[i]!),
+    ];
+  }
+
+  Never rethrowFirst() {
+    final error = _firstError;
+    if (error != null) Error.throwWithStackTrace(error.$1, error.$2);
+    throw const AiRequestException('Scan was cancelled', retryable: false);
+  }
+
+  /// The final result, or the first error when no call returned.
+  PipelineResult result(
+    List<ScannedItem> items,
+    List<ScanZone> zones,
+    double tiltDegrees,
+  ) {
+    if (_responses.isEmpty) rethrowFirst();
+    var prompt = 0, candidates = 0, thoughts = 0, total = 0, nonFood = 0;
+    for (final r in _responses) {
+      prompt += r.usage.promptTokenCount;
+      candidates += r.usage.candidatesTokenCount;
+      thoughts += r.usage.thoughtsTokenCount;
+      total += r.usage.totalTokenCount;
+      nonFood += r.droppedNonFood;
+    }
+    return PipelineResult(
+      items: items,
+      zones: zones,
+      tiltDegrees: tiltDegrees,
+      droppedNonFood: nonFood,
+      usage: FridgeScanUsage(
+        promptTokenCount: prompt,
+        candidatesTokenCount: candidates,
+        thoughtsTokenCount: thoughts,
+        totalTokenCount: total,
+      ),
+      calls: _calls,
+      callTimings: List.unmodifiable(_timings),
+      droppedTiles: List.unmodifiable(_dropped),
+    );
+  }
+}

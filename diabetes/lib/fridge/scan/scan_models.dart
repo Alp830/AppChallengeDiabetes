@@ -1,5 +1,7 @@
 // FoodItem and FoodType still live in main.dart; the import is circular,
 // which Dart allows.
+import 'package:flutter/foundation.dart';
+
 import '../../main.dart';
 
 /// How sure the model is about one scanned item. v1 only returned the items it
@@ -27,6 +29,52 @@ enum ScanConfidence {
       orElse: () => ScanConfidence.likely,
     );
   }
+}
+
+/// Why a fridge item still needs a look: the scan was unsure of it. Kept on
+/// the item until the user edits it, picks an alternative or taps "Looks
+/// right".
+@immutable
+class ScanReview {
+  const ScanReview({
+    required this.confidence,
+    this.alternatives = const [],
+  });
+
+  final ScanConfidence confidence;
+
+  /// Other names the item could be, best first.
+  final List<String> alternatives;
+
+  Map<String, dynamic> toFirestore() => {
+    'confidence': confidence.label,
+    'alternatives': alternatives,
+  };
+
+  /// Null for missing or malformed data, so old documents load as before.
+  static ScanReview? fromFirestore(Object? data) {
+    if (data is! Map) return null;
+    final rawAlternatives = data['alternatives'];
+    return ScanReview(
+      confidence: ScanConfidence.fromLabel(data['confidence']),
+      alternatives: rawAlternatives is List
+          ? [
+              for (final alternative in rawAlternatives)
+                if (alternative is String && alternative.trim().isNotEmpty)
+                  alternative.trim(),
+            ]
+          : const [],
+    );
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      other is ScanReview &&
+      other.confidence == confidence &&
+      listEquals(other.alternatives, alternatives);
+
+  @override
+  int get hashCode => Object.hash(confidence, Object.hashAll(alternatives));
 }
 
 /// One food or drink the v2 scan saw.
@@ -87,10 +135,14 @@ class ScannedItem {
     );
   }
 
-  /// The fridge-grid item. Confidence is ignored until the review step reads it.
+  /// The fridge-grid item. Unsure items (likely or guess) carry a
+  /// [ScanReview] so the fridge marks them "Maybe" until the user confirms.
   FoodItem toFoodItem() {
     final days = expiryEstimateDays;
     return FoodItem(
+      scanReview: confidence == ScanConfidence.sure
+          ? null
+          : ScanReview(confidence: confidence, alternatives: alternatives),
       name: name,
       amount: amount.isEmpty ? '1 $name' : amount,
       foodType: foodType,

@@ -1106,10 +1106,12 @@ class _MainPageState extends State<MainPage> {
       batch.set(collection.doc(), foodItem.toFirestore());
     }
     changes.updates.forEach((id, foodItem) {
-      batch.update(
-        collection.doc(id),
-        foodItem.toFirestore(includeCreatedAt: false),
-      );
+      batch.update(collection.doc(id), {
+        ...foodItem.toFirestore(includeCreatedAt: false),
+        // update() keeps fields it doesn't mention, so a cleared review must
+        // be deleted explicitly.
+        if (foodItem.scanReview == null) 'scanReview': FieldValue.delete(),
+      });
     });
     for (final id in changes.deletions) {
       batch.delete(collection.doc(id));
@@ -1649,7 +1651,7 @@ class FridgePageState extends State<FridgePage> {
             photo.overviewJpeg,
             abortTrigger: abort,
           );
-          // Confidence is not shown yet; every food item is added.
+          // Every item is added; unsure ones carry a review ("Maybe" badge).
           return [for (final item in response.items) item.toFoodItem()];
         },
       ),
@@ -1681,11 +1683,7 @@ class FridgePageState extends State<FridgePage> {
     _addDrafts(result.foods);
     _showFridgeSnackBar(
       messenger,
-      content: Text(
-        result.foods.length == 1
-            ? 'Added 1 item — remember to save.'
-            : 'Added ${result.foods.length} items — remember to save.',
-      ),
+      content: Text(scanAddedMessage(result.foods)),
     );
   }
 
@@ -1743,12 +1741,23 @@ class FridgePageState extends State<FridgePage> {
   }
 }
 
+/// The snackbar text after a scan added [foods]; unsure items are counted so
+/// the user knows how many to check.
+@visibleForTesting
+String scanAddedMessage(List<FoodItem> foods) {
+  final toCheck = foods.where((food) => food.scanReview != null).length;
+  final added = foods.length == 1 ? '1 item' : '${foods.length} items';
+  final check = toCheck == 0 ? '' : ', $toCheck to check';
+  return 'Added $added$check — remember to save.';
+}
+
 bool _sameFoodItem(FoodItem a, FoodItem b) {
   return a.name == b.name &&
       a.amount == b.amount &&
       a.foodType == b.foodType &&
       a.description == b.description &&
       a.expiryDate == b.expiryDate &&
+      a.scanReview == b.scanReview &&
       _sameBytes(a.imageBytes, b.imageBytes);
 }
 
@@ -2209,6 +2218,60 @@ class _FridgeCameraSheetState extends State<FridgeCameraSheet> {
   }
 }
 
+/// Shown in the edit sheet for a "Maybe" item: the scan's other guesses and
+/// a one-tap confirm.
+class _ScanReviewPanel extends StatelessWidget {
+  const _ScanReviewPanel({
+    required this.review,
+    required this.onLooksRight,
+    required this.onPickAlternative,
+  });
+
+  final ScanReview review;
+  final VoidCallback onLooksRight;
+  final ValueChanged<String> onPickAlternative;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          'The scan wasn\'t sure about this one.',
+          style: theme.textTheme.bodyMedium,
+        ),
+        if (review.alternatives.isNotEmpty) ...[
+          const SizedBox(height: Spacing.s8),
+          Wrap(
+            spacing: Spacing.s8,
+            runSpacing: Spacing.s8,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Text('Or:', style: theme.textTheme.labelLarge),
+              for (final alternative in review.alternatives)
+                ActionChip(
+                  key: Key('scanAlternative_$alternative'),
+                  label: Text(alternative),
+                  materialTapTargetSize: MaterialTapTargetSize.padded,
+                  onPressed: () => onPickAlternative(alternative),
+                ),
+            ],
+          ),
+        ],
+        const SizedBox(height: Spacing.s8),
+        OutlinedButton.icon(
+          key: const Key('scanLooksRight'),
+          style: OutlinedButton.styleFrom(minimumSize: const Size(0, 48)),
+          onPressed: onLooksRight,
+          icon: const Icon(Icons.check),
+          label: const Text('Looks right'),
+        ),
+      ],
+    );
+  }
+}
+
 class AddFoodSheet extends StatefulWidget {
   const AddFoodSheet({super.key, this.foodItem, this.onDelete});
 
@@ -2271,6 +2334,18 @@ class _AddFoodSheetState extends State<AddFoodSheet> {
     setState(() {
       _imageBytes = imageBytes;
     });
+  }
+
+  /// "Looks right": keeps the item as scanned and drops the Maybe mark.
+  void _confirmScan() {
+    Navigator.of(context).pop(widget.foodItem!.copyWith(clearScanReview: true));
+  }
+
+  /// Renames the item to one of the scan's other guesses and drops the mark.
+  void _pickAlternative(String alternative) {
+    Navigator.of(context).pop(
+      widget.foodItem!.copyWith(name: alternative, clearScanReview: true),
+    );
   }
 
   void _saveFoodItem() {
@@ -2357,6 +2432,14 @@ class _AddFoodSheetState extends State<AddFoodSheet> {
                     ),
                 ],
               ),
+              if (widget.foodItem?.scanReview case final review?) ...[
+                const SizedBox(height: Spacing.s12),
+                _ScanReviewPanel(
+                  review: review,
+                  onLooksRight: _confirmScan,
+                  onPickAlternative: _pickAlternative,
+                ),
+              ],
               const SizedBox(height: Spacing.s16),
               OutlinedButton.icon(
                 onPressed: _pickImage,
@@ -4437,6 +4520,7 @@ class FoodItem {
     this.description,
     this.imageBytes,
     this.expiryDate,
+    this.scanReview,
   });
 
   final String name;
@@ -4444,6 +4528,10 @@ class FoodItem {
   final FoodType foodType;
   final String? description;
   final Uint8List? imageBytes;
+
+  /// Set while a fridge scan was unsure of this item; the tile shows a
+  /// "Maybe" badge until the user confirms, renames or edits it.
+  final ScanReview? scanReview;
 
   /// When this item is expected to spoil. Drives the neutral expiration-date
   /// ranking and the freshness status shown on the fridge card. Null when
@@ -4457,8 +4545,11 @@ class FoodItem {
     String? description,
     Uint8List? imageBytes,
     DateTime? expiryDate,
+    ScanReview? scanReview,
+    bool clearScanReview = false,
   }) {
     return FoodItem(
+      scanReview: clearScanReview ? null : scanReview ?? this.scanReview,
       name: name ?? this.name,
       amount: amount ?? this.amount,
       foodType: foodType ?? this.foodType,
@@ -4475,6 +4566,7 @@ class FoodItem {
       'foodType': foodType.label,
       'description': description,
       'expiryDate': expiryDate == null ? null : Timestamp.fromDate(expiryDate!),
+      if (scanReview != null) 'scanReview': scanReview!.toFirestore(),
       if (includeCreatedAt) 'createdAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
     };
@@ -4490,6 +4582,7 @@ class FoodItem {
           ? null
           : (data['description'] ?? '').toString(),
       expiryDate: expiry is Timestamp ? expiry.toDate() : null,
+      scanReview: ScanReview.fromFirestore(data['scanReview']),
     );
   }
 }
@@ -4868,7 +4961,10 @@ class GeminiMealService {
                     freshness = ', expires in $daysLeft day(s)';
                   }
                 }
-                return '- ${item.name}: ${item.amount}, type: ${item.foodType.label}$description$freshness';
+                final unconfirmed = item.scanReview == null
+                    ? ''
+                    : ' (unconfirmed)';
+                return '- ${item.name}: ${item.amount}, type: ${item.foodType.label}$description$freshness$unconfirmed';
               })
               .join('\n');
     final feedback = request.feedbackHistory.isEmpty
