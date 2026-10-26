@@ -12,16 +12,16 @@
 <main>
 
   <header>
-    <p>Engineering plan · In progress</p>
+    <p>Engineering plan · Implemented; Phase 5 live retake pending the owner</p>
     <h1>Plan: Fridge scan that reads hard photos, blurry and clear</h1>
     <details class="meta">
       <summary>Metadata</summary>
       <dl>
         <dt>created</dt>      <dd>2026-10-24T21:36:00Z</dd>
-        <dt>modified</dt>     <dd>2026-10-24T21:36:00Z, 2026-10-24T22:20:00Z</dd>
-        <dt>commits</dt>      <dd>dd3df4f (inspection baseline; workspace dirty with uncommitted Argon switch, retry abort, camera_web patch and fridge grid fix from this session), dd3df4f (revision 2, still uncommitted)</dd>
-        <dt>agent name</dt>   <dd>Claude Code root / claude-opus-5-5, Claude Code root / claude-opus-5-5 (revision 2: clear-photo and blur research)</dd>
-        <dt>session id</dt>   <dd>416c8359-22ac-471c-b79f-fcbabad2d3f5, 416c8359-22ac-471c-b79f-fcbabad2d3f5</dd>
+        <dt>modified</dt>     <dd>2026-10-24T21:36:00Z, 2026-10-24T22:20:00Z, 2026-10-25T19:45:00Z</dd>
+        <dt>commits</dt>      <dd>dd3df4f (inspection baseline; workspace dirty with uncommitted Argon switch, retry abort, camera_web patch and fridge grid fix from this session), dd3df4f (revision 2, still uncommitted), b82c664 (execution baseline on branch fridge-scan-hard-photos), e649382, 98f1172, 9bed8b3, 57c38b7, 604760b, d11f057 (implementation)</dd>
+        <dt>agent name</dt>   <dd>Claude Code root / claude-opus-5-5, Claude Code root / claude-opus-5-5 (revision 2: clear-photo and blur research), Claude Code root / claude-opus-5-5 with claude-sonnet-5-5 builders and gpt-6.1-sol reviewers (execution, revision 3)</dd>
+        <dt>session id</dt>   <dd>416c8359-22ac-471c-b79f-fcbabad2d3f5, 416c8359-22ac-471c-b79f-fcbabad2d3f5, 178e3459-3291-4dfe-a9b0-8827439fd124</dd>
         <dt>back refs</dt>    <dd>../docs/TECHNICAL_OVERVIEW.md, C:/Users/alpsa/.pi/agent/specs/a2abox/2026-10-24-food-recognition-model.md (Argon low decision), user decisions in this session (budget, latency, show-everything, capture, improve both clear and blurry)</dd>
         <dt>forward refs</dt> <dd>tool/scan_eval/results/ (eval reports, created in Phase 1)</dd>
       </dl>
@@ -299,16 +299,16 @@
     </div>
 
     <div class="phase">
-      <h3><code class="status">[]</code> Phase 6: Final eval and write-up</h3>
+      <h3><code class="status">[x]</code> Phase 6: Final eval and write-up</h3>
       <ul class="checklist">
-        <li><code class="status">[]</code> Run the shipped configuration 3× on every eval photo; save <code>results/final.md</code> next to the baseline.</li>
-        <li><code class="status">[]</code> Manually scan both reference photos in the running web app and confirm the Maybe flow end to end.</li>
-        <li><code class="status">[]</code> Update <code>docs/TECHNICAL_OVERVIEW.md</code> §4.1 with the before and after numbers and the two research-backed ideas (sharpest-of-burst for blur, native-pixel tiles for large photos).</li>
+        <li><code class="status">[x]</code> Run the shipped configuration 3× on every eval photo; save <code>results/final.md</code> next to the baseline. <em>Done 2026-10-25: results/final.md. Blurry 83%, clear 93% read+recog recall; sure precision 100% / 82%; 0 leaks; 25 s / 30 s; $0.028 / $0.092.</em></li>
+        <li><code class="status">[x]</code> Manually scan both reference photos in the running web app and confirm the Maybe flow end to end. <em>Done 2026-10-25 by the root in the agent Chrome (release build, owner signed in, Discard used so nothing was saved): streaming progress, 59 items with 44 Maybe, alternative chip, ✕ delete with Undo, and the blurry-photo warning worked. Found: too many items marked Maybe (likely + guess); a same-name duplicate ("mushrooms" / "Mushrooms"); the page was unresponsive for more than 5 s while a 24 MP photo was prepared, since web has no isolate.</em></li>
+        <li><code class="status">[x]</code> Update <code>docs/TECHNICAL_OVERVIEW.md</code> §4.1 with the before and after numbers and the two research-backed ideas (sharpest-of-burst for blur, native-pixel tiles for large photos). <em>Done: §4.1 rewritten with the before/after table and both research ideas.</em></li>
       </ul>
       <h4>6.1. Testing Strategy</h4>
       <ul class="checklist">
-        <li><code class="status">[]</code> <code>flutter analyze lib test tool</code> — no new issues.</li>
-        <li><code class="status">[]</code> <code>flutter test</code> — no new failures beyond the 11 known ones.</li>
+        <li><code class="status">[x]</code> <code>flutter analyze lib test tool</code> — no new issues.</li>
+        <li><code class="status">[x]</code> <code>flutter test</code> — no new failures beyond the 11 known ones.</li>
       </ul>
       <div class="loop">🔁 <strong>Do not exit this phase until every box above is checked.</strong> If any command fails, fix the cause and re-run — loop until all pass.</div>
     </div>
@@ -318,11 +318,11 @@
     <h2>Validation Commands</h2>
     <p>Execute these commands to validate the entire plan is complete:</p>
     <ul class="checklist">
-      <li><code class="status">[]</code> <code>flutter analyze lib test tool</code> — clean apart from the known <code>app_theme.dart:56</code> info.</li>
-      <li><code class="status">[]</code> <code>flutter test</code> — only the 11 known failures remain.</li>
-      <li><code class="status">[]</code> <code>tool/scan_eval/results/final.md</code> — every Success target met, or each miss written down with its number.</li>
-      <li><code class="status">[]</code> <code>tool/scan_eval/results/ledger.json</code> — total real spend ≤ $5.</li>
-      <li><code class="status">[]</code> <code>git status</code> — no eval photos tracked.</li>
+      <li><code class="status">[x]</code> <code>flutter analyze lib test tool</code> — clean apart from the known <code>app_theme.dart:56</code> info.</li>
+      <li><code class="status">[x]</code> <code>flutter test</code> — only the 11 known failures remain.</li>
+      <li><code class="status">[x]</code> <code>tool/scan_eval/results/final.md</code> — every Success target met, or each miss written down with its number. <em>Two misses written down: sure precision on the clear photo 82% (target 90%) and latency 25–30 s (target 15 s; streaming shows the first item at about 9–12 s).</em></li>
+      <li><code class="status">[x]</code> <code>tool/scan_eval/results/ledger.json</code> — total real spend ≤ $5. <em>$3.20, including one manual web run estimated from the eval median.</em></li>
+      <li><code class="status">[x]</code> <code>git status</code> — no eval photos tracked.</li>
     </ul>
     <div class="loop">🔁 <strong>The plan is not complete until every box is checked and every command passes. If for some reason a step is not possible to complete, mark it with [f] and move on if possible.</strong></div>
   </section>

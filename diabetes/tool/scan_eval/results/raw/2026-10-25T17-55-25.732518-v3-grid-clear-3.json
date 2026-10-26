@@ -1,0 +1,1510 @@
+{
+ "variant": "v3-grid",
+ "photo": "clear",
+ "run": 3,
+ "latencyMs": 29641,
+ "promptTokens": 9724,
+ "candidatesTokens": 7299,
+ "thoughtsTokens": 0,
+ "calls": 4,
+ "callTimingsMs": [
+  10959,
+  24750,
+  26593,
+  26439
+ ],
+ "perCall": [
+  {
+   "id": "gr0c0",
+   "items": [
+    {
+     "name": "Cooked dish",
+     "alternatives": [
+      "Soup",
+      "Stew"
+     ],
+     "confidence": "guess",
+     "box": [
+      66,
+      75,
+      143,
+      160
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "Food in bag",
+     "alternatives": [
+      "Cheese",
+      "Produce"
+     ],
+     "confidence": "guess",
+     "box": [
+      142,
+      89,
+      185,
+      168
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "Piknik white cheese",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      21,
+      143,
+      188,
+      257
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "Eggs",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      139,
+      255,
+      192,
+      369
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "Condiment",
+     "alternatives": [
+      "Tahini",
+      "Mayo"
+     ],
+     "confidence": "guess",
+     "box": [
+      137,
+      325,
+      192,
+      385
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "Juice",
+     "alternatives": [
+      "Pomegranate juice",
+      "Syrup"
+     ],
+     "confidence": "guess",
+     "box": [
+      10,
+      380,
+      192,
+      435
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "Soft cheese",
+     "alternatives": [
+      "Yogurt",
+      "Dough"
+     ],
+     "confidence": "guess",
+     "box": [
+      208,
+      99,
+      247,
+      216
+     ],
+     "location": "shelf 2"
+    },
+    {
+     "name": "Hummus",
+     "alternatives": [
+      "Tahini",
+      "Lentil soup"
+     ],
+     "confidence": "likely",
+     "box": [
+      247,
+      106,
+      308,
+      235
+     ],
+     "location": "shelf 2"
+    },
+    {
+     "name": "Stonyfield Greek yogurt",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      213,
+      214,
+      305,
+      297
+     ],
+     "location": "shelf 2"
+    },
+    {
+     "name": "Canned food",
+     "alternatives": [
+      "Stuffed grape leaves",
+      "Canned fish"
+     ],
+     "confidence": "guess",
+     "box": [
+      273,
+      252,
+      305,
+      325
+     ],
+     "location": "shelf 2"
+    },
+    {
+     "name": "Tomato stew",
+     "alternatives": [
+      "Tomato paste",
+      "Red sauce"
+     ],
+     "confidence": "likely",
+     "box": [
+      256,
+      318,
+      302,
+      466
+     ],
+     "location": "shelf 2"
+    },
+    {
+     "name": "Cooked food",
+     "alternatives": [
+      "Soup",
+      "Stew"
+     ],
+     "confidence": "guess",
+     "box": [
+      323,
+      118,
+      417,
+      323
+     ],
+     "location": "shelf 3"
+    },
+    {
+     "name": "Jam",
+     "alternatives": [
+      "Tomato paste",
+      "Pepper paste"
+     ],
+     "confidence": "likely",
+     "box": [
+      309,
+      273,
+      389,
+      341
+     ],
+     "location": "shelf 3"
+    },
+    {
+     "name": "Butter",
+     "alternatives": [
+      "Mustard",
+      "Cheese"
+     ],
+     "confidence": "guess",
+     "box": [
+      328,
+      336,
+      382,
+      362
+     ],
+     "location": "shelf 3"
+    },
+    {
+     "name": "Jam",
+     "alternatives": [
+      "Honey",
+      "Sauce"
+     ],
+     "confidence": "guess",
+     "box": [
+      306,
+      354,
+      385,
+      415
+     ],
+     "location": "shelf 3"
+    },
+    {
+     "name": "Kirkland salted butter",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      335,
+      375,
+      402,
+      473
+     ],
+     "location": "shelf 3"
+    },
+    {
+     "name": "Cooked vegetables",
+     "alternatives": [
+      "Salad",
+      "Stew"
+     ],
+     "confidence": "likely",
+     "box": [
+      421,
+      137,
+      488,
+      261
+     ],
+     "location": "shelf 4"
+    },
+    {
+     "name": "Eggs",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      415,
+      240,
+      473,
+      339
+     ],
+     "location": "shelf 4"
+    },
+    {
+     "name": "Mushrooms",
+     "alternatives": [
+      "Garlic",
+      "Figs"
+     ],
+     "confidence": "likely",
+     "box": [
+      405,
+      308,
+      455,
+      444
+     ],
+     "location": "shelf 4"
+    },
+    {
+     "name": "Produce",
+     "alternatives": [
+      "Meat",
+      "Bread"
+     ],
+     "confidence": "guess",
+     "box": [
+      504,
+      174,
+      560,
+      289
+     ],
+     "location": "drawer 1"
+    },
+    {
+     "name": "Cheese wheel",
+     "alternatives": [
+      "Tofu",
+      "Hummus"
+     ],
+     "confidence": "likely",
+     "box": [
+      492,
+      289,
+      547,
+      390
+     ],
+     "location": "drawer 1"
+    },
+    {
+     "name": "Leafy greens",
+     "alternatives": [
+      "Herbs",
+      "Vegetables"
+     ],
+     "confidence": "likely",
+     "box": [
+      485,
+      374,
+      538,
+      450
+     ],
+     "location": "drawer 1"
+    },
+    {
+     "name": "Drink can",
+     "alternatives": [
+      "Matcha",
+      "Supplement"
+     ],
+     "confidence": "guess",
+     "box": [
+      206,
+      501,
+      305,
+      543
+     ],
+     "location": "door bin 1"
+    },
+    {
+     "name": "Sauce",
+     "alternatives": [
+      "Syrup",
+      "Dressing"
+     ],
+     "confidence": "guess",
+     "box": [
+      172,
+      540,
+      306,
+      560
+     ],
+     "location": "door bin 1"
+    },
+    {
+     "name": "Honey",
+     "alternatives": [
+      "Jam",
+      "Broth"
+     ],
+     "confidence": "likely",
+     "box": [
+      368,
+      503,
+      499,
+      560
+     ],
+     "location": "door bin 2"
+    }
+   ]
+  },
+  {
+   "id": "gr0c1",
+   "items": [
+    {
+     "name": "liquid bottle",
+     "alternatives": [
+      "milk",
+      "water"
+     ],
+     "confidence": "guess",
+     "box": [
+      79,
+      456,
+      195,
+      533
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "sauce",
+     "alternatives": [
+      "salsa",
+      "jam"
+     ],
+     "confidence": "guess",
+     "box": [
+      257,
+      440,
+      301,
+      463
+     ],
+     "location": "shelf 2"
+    },
+    {
+     "name": "butter",
+     "alternatives": [
+      "juice boxes",
+      "cream cheese"
+     ],
+     "confidence": "guess",
+     "box": [
+      340,
+      440,
+      400,
+      474
+     ],
+     "location": "shelf 3"
+    },
+    {
+     "name": "condiment",
+     "alternatives": [
+      "supplement",
+      "dressing"
+     ],
+     "confidence": "guess",
+     "box": [
+      0,
+      527,
+      62,
+      572
+     ],
+     "location": "door bin 1"
+    },
+    {
+     "name": "condiment",
+     "alternatives": [
+      "supplement",
+      "sauce"
+     ],
+     "confidence": "guess",
+     "box": [
+      0,
+      569,
+      51,
+      615
+     ],
+     "location": "door bin 1"
+    },
+    {
+     "name": "condiment",
+     "alternatives": [
+      "jam",
+      "pickles"
+     ],
+     "confidence": "guess",
+     "box": [
+      0,
+      613,
+      39,
+      667
+     ],
+     "location": "door bin 1"
+    },
+    {
+     "name": "condiment",
+     "alternatives": [
+      "mustard",
+      "sauce"
+     ],
+     "confidence": "guess",
+     "box": [
+      0,
+      665,
+      27,
+      754
+     ],
+     "location": "door bin 1"
+    },
+    {
+     "name": "condiment",
+     "alternatives": [
+      "jam",
+      "sauce"
+     ],
+     "confidence": "guess",
+     "box": [
+      0,
+      752,
+      14,
+      829
+     ],
+     "location": "door bin 1"
+    },
+    {
+     "name": "beet kvass",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      139,
+      539,
+      308,
+      614
+     ],
+     "location": "door bin 2"
+    },
+    {
+     "name": "broth",
+     "alternatives": [
+      "honey",
+      "pickled juice"
+     ],
+     "confidence": "guess",
+     "box": [
+      368,
+      503,
+      499,
+      594
+     ],
+     "location": "door bin 3"
+    },
+    {
+     "name": "hot sauce",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      340,
+      574,
+      528,
+      653
+     ],
+     "location": "door bin 3"
+    },
+    {
+     "name": "flax seeds",
+     "alternatives": [
+      "hemp seeds",
+      "chia seeds"
+     ],
+     "confidence": "likely",
+     "box": [
+      320,
+      692,
+      444,
+      839
+     ],
+     "location": "door bin 3"
+    },
+    {
+     "name": "sauce packet",
+     "alternatives": [
+      "seasoning",
+      "yeast"
+     ],
+     "confidence": "guess",
+     "box": [
+      408,
+      639,
+      466,
+      683
+     ],
+     "location": "door bin 3"
+    }
+   ]
+  },
+  {
+   "id": "gr1c0",
+   "items": [
+    {
+     "name": "Cooked vegetable dish",
+     "alternatives": [
+      "Meat stew",
+      "Roasted vegetables"
+     ],
+     "confidence": "guess",
+     "box": [
+      440,
+      139,
+      490,
+      259
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "Eggs",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      440,
+      252,
+      474,
+      342
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "Mushrooms",
+     "alternatives": [
+      "Garlic",
+      "Shallots"
+     ],
+     "confidence": "guess",
+     "box": [
+      440,
+      342,
+      455,
+      432
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "Tortillas",
+     "alternatives": [
+      "Cheese",
+      "Flatbread"
+     ],
+     "confidence": "guess",
+     "box": [
+      450,
+      329,
+      471,
+      437
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "Meat",
+     "alternatives": [
+      "Mushrooms",
+      "Bread"
+     ],
+     "confidence": "guess",
+     "box": [
+      504,
+      170,
+      570,
+      273
+     ],
+     "location": "drawer 1"
+    },
+    {
+     "name": "Cheese block",
+     "alternatives": [
+      "Tofu",
+      "Butter"
+     ],
+     "confidence": "likely",
+     "box": [
+      492,
+      281,
+      548,
+      393
+     ],
+     "location": "drawer 1"
+    },
+    {
+     "name": "Leafy greens",
+     "alternatives": [
+      "Herbs",
+      "Avocados"
+     ],
+     "confidence": "guess",
+     "box": [
+      483,
+      378,
+      537,
+      450
+     ],
+     "location": "drawer 1"
+    },
+    {
+     "name": "Yellow olives",
+     "alternatives": [
+      "Pickled peppers",
+      "Pickled garlic"
+     ],
+     "confidence": "likely",
+     "box": [
+      576,
+      162,
+      632,
+      208
+     ],
+     "location": "shelf 2"
+    },
+    {
+     "name": "Lemonade",
+     "alternatives": [
+      "Salad dressing",
+      "Juice"
+     ],
+     "confidence": "guess",
+     "box": [
+      548,
+      322,
+      593,
+      384
+     ],
+     "location": "shelf 2"
+    },
+    {
+     "name": "Green herb soup",
+     "alternatives": [
+      "Spinach stew",
+      "Cooked greens"
+     ],
+     "confidence": "likely",
+     "box": [
+      574,
+      172,
+      683,
+      420
+     ],
+     "location": "shelf 2"
+    },
+    {
+     "name": "Flatbread",
+     "alternatives": [
+      "Cheese",
+      "Cooked chicken"
+     ],
+     "confidence": "guess",
+     "box": [
+      659,
+      181,
+      697,
+      249
+     ],
+     "location": "shelf 2"
+    },
+    {
+     "name": "Blueberries",
+     "alternatives": [
+      "Blackberries",
+      "Plums"
+     ],
+     "confidence": "likely",
+     "box": [
+      683,
+      370,
+      718,
+      435
+     ],
+     "location": "shelf 2"
+    },
+    {
+     "name": "White cheese",
+     "alternatives": [
+      "Cauliflower",
+      "Cabbage"
+     ],
+     "confidence": "guess",
+     "box": [
+      710,
+      235,
+      752,
+      315
+     ],
+     "location": "drawer 2"
+    },
+    {
+     "name": "Hummus",
+     "alternatives": [
+      "Cooked grains",
+      "Mashed potatoes"
+     ],
+     "confidence": "guess",
+     "box": [
+      703,
+      306,
+      739,
+      362
+     ],
+     "location": "drawer 2"
+    },
+    {
+     "name": "Bulgur",
+     "alternatives": [
+      "Couscous",
+      "Chopped nuts"
+     ],
+     "confidence": "guess",
+     "box": [
+      713,
+      345,
+      755,
+      435
+     ],
+     "location": "drawer 2"
+    },
+    {
+     "name": "Fresh dill",
+     "alternatives": [
+      "Fennel fronds",
+      "Parsley"
+     ],
+     "confidence": "likely",
+     "box": [
+      750,
+      214,
+      788,
+      374
+     ],
+     "location": "drawer 2"
+    },
+    {
+     "name": "Tomatoes",
+     "alternatives": [
+      "Red bell peppers",
+      "Strawberries"
+     ],
+     "confidence": "guess",
+     "box": [
+      697,
+      282,
+      713,
+      341
+     ],
+     "location": "drawer 2"
+    },
+    {
+     "name": "Pomegranate",
+     "alternatives": [
+      "Red onion",
+      "Beet"
+     ],
+     "confidence": "likely",
+     "box": [
+      839,
+      230,
+      882,
+      292
+     ],
+     "location": "drawer 3"
+    },
+    {
+     "name": "Carrots",
+     "alternatives": [
+      "Red bell pepper",
+      "Tomatoes"
+     ],
+     "confidence": "likely",
+     "box": [
+      807,
+      235,
+      849,
+      341
+     ],
+     "location": "drawer 3"
+    },
+    {
+     "name": "Cucumber",
+     "alternatives": [
+      "Zucchini",
+      "Green pepper"
+     ],
+     "confidence": "likely",
+     "box": [
+      845,
+      292,
+      875,
+      378
+     ],
+     "location": "drawer 3"
+    },
+    {
+     "name": "Melon",
+     "alternatives": [
+      "Cabbage",
+      "Squash"
+     ],
+     "confidence": "guess",
+     "box": [
+      801,
+      325,
+      850,
+      382
+     ],
+     "location": "drawer 3"
+    },
+    {
+     "name": "Cucumbers",
+     "alternatives": [
+      "Zucchini",
+      "Green peppers"
+     ],
+     "confidence": "likely",
+     "box": [
+      782,
+      398,
+      839,
+      459
+     ],
+     "location": "drawer 3"
+    },
+    {
+     "name": "Sauce jar",
+     "alternatives": [
+      "Peanut butter",
+      "Spice paste"
+     ],
+     "confidence": "guess",
+     "box": [
+      440,
+      501,
+      502,
+      551
+     ],
+     "location": "door bin 1"
+    },
+    {
+     "name": "Ketchup",
+     "alternatives": [
+      "BBQ sauce",
+      "Chili sauce"
+     ],
+     "confidence": "likely",
+     "box": [
+      715,
+      517,
+      822,
+      560
+     ],
+     "location": "door bin 2"
+    },
+    {
+     "name": "Condiment bottle",
+     "alternatives": [
+      "Mayonnaise",
+      "Salad dressing"
+     ],
+     "confidence": "guess",
+     "box": [
+      770,
+      547,
+      842,
+      560
+     ],
+     "location": "door bin 2"
+    }
+   ]
+  },
+  {
+   "id": "gr1c1",
+   "items": [
+    {
+     "name": "Sauerkraut",
+     "alternatives": [
+      "Pickled vegetables",
+      "Dressing"
+     ],
+     "confidence": "guess",
+     "box": [
+      440,
+      500,
+      501,
+      558
+     ],
+     "location": "door bin 1"
+    },
+    {
+     "name": "Pepper sauce",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      440,
+      575,
+      528,
+      650
+     ],
+     "location": "door bin 1"
+    },
+    {
+     "name": "Organic ketchup",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      647,
+      583,
+      783,
+      673
+     ],
+     "location": "door bin 2"
+    },
+    {
+     "name": "Ketchup",
+     "alternatives": [
+      "Barbecue sauce",
+      "Chili sauce"
+     ],
+     "confidence": "likely",
+     "box": [
+      715,
+      517,
+      821,
+      585
+     ],
+     "location": "door bin 2"
+    },
+    {
+     "name": "Philadelphia cream cheese",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      769,
+      576,
+      886,
+      653
+     ],
+     "location": "door bin 2"
+    },
+    {
+     "name": "Hidden Valley ranch dressing",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      729,
+      638,
+      936,
+      762
+     ],
+     "location": "door bin 2"
+    },
+    {
+     "name": "Shredded cheese",
+     "alternatives": [
+      "Blueberries",
+      "Ground flaxseed"
+     ],
+     "confidence": "guess",
+     "box": [
+      824,
+      750,
+      926,
+      818
+     ],
+     "location": "door bin 2"
+    },
+    {
+     "name": "Organic lactose-free 2% milk",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      901,
+      570,
+      1000,
+      779
+     ],
+     "location": "door bin 3"
+    }
+   ]
+  }
+ ],
+ "items": [
+  {
+   "name": "Cooked dish",
+   "alternatives": [
+    "Soup",
+    "Stew"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Food in bag",
+   "alternatives": [
+    "Cheese",
+    "Produce"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Piknik white cheese",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Eggs",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Condiment",
+   "alternatives": [
+    "Tahini",
+    "Mayo"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Juice",
+   "alternatives": [
+    "Pomegranate juice",
+    "Syrup"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Soft cheese",
+   "alternatives": [
+    "Yogurt",
+    "Dough"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Hummus",
+   "alternatives": [
+    "Tahini",
+    "Lentil soup"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Stonyfield Greek yogurt",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Canned food",
+   "alternatives": [
+    "Stuffed grape leaves",
+    "Canned fish"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Tomato stew",
+   "alternatives": [
+    "Tomato paste",
+    "Red sauce"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Cooked food",
+   "alternatives": [
+    "Soup",
+    "Stew"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Jam",
+   "alternatives": [
+    "Tomato paste",
+    "Pepper paste"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Butter",
+   "alternatives": [
+    "Mustard",
+    "Cheese"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Jam",
+   "alternatives": [
+    "Honey",
+    "Sauce"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Kirkland salted butter",
+   "alternatives": [
+    "juice boxes",
+    "cream cheese"
+   ],
+   "confidence": "sure"
+  },
+  {
+   "name": "Cooked vegetables",
+   "alternatives": [
+    "Salad",
+    "Stew"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Eggs",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Mushrooms",
+   "alternatives": [
+    "Garlic",
+    "Figs"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Produce",
+   "alternatives": [
+    "Meat",
+    "Bread"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Cheese wheel",
+   "alternatives": [
+    "Cheese block",
+    "Tofu"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Leafy greens",
+   "alternatives": [
+    "Herbs",
+    "Vegetables"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Drink can",
+   "alternatives": [
+    "Matcha",
+    "Supplement"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Sauce",
+   "alternatives": [
+    "Syrup",
+    "Dressing"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Honey",
+   "alternatives": [
+    "Sauerkraut",
+    "Sauce jar"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "liquid bottle",
+   "alternatives": [
+    "milk",
+    "water"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "sauce",
+   "alternatives": [
+    "salsa",
+    "jam"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "condiment",
+   "alternatives": [
+    "supplement",
+    "dressing"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "condiment",
+   "alternatives": [
+    "supplement",
+    "sauce"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "condiment",
+   "alternatives": [
+    "jam",
+    "pickles"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "condiment",
+   "alternatives": [
+    "mustard",
+    "sauce"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "condiment",
+   "alternatives": [
+    "jam",
+    "sauce"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "beet kvass",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "hot sauce",
+   "alternatives": [
+    "Pepper sauce"
+   ],
+   "confidence": "sure"
+  },
+  {
+   "name": "flax seeds",
+   "alternatives": [
+    "hemp seeds",
+    "chia seeds"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "sauce packet",
+   "alternatives": [
+    "seasoning",
+    "yeast"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Tortillas",
+   "alternatives": [
+    "Cheese",
+    "Flatbread"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Yellow olives",
+   "alternatives": [
+    "Pickled peppers",
+    "Pickled garlic"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Lemonade",
+   "alternatives": [
+    "Salad dressing",
+    "Juice"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Green herb soup",
+   "alternatives": [
+    "Spinach stew",
+    "Cooked greens"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Flatbread",
+   "alternatives": [
+    "Cheese",
+    "Cooked chicken"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Blueberries",
+   "alternatives": [
+    "Blackberries",
+    "Plums"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "White cheese",
+   "alternatives": [
+    "Cauliflower",
+    "Cabbage"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Hummus",
+   "alternatives": [
+    "Cooked grains",
+    "Mashed potatoes"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Bulgur",
+   "alternatives": [
+    "Couscous",
+    "Chopped nuts"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Fresh dill",
+   "alternatives": [
+    "Fennel fronds",
+    "Parsley"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Tomatoes",
+   "alternatives": [
+    "Red bell peppers",
+    "Strawberries"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Pomegranate",
+   "alternatives": [
+    "Red onion",
+    "Beet"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Carrots",
+   "alternatives": [
+    "Red bell pepper",
+    "Tomatoes"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Cucumber",
+   "alternatives": [
+    "Zucchini",
+    "Green pepper"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Melon",
+   "alternatives": [
+    "Cabbage",
+    "Squash"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Cucumbers",
+   "alternatives": [
+    "Zucchini",
+    "Green peppers"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Ketchup",
+   "alternatives": [
+    "BBQ sauce",
+    "Chili sauce"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Condiment bottle",
+   "alternatives": [
+    "Mayonnaise",
+    "Salad dressing"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Organic ketchup",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Philadelphia cream cheese",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Hidden Valley ranch dressing",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Shredded cheese",
+   "alternatives": [
+    "Blueberries",
+    "Ground flaxseed"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Organic lactose-free 2% milk",
+   "alternatives": [],
+   "confidence": "sure"
+  }
+ ]
+}

@@ -68,15 +68,26 @@ This app ties those three together: **Fridge → Meals → (optionally) Glucose 
 
 ### 4.1 Fridge Vision Scan — photo → structured inventory
 
-`FridgePhotoFoodAgent.detectFoods` (`lib/main.dart`)
+`FridgeScanPipeline.scan` (`lib/fridge/scan/`), measured with a live eval harness (`tool/scan_eval/`)
 
-- The user takes a photo of a fridge, a pantry or a grocery bag. It is sent to **Gemini 4 Argon**, Google's flagship model, at its lowest thinking level. It replaced Gemini 3.1 Pro: on Roboflow's real-world text-reading benchmark, Argon low scored 85.7% in 7.7 s against Pro's 73.1% in 18.6 s, at about a fifth of the cost. Lighter "flash" models were ruled out earlier because they mistook uncommon foods (dried linden flowers) for bread.
-- **Structured output:** the request includes a JSON **response schema** (`responseSchema`). The model has to return an array of `{name, amount, foodType, description, expiryEstimateDays}`, and `foodType` must be one of the app's 7 categories (Produce, Protein, Dairy, Grain, Snack, Drink, Other).
-- **Tuned for accuracy and cost:** `mediaResolution: HIGH` so small label text stays readable, `thinkingLevel: low` because thinking tokens are most of a scan's time and cost, and a 32k output ceiling (Google's guidance for Argon) so a full grocery bag doesn't cut off mid-list.
-- **Lean uploads:** gallery photos are resized to 2048 px and recompressed before upload; the camera already shoots at about 1080p.
-- **Prompt rules:** read the label before guessing from shape, use texture cues for unlabeled staples (fine matte powder = flour, crystalline = sugar or salt), and *leave out* anything uncertain.
-- **Checked in code as well:** placeholder names such as "Unknown" or "Unidentified" are filtered out even if the model ignores the prompt.
-- **Expiry estimates:** the model's "days until it spoils" becomes a real expiry date. `fridge/freshness.dart` then labels each item Fresh, Expiring Soon or Expired, comparing calendar days.
+- The user takes up to 3 photos of a fridge, a pantry or a grocery bag. They are read by **Gemini 4 Argon**, Google's flagship model, at its lowest thinking level. It replaced Gemini 3.1 Pro: on Roboflow's real-world text-reading benchmark, Argon low scored 85.7% in 7.7 s against Pro's 73.1% in 18.6 s, at about a fifth of the cost. Lighter "flash" models were ruled out earlier because they mistook uncommon foods (dried linden flowers) for bread.
+- **Measured, not guessed.** An eval harness scores the real scan against a hand-written answer key for two hard photos: a motion-blurred, tilted, back-lit webcam frame and a sharp 24 MP phone photo with 40+ small items. It reports recall per tier, "sure" precision, medicine leaks, latency and cost from real token counts. Every number is the median of 3 runs, and a spend ledger caps the eval budget.
+
+  | | Blurry photo | Clear 24 MP photo |
+  | --- | --- | --- |
+  | Before: recall (readable + recognizable) | 28% | 41% |
+  | After: recall | **83%** | **93%** |
+  | After: "sure" items correct | 100% | 82% |
+  | After: medicine or supplements added as food | 0 | 0 |
+  | After: first item on screen / whole scan | ~12 s / ~25 s | ~9 s / ~30 s |
+  | After: cost per scan | $0.03 | $0.09 |
+
+- **List everything, mark what's unsure.** The old prompt told the model to leave out anything uncertain, so blurry items silently vanished. The new prompt works zone by zone with a count first and never omits an item. Each item carries a confidence (sure / likely / guess), up to two alternatives, a bounding box and an `isFood` flag. Non-food (medicine, supplements, skincare) is dropped in code. Unsure items reach the fridge with an amber **Maybe** badge, alternative chips and "Looks right", and the tile ✕ deletes in one press. The meal agent sees them as unconfirmed.
+- **Research idea 1 — native-pixel tiles for large photos.** Gemini gives every image about the same token budget, so a 24 MP photo shrunk to fit leaves a door label a fraction of a token. Following Shi et al. (arXiv 2610.09313: splitting is safe if no view zooms out and views overlap by about one object), photos of 3072 px and more are cut into 2×2 overlapping tiles from the kept original and read in parallel. Tile boxes are mapped back to the full photo and merged, including the same object named differently by two tiles. On the clear photo this raised recall from 86% (one call) to 93%.
+- **Research idea 2 — capture a better frame instead of repairing a bad one.** Blur cut the odds of a correct product ID by 88% in a CHI '26 study, and deblurring or upscaling before the model doesn't recover the loss ("Visual Quality Paradox"). So the shutter takes a short burst and keeps the sharpest frame (Laplacian variance, as in Apple's sample code), and a quality check warns "Looks blurry, hold steady and retake" or "Bright light behind". On the owner's webcam clip every frame had the same hand-shake: the best frame did not beat the still (78% vs 83%), so the warning is the part that matters there.
+- **Streaming and the original pixels.** Calls use `streamGenerateContent`; the dialog shows "Found 34 items so far… Reading part 2 of 4" as items arrive. Photos are no longer shrunk at pick time; the engine's image codec decodes them once, and the original is kept (capped at 4096 px) for tiles while only a ≤2048 px overview or tile is ever uploaded.
+- **What didn't make it:** more image tokens (ULTRA_HIGH: worse), more thinking (no gain), a zoom pass on unsure regions (no gain, +26 s), Gemini's own agentic zoom (≈376k tokens per image in the literature, over budget). No configuration reaches 15 s for a full list: output speed (~100 tokens/s) bounds it, which is why the scan streams.
+- **Structured output and safety nets kept:** a JSON response schema, the app's 7 food categories, placeholder names filtered in code, and the model's "days until it spoils" turned into an expiry date that `fridge/freshness.dart` labels Fresh, Expiring Soon or Expired.
 
 ### 4.2 Fridge as an editable draft with atomic saves
 
@@ -230,7 +241,7 @@ It then sorts each night into a plain-language **pattern**, with **safety-first 
 | What | Where |
 |---|---|
 | Retry engine (short and readable) | `lib/ai/ai_retry.dart` — `runWithAiRetry` |
-| Vision request with JSON schema | `lib/main.dart` — `FridgePhotoFoodAgent.detectFoods` |
+| Vision scan pipeline (tiles, streaming, merge) | `lib/fridge/scan/fridge_scan_pipeline.dart`, `fridge_scan_service.dart`, `scan_merge.dart`; eval in `tool/scan_eval/` |
 | Overnight pattern rules | `lib/sleep/services/overnight_analysis_service.dart` — `_classify` |
 | Bedtime safety rules engine | `lib/sleep/services/bedtime_advisor_service.dart` — `evaluate` |
 | Per-user security rules | `firestore.rules` |

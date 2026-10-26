@@ -394,5 +394,68 @@
   "promptTokens": 9724,
   "outputTokens": 7740,
   "costUsd": 0.096848
+ },
+ {
+  "timestamp": "2026-10-25T17:52:49.780350",
+  "variant": "v3-grid",
+  "photo": "blurry",
+  "run": 1,
+  "promptTokens": 2439,
+  "outputTokens": 2194,
+  "costUsd": 0.026818
+ },
+ {
+  "timestamp": "2026-10-25T17:53:16.958585",
+  "variant": "v3-grid",
+  "photo": "blurry",
+  "run": 2,
+  "promptTokens": 2439,
+  "outputTokens": 2493,
+  "costUsd": 0.029808
+ },
+ {
+  "timestamp": "2026-10-25T17:53:42.129224",
+  "variant": "v3-grid",
+  "photo": "blurry",
+  "run": 3,
+  "promptTokens": 2439,
+  "outputTokens": 2337,
+  "costUsd": 0.028248
+ },
+ {
+  "timestamp": "2026-10-25T17:54:27.826079",
+  "variant": "v3-grid",
+  "photo": "clear",
+  "run": 1,
+  "promptTokens": 9724,
+  "outputTokens": 7253,
+  "costUsd": 0.091978
+ },
+ {
+  "timestamp": "2026-10-25T17:54:55.997122",
+  "variant": "v3-grid",
+  "photo": "clear",
+  "run": 2,
+  "promptTokens": 9724,
+  "outputTokens": 7422,
+  "costUsd": 0.093668
+ },
+ {
+  "timestamp": "2026-10-25T17:55:25.730385",
+  "variant": "v3-grid",
+  "photo": "clear",
+  "run": 3,
+  "promptTokens": 9724,
+  "outputTokens": 7299,
+  "costUsd": 0.09243799999999999
+ },
+ {
+  "timestamp": "2026-10-25T19:30:00Z",
+  "variant": "web manual run (estimated from eval median, not metered)",
+  "photo": "clear",
+  "run": 1,
+  "promptTokens": null,
+  "outputTokens": null,
+  "costUsd": 0.0924
  }
 ]
