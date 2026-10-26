@@ -1,0 +1,185 @@
+{
+ "variant": "v2-lean",
+ "photo": "blurry_burst",
+ "run": 3,
+ "latencyMs": 22296,
+ "promptTokens": 2439,
+ "candidatesTokens": 2159,
+ "thoughtsTokens": 0,
+ "items": [
+  {
+   "name": "Grated parmesan cheese",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Eggs",
+   "alternatives": [
+    "Takeout food"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Dark bottle drink",
+   "alternatives": [
+    "Soy sauce",
+    "Vinegar"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Cooked grains",
+   "alternatives": [
+    "Hummus",
+    "Soup"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Greek yogurt",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Tomato stew",
+   "alternatives": [
+    "Salsa",
+    "Cooked beans"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Leftover meal",
+   "alternatives": [
+    "Marinated meat",
+    "Vegetables"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Jam",
+   "alternatives": [
+    "Salsa",
+    "Pasta sauce"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Honey",
+   "alternatives": [
+    "Nut butter",
+    "Jam"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Butter sticks",
+   "alternatives": [
+    "Cheese blocks",
+    "Juice boxes"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Prepared food",
+   "alternatives": [
+    "Cut fruit",
+    "Salad"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Eggs",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Mushrooms",
+   "alternatives": [
+    "Garlic bulbs",
+    "Pastries"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Produce in bag",
+   "alternatives": [
+    "Leafy greens",
+    "Vegetables"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Condiment jar",
+   "alternatives": [
+    "Mayonnaise",
+    "Mustard"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Avocado",
+   "alternatives": [
+    "Kiwi",
+    "Green box"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Beverage bottle",
+   "alternatives": [
+    "Salad dressing",
+    "Syrup"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Electrolyte solution",
+   "alternatives": [
+    "Juice",
+    "Water"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Sauce bottle",
+   "alternatives": [
+    "Hot sauce",
+    "Dressing"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Salsa jar",
+   "alternatives": [
+    "Pasta sauce",
+    "Jam"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Hot sauce",
+   "alternatives": [
+    "Ketchup",
+    "Chili sauce"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Dark bottle condiment",
+   "alternatives": [
+    "Soy sauce",
+    "Balsamic vinegar"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Snack pouch",
+   "alternatives": [
+    "Shredded cheese",
+    "Dried fruit"
+   ],
+   "confidence": "guess"
+  }
+ ]
+}

@@ -170,6 +170,148 @@ class FridgeScanPipeline {
     }
   }
 
+  /// Scans several photos of the same fridge. Each photo runs its own plan
+  /// (a grid, or one overview call when it is too small to tile), all calls in
+  /// parallel and at most [maxParallel] at once. Items get the photoIndex of
+  /// the photo they were seen in. Within a photo the box-based merge applies;
+  /// across photos items merge by normalized name and zone only, because boxes
+  /// don't line up between photos (see [mergePhotos]). The progress covers
+  /// every call of every photo.
+  static Future<PipelineResult> scanPhotos(
+    List<PreparedPhoto> photos, {
+    ScanStyle style = ScanStyle.lean,
+    String thinkingLevel = 'low',
+    Duration? deadline,
+    http.Client? client,
+    String? apiKey,
+    Future<void>? abortTrigger,
+    int maxParallel = 4,
+    void Function(ScanProgress progress)? onProgress,
+  }) async {
+    final run = _Run(
+      onProgress: onProgress,
+      style: style,
+      thinkingLevel: thinkingLevel,
+      deadline: deadline,
+      client: client,
+      apiKey: apiKey,
+      abortTrigger: abortTrigger,
+      maxParallel: math.max(1, maxParallel),
+    );
+    final rectsOf = [
+      for (final photo in photos)
+        planGridTiles(
+          photo.original.width,
+          photo.original.height,
+          overviewMaxSide: overviewMaxSide,
+        ),
+    ];
+
+    // One job per call, across all photos, so the limit is shared.
+    final jobs = <Future<ScanResponse?> Function()>[];
+    final jobPhoto = <int>[];
+    final jobRect = <TileRect?>[];
+    for (var p = 0; p < photos.length; p++) {
+      final photo = photos[p];
+      final rects = rectsOf[p];
+      if (rects.isEmpty) {
+        jobs.add(
+          () => run.call('p$p:overview', () => [photo.overviewJpeg],
+              droppable: false),
+        );
+        jobPhoto.add(p);
+        jobRect.add(null);
+        continue;
+      }
+      for (final rect in rects) {
+        jobs.add(
+          () => run.call(
+            'p$p:${rect.id}',
+            () => [encodeTile(cutTile(photo.original, rect))],
+            note: tileContextNote,
+          ),
+        );
+        jobPhoto.add(p);
+        jobRect.add(rect);
+      }
+    }
+    run.plan(jobs.length);
+
+    final responses = List<ScanResponse?>.filled(jobs.length, null);
+    var next = 0;
+    Future<void> worker() async {
+      while (next < jobs.length) {
+        final i = next++;
+        responses[i] = await jobs[i]();
+      }
+    }
+
+    await Future.wait([
+      for (var w = 0; w < math.min(run.maxParallel, jobs.length); w++) worker(),
+    ]);
+
+    final perPhoto = <List<ScannedItem>>[];
+    final zoneCounts = <String, int>{};
+    final callIds = <String>[];
+    final perCall = <List<ScannedItem>>[];
+    for (var p = 0; p < photos.length; p++) {
+      final source = photos[p].original;
+      final lists = <List<ScannedItem>>[];
+      for (var j = 0; j < jobs.length; j++) {
+        final response = responses[j];
+        if (jobPhoto[j] != p || response == null) continue;
+        final rect = jobRect[j];
+        final items = [
+          for (final item in response.items)
+            _withPhotoIndex(
+              rect == null
+                  ? item
+                  : _toPhotoSpace(item, rect, source.width, source.height),
+              p,
+            ),
+        ];
+        lists.add(items);
+        perCall.add(items);
+        callIds.add(
+          rect == null ? 'p$p:overview' : 'p$p:${rect.id}',
+        );
+        for (final zone in response.zones) {
+          zoneCounts[zone.name] = math.max(
+            zoneCounts[zone.name] ?? 0,
+            zone.count,
+          );
+        }
+      }
+      perPhoto.add(mergeScans(const [], lists));
+    }
+    return run.result(
+      mergePhotos(perPhoto),
+      [
+        for (final e in zoneCounts.entries)
+          ScanZone(name: e.key, count: e.value),
+      ],
+      0,
+      callIds,
+      perCall,
+    );
+  }
+
+  static ScannedItem _withPhotoIndex(ScannedItem item, int index) {
+    return ScannedItem(
+      name: item.name,
+      foodType: item.foodType,
+      confidence: item.confidence,
+      alternatives: item.alternatives,
+      location: item.location,
+      box2d: item.box2d,
+      photoIndex: index,
+      isFood: item.isFood,
+      amount: item.amount,
+      description: item.description,
+      expiryEstimateDays: item.expiryEstimateDays,
+    );
+  }
+
   static Future<PipelineResult> _overviewOnly(
     _Run run,
     PreparedPhoto photo,

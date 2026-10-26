@@ -27,12 +27,14 @@ import 'design/text_scale.dart';
 import 'design/title_case.dart';
 import 'design/undo_snack_bar.dart';
 import 'firebase_options.dart';
+import 'fridge/burst_capture.dart';
 import 'fridge/freshness.dart';
 import 'fridge/fridge_scan_dialog.dart';
 import 'fridge/scan/fridge_scan_pipeline.dart';
 import 'fridge/scan/fridge_scan_service.dart';
 import 'fridge/scan/photo_prep.dart';
 import 'fridge/scan/scan_models.dart';
+import 'fridge/photo_quality.dart';
 import 'fridge/selectable_fridge_grid.dart';
 import 'home/mvp_home_page.dart';
 import 'meals/data/meal_repository.dart';
@@ -1616,32 +1618,35 @@ class FridgePageState extends State<FridgePage> {
 
     // The sheet lets the user choose between taking a live picture and uploading
     // an existing screenshot/photo, so it handles both web and mobile.
-    final imageBytes = await showModalBottomSheet<Uint8List>(
+    final photoBytes = await showModalBottomSheet<List<Uint8List>>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
       builder: (context) => const FridgeCameraSheet(),
     );
 
-    if (imageBytes == null) {
+    if (photoBytes == null || photoBytes.isEmpty) {
       return;
     }
 
     if (!context.mounted) return;
     // Decode once and keep the pixels; a retry reuses them instead of
     // decoding the photo again. A failed decode is not cached.
-    Future<PreparedPhoto>? preparedPhoto;
+    Future<List<PreparedPhoto>>? preparedPhotos;
     final result = await showDialog<FridgeScanResult>(
       context: context,
       barrierDismissible: false,
       builder: (context) => FridgeScanDialog(
-        imageBytes: imageBytes,
-        detectWithProgress: (imageBytes, abort, onProgress) async {
-          final PreparedPhoto photo;
+        imageBytes: photoBytes.first,
+        photos: photoBytes,
+        detectPhotos: (photoBytes, abort, onProgress) async {
+          final List<PreparedPhoto> photos;
           try {
-            photo = await (preparedPhoto ??= preparePhotoAsync(imageBytes));
+            photos = await (preparedPhotos ??= Future.wait([
+              for (final bytes in photoBytes) preparePhotoAsync(bytes),
+            ]));
           } catch (error) {
-            preparedPhoto = null;
+            preparedPhotos = null;
             // The same bytes will never decode on a second try.
             throw AiRequestException(
               'Could not read the photo: $error',
@@ -1651,13 +1656,22 @@ class FridgePageState extends State<FridgePage> {
           // Measured: one lean call takes ~27 s on a 1080p photo, a 2×2 grid
           // 33–39 s on a 24 MP one. Photos under 3072 px fall back to one
           // overview call. Replies stream so the dialog can show items early.
-          final scan = await FridgeScanPipeline.scan(
-            photo,
-            plan: ScanPlan.grid,
-            style: ScanStyle.lean,
-            abortTrigger: abort,
-            onProgress: onProgress,
-          );
+          // Several photos run their plans in parallel and merge by name and
+          // zone.
+          final scan = photos.length == 1
+              ? await FridgeScanPipeline.scan(
+                  photos.single,
+                  plan: ScanPlan.grid,
+                  style: ScanStyle.lean,
+                  abortTrigger: abort,
+                  onProgress: onProgress,
+                )
+              : await FridgeScanPipeline.scanPhotos(
+                  photos,
+                  style: ScanStyle.lean,
+                  abortTrigger: abort,
+                  onProgress: onProgress,
+                );
           // Every item is added; unsure ones carry a review ("Maybe" badge).
           return [for (final item in scan.items) item.toFoodItem()];
         },
@@ -1904,8 +1918,37 @@ class _FridgeSaveBar extends StatelessWidget {
   }
 }
 
+/// Most photos one scan can use.
+const maxFridgePhotos = 3;
+
+/// Collects up to [maxFridgePhotos] photos for one scan and pops their bytes
+/// as a `List<Uint8List>`.
 class FridgeCameraSheet extends StatefulWidget {
-  const FridgeCameraSheet({super.key});
+  const FridgeCameraSheet({
+    super.key,
+    this.openCamera,
+    this.pickPhoto,
+    this.burst,
+    this.assess,
+  });
+
+  /// Test seam: stands in for the camera plugin. Returns the function the
+  /// shutter calls to take one picture.
+  @visibleForTesting
+  final Future<Future<XFile> Function()> Function()? openCamera;
+
+  /// Test seam: stands in for the gallery picker.
+  @visibleForTesting
+  final Future<Uint8List?> Function()? pickPhoto;
+
+  /// Test seam: stands in for [captureSharpest].
+  @visibleForTesting
+  final Future<BurstResult> Function(Future<XFile> Function() takePicture)?
+  burst;
+
+  /// Test seam: stands in for [assessPhotoAsync].
+  @visibleForTesting
+  final Future<PhotoQuality> Function(Uint8List bytes)? assess;
 
   @override
   State<FridgeCameraSheet> createState() => _FridgeCameraSheetState();
@@ -1917,6 +1960,22 @@ class _FridgeCameraSheetState extends State<FridgeCameraSheet> {
   Future<void>? _initializeCameraFuture;
   String? _cameraError;
   bool _isTakingPicture = false;
+
+  /// Set instead of [_cameraController] when the test seam is used.
+  Future<XFile> Function()? _seamTake;
+
+  /// The photos accepted so far, in the order they were added.
+  final List<Uint8List> _photos = [];
+
+  /// A photo that tripped the quality check and waits for "Retake" or "Use
+  /// anyway".
+  Uint8List? _warnedPhoto;
+  PhotoQuality? _warnedQuality;
+  bool _warnedFromCamera = false;
+
+  /// Whether the chooser is showing even though photos were already added
+  /// (the user tapped "Add another photo").
+  bool _adding = false;
 
   /// The sheet opens on a two-option chooser; the live camera is only started
   /// when the user explicitly taps "Take a picture".
@@ -1947,6 +2006,7 @@ class _FridgeCameraSheetState extends State<FridgeCameraSheet> {
     setState(() {
       _cameraStarted = false;
       _cameraController = null;
+      _seamTake = null;
       _initializeCameraFuture = null;
       _cameraError = null;
     });
@@ -1955,6 +2015,18 @@ class _FridgeCameraSheetState extends State<FridgeCameraSheet> {
   Future<void> _initializeCamera() async {
     final generation = _cameraGeneration;
     bool stale() => !mounted || generation != _cameraGeneration;
+    final openCamera = widget.openCamera;
+    if (openCamera != null) {
+      try {
+        final take = await openCamera();
+        if (stale()) return;
+        _seamTake = take;
+      } catch (error) {
+        _cameraError = error.toString();
+      }
+      if (mounted) setState(() {});
+      return;
+    }
     try {
       final cameras = await availableCameras();
       if (cameras.isEmpty) {
@@ -2006,8 +2078,9 @@ class _FridgeCameraSheetState extends State<FridgeCameraSheet> {
   Future<void> _capturePhoto() async {
     final cameraController = _cameraController;
     final initializeCameraFuture = _initializeCameraFuture;
+    final seamTake = _seamTake;
 
-    if (cameraController == null ||
+    if ((cameraController == null && seamTake == null) ||
         initializeCameraFuture == null ||
         _isTakingPicture) {
       return;
@@ -2019,14 +2092,20 @@ class _FridgeCameraSheetState extends State<FridgeCameraSheet> {
 
     try {
       await initializeCameraFuture;
-      final photo = await cameraController.takePicture();
-      final imageBytes = await photo.readAsBytes();
+      Future<XFile> takePicture() =>
+          seamTake != null ? seamTake() : cameraController!.takePicture();
+      // Several frames back to back; the sharpest one is kept. Hand-shake
+      // blur is the biggest accuracy loss on real photos.
+      final Future<BurstResult> Function(Future<XFile> Function()) shoot =
+          widget.burst ?? captureSharpest;
+      final burst = await shoot(takePicture);
+      final quality = await (widget.assess ?? assessPhotoAsync)(burst.bytes);
 
       if (!mounted) {
         return;
       }
-
-      Navigator.of(context).pop(imageBytes);
+      _isTakingPicture = false;
+      _offerPhoto(burst.bytes, quality, fromCamera: true);
     } catch (error) {
       if (!mounted) {
         return;
@@ -2051,23 +2130,99 @@ class _FridgeCameraSheetState extends State<FridgeCameraSheet> {
       // original. The scanner keeps its pixels for zooming and only uploads a
       // 2048 px overview (see preparePhoto), so shrinking here would throw
       // away detail it needs.
-      final picked = await _imagePicker.pickImage(
-        source: ImageSource.gallery,
-      );
-      if (picked == null) {
+      final pick = widget.pickPhoto;
+      final Uint8List? imageBytes;
+      if (pick != null) {
+        imageBytes = await pick();
+      } else {
+        final picked = await _imagePicker.pickImage(
+          source: ImageSource.gallery,
+        );
+        imageBytes = await picked?.readAsBytes();
+      }
+      if (imageBytes == null) {
         return;
       }
-      final imageBytes = await picked.readAsBytes();
+      final quality = await (widget.assess ?? assessPhotoAsync)(imageBytes);
       if (!mounted) {
         return;
       }
-      Navigator.of(context).pop(imageBytes);
+      _offerPhoto(imageBytes, quality, fromCamera: false);
     } catch (error) {
       if (!mounted) {
         return;
       }
       setState(() => _cameraError = error.toString());
     }
+  }
+
+  /// A new photo is in hand: ask about it when it looks blurry or washed
+  /// out, otherwise add it. The warning never blocks the scan.
+  void _offerPhoto(
+    Uint8List bytes,
+    PhotoQuality quality, {
+    required bool fromCamera,
+  }) {
+    if (fromCamera) _stopCamera();
+    if (quality.hasProblem) {
+      setState(() {
+        _isTakingPicture = false;
+        _warnedPhoto = bytes;
+        _warnedQuality = quality;
+        _warnedFromCamera = fromCamera;
+      });
+      return;
+    }
+    _addPhoto(bytes);
+  }
+
+  void _addPhoto(Uint8List bytes) {
+    setState(() {
+      _isTakingPicture = false;
+      _photos.add(bytes);
+      _warnedPhoto = null;
+      _warnedQuality = null;
+      _adding = false;
+    });
+  }
+
+  void _removePhoto(int index) {
+    setState(() {
+      _photos.removeAt(index);
+      _adding = false;
+    });
+  }
+
+  void _useAnyway() {
+    final bytes = _warnedPhoto;
+    if (bytes != null) _addPhoto(bytes);
+  }
+
+  void _retake() {
+    final fromCamera = _warnedFromCamera;
+    setState(() {
+      _warnedPhoto = null;
+      _warnedQuality = null;
+    });
+    if (fromCamera) _startCamera();
+  }
+
+  /// Stops the camera without touching the rest of the sheet's state.
+  void _stopCamera() {
+    _cameraGeneration++;
+    _cameraController?.dispose();
+    _cameraController = null;
+    _seamTake = null;
+    _initializeCameraFuture = null;
+    _cameraStarted = false;
+  }
+
+  String get _title {
+    if (_warnedPhoto != null) return 'Check your photo';
+    if (_cameraStarted) return 'Take a picture';
+    if (_photos.isNotEmpty && !_adding) return 'Your fridge photos';
+    if (_photos.isNotEmpty) return 'Add another photo';
+    return 'Add a fridge photo';
   }
 
   @override
@@ -2086,10 +2241,16 @@ class _FridgeCameraSheetState extends State<FridgeCameraSheet> {
                     onPressed: _backToChooser,
                     tooltip: 'Back',
                     icon: const Icon(Icons.arrow_back),
+                  )
+                else if (_warnedPhoto == null && _adding)
+                  IconButton(
+                    onPressed: () => setState(() => _adding = false),
+                    tooltip: 'Back',
+                    icon: const Icon(Icons.arrow_back),
                   ),
                 Expanded(
                   child: Text(
-                    _cameraStarted ? 'Take a picture' : 'Add a fridge photo',
+                    _title,
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                 ),
@@ -2102,8 +2263,12 @@ class _FridgeCameraSheetState extends State<FridgeCameraSheet> {
             ),
             const SizedBox(height: Spacing.s12),
             Expanded(
-              child: _cameraStarted
+              child: _warnedPhoto != null
+                  ? _buildWarning(context)
+                  : _cameraStarted
                   ? _buildCameraMode(context)
+                  : _photos.isNotEmpty && !_adding
+                  ? _buildPhotoStrip(context)
                   : _buildChooser(context),
             ),
           ],
@@ -2135,6 +2300,136 @@ class _FridgeCameraSheetState extends State<FridgeCameraSheet> {
     );
   }
 
+  /// The photo that looks blurry or washed out, with a choice to retake or go
+  /// on with it.
+  Widget _buildWarning(BuildContext context) {
+    final theme = Theme.of(context);
+    final quality = _warnedQuality;
+    final message = quality != null && quality.isBlurry
+        ? 'Looks blurry, hold steady and retake'
+        : 'Bright light behind, try another angle';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Expanded(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(AppRadius.sm),
+            child: Image.memory(
+              _warnedPhoto!,
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) =>
+                  const SizedBox.shrink(),
+            ),
+          ),
+        ),
+        const SizedBox(height: Spacing.s12),
+        Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: theme.colorScheme.error),
+            const SizedBox(width: Spacing.s8),
+            Expanded(
+              child: Text(message, style: theme.textTheme.titleMedium),
+            ),
+          ],
+        ),
+        const SizedBox(height: Spacing.s16),
+        FilledButton.icon(
+          key: const Key('fridgePhotoRetake'),
+          onPressed: _retake,
+          style: FilledButton.styleFrom(minimumSize: const Size(0, 48)),
+          icon: const Icon(Icons.refresh),
+          label: const Text('Retake'),
+        ),
+        const SizedBox(height: Spacing.s8),
+        OutlinedButton(
+          key: const Key('fridgePhotoUseAnyway'),
+          onPressed: _useAnyway,
+          style: OutlinedButton.styleFrom(minimumSize: const Size(0, 48)),
+          child: const Text('Use anyway'),
+        ),
+      ],
+    );
+  }
+
+  /// The photos so far as removable thumbnails, with the way to add more and
+  /// to start the scan.
+  Widget _buildPhotoStrip(BuildContext context) {
+    final count = _photos.length;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Expanded(
+          child: SingleChildScrollView(
+            child: Wrap(
+              spacing: Spacing.s12,
+              runSpacing: Spacing.s12,
+              children: [
+                for (var i = 0; i < count; i++)
+                  SizedBox(
+                    key: Key('fridgePhotoThumb$i'),
+                    width: 120,
+                    height: 120,
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(
+                            top: Spacing.s8,
+                            right: Spacing.s8,
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(AppRadius.sm),
+                            child: Image.memory(
+                              _photos[i],
+                              fit: BoxFit.cover,
+                              semanticLabel: 'Photo ${i + 1}',
+                              errorBuilder: (context, error, stackTrace) =>
+                                  const ColoredBox(color: Colors.black12),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          top: 0,
+                          right: 0,
+                          child: IconButton.filledTonal(
+                            key: Key('fridgePhotoRemove$i'),
+                            onPressed: () => _removePhoto(i),
+                            tooltip: 'Remove photo ${i + 1}',
+                            constraints: const BoxConstraints(
+                              minWidth: 48,
+                              minHeight: 48,
+                            ),
+                            icon: const Icon(Icons.close, size: 18),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: Spacing.s12),
+        if (count < maxFridgePhotos) ...[
+          OutlinedButton.icon(
+            key: const Key('fridgeAddAnotherPhoto'),
+            onPressed: () => setState(() => _adding = true),
+            style: OutlinedButton.styleFrom(minimumSize: const Size(0, 48)),
+            icon: const Icon(Icons.add_a_photo_outlined),
+            label: const Text('Add another photo'),
+          ),
+          const SizedBox(height: Spacing.s8),
+        ],
+        FilledButton(
+          key: const Key('fridgeScanPhotos'),
+          onPressed: () => Navigator.of(context).pop(List.of(_photos)),
+          style: FilledButton.styleFrom(minimumSize: const Size(0, 48)),
+          child: Text(count == 1 ? 'Scan photo' : 'Scan $count photos'),
+        ),
+      ],
+    );
+  }
+
   /// The live-camera experience, with an upload fallback when the hardware
   /// cannot be opened.
   Widget _buildCameraMode(BuildContext context) {
@@ -2148,7 +2443,7 @@ class _FridgeCameraSheetState extends State<FridgeCameraSheet> {
           FilledButton.icon(
             onPressed: _isTakingPicture ? null : _capturePhoto,
             icon: const Icon(Icons.camera_alt),
-            label: Text(_isTakingPicture ? 'Capturing…' : 'Take picture'),
+            label: Text(_isTakingPicture ? 'Hold still…' : 'Take picture'),
           )
         else
           FilledButton.icon(
@@ -2195,6 +2490,10 @@ class _FridgeCameraSheetState extends State<FridgeCameraSheet> {
           ),
         ),
       );
+    }
+
+    if (_seamTake != null) {
+      return const ColoredBox(color: Colors.black);
     }
 
     if (cameraController == null || initializeCameraFuture == null) {

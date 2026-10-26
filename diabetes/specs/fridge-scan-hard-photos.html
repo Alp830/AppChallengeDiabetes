@@ -274,26 +274,26 @@
     </div>
 
     <div class="phase">
-      <h3><code class="status">[]</code> Phase 5: Capture: sharpest-of-burst, quality warning, up to 3 photos</h3>
+      <h3><code class="status">[wip]</code> Phase 5: Capture: sharpest-of-burst, quality warning, up to 3 photos</h3>
       <h4>5.1. Sharpest of a burst</h4>
       <ul class="checklist">
-        <li><code class="status">[]</code> <code>burst_capture.dart</code>: on shutter, call <code>takePicture</code> 4 times as fast as the platform allows (budget 0.8 s; fewer frames if it's slower). Score each frame's Laplacian variance on a 512 px grayscale copy in an isolate, and keep the sharpest. The shutter button shows "Hold still…" during the burst.</li>
-        <li><code class="status">[]</code> Measure how long <code>takePicture</code> takes on web (patched <code>camera_web</code>) and on Android. If a burst exceeds 1.5 s on a platform, fall back to a single frame there and note it.</li>
+        <li><code class="status">[x]</code> <code>burst_capture.dart</code>: on shutter, call <code>takePicture</code> 4 times as fast as the platform allows (budget 0.8 s; fewer frames if it's slower). Score each frame's Laplacian variance on a 512 px grayscale copy in an isolate, and keep the sharpest. The shutter button shows "Hold still…" during the burst.</li>
+        <li><code class="status">[wip]</code> Measure how long <code>takePicture</code> takes on web (patched <code>camera_web</code>) and on Android. If a burst exceeds 1.5 s on a platform, fall back to a single frame there and note it. <em>Offline check 2026-10-25 on the owner's 0.7 s webcam clip (21 frames): sharpness 128–193 vs the still's 153 and the phone photo's 546. The sharpest frame scored 78% read+recog recall vs the still's 83% with v2-lean (3 runs each; a one-item difference), so on this clip sharpest-of-burst did not improve recognition. The hand-shake affects every frame, so the quality warning is the stronger fix for this case.</em></li>
       </ul>
       <h4>5.2. Quality warning</h4>
       <ul class="checklist">
-        <li><code class="status">[]</code> Calibrate blur and over-exposure thresholds on all eval photos: the blurry reference must trip the warning and the clear one must not.</li>
-        <li><code class="status">[]</code> If the chosen frame still trips: show it with "Looks blurry, hold steady and retake" or "Bright light behind, try another angle", plus <em>Retake</em> and <em>Use anyway</em>. Never block the scan.</li>
+        <li><code class="status">[x]</code> Calibrate blur and over-exposure thresholds on all eval photos: the blurry reference must trip the warning and the clear one must not. <em>Done 2026-10-25 with the app's own metric (tool/scan_eval/bench/quality_calibration_test.dart): blurry still 271, its 21 clip frames 298–355, clear phone photo 946; clipped pixels 4.3–4.5% vs 0.4%. Thresholds: blurry below 500, over-exposed above 3%. The still and every clip frame trip the warning; the clear photo doesn't. Only three scenes measured.</em></li>
+        <li><code class="status">[x]</code> If the chosen frame still trips: show it with "Looks blurry, hold steady and retake" or "Bright light behind, try another angle", plus <em>Retake</em> and <em>Use anyway</em>. Never block the scan.</li>
       </ul>
       <h4>5.3. Multiple photos</h4>
       <ul class="checklist">
-        <li><code class="status">[]</code> "Add another photo": up to 3 removable thumbnails, then "Scan 3 photos". Each photo gets its own overview and tiles; items are merged across photos by name plus zone, without boxes, since boxes don't line up between photos.</li>
-        <li><code class="status">[]</code> Scan dialog: first thumbnail and "Reading 3 photos…".</li>
+        <li><code class="status">[x]</code> "Add another photo": up to 3 removable thumbnails, then "Scan 3 photos". Each photo gets its own overview and tiles; items are merged across photos by name plus zone, without boxes, since boxes don't line up between photos.</li>
+        <li><code class="status">[x]</code> Scan dialog: first thumbnail and "Reading 3 photos…".</li>
       </ul>
       <h4>5.4. Testing Strategy</h4>
       <ul class="checklist">
-        <li><code class="status">[]</code> <code>flutter test test/burst_capture_test.dart test/fridge_camera_sheet_test.dart test/fridge_scan_dialog_test.dart</code> — sharpest frame chosen from synthetic sharp and blurred frames; single-frame fallback; warning shows and can be bypassed; photo strip; request carries N photos.</li>
-        <li><code class="status">[]</code> Live: the owner retakes the reference shot on the webcam with burst on; compare its blur score and recall with the original blurry photo. Then the blurry photo plus a steady door close-up (<code>final-multi</code>): door recall improves with no duplicates.</li>
+        <li><code class="status">[x]</code> <code>flutter test test/burst_capture_test.dart test/fridge_camera_sheet_test.dart test/fridge_scan_dialog_test.dart</code> — sharpest frame chosen from synthetic sharp and blurred frames; single-frame fallback; warning shows and can be bypassed; photo strip; request carries N photos.</li>
+        <li><code class="status">[wip]</code> Live: the owner retakes the reference shot on the webcam with burst on; compare its blur score and recall with the original blurry photo. Then the blurry photo plus a steady door close-up (<code>final-multi</code>): door recall improves with no duplicates.</li>
       </ul>
       <div class="loop">🔁 <strong>Do not exit this phase until every box above is checked.</strong> If any command fails, fix the cause and re-run — loop until all pass.</div>
     </div>

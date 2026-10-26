@@ -1,0 +1,224 @@
+{
+ "variant": "v2-lean",
+ "photo": "blurry_burst",
+ "run": 2,
+ "latencyMs": 28633,
+ "promptTokens": 2439,
+ "candidatesTokens": 2400,
+ "thoughtsTokens": 0,
+ "items": [
+  {
+   "name": "Oatmeal",
+   "alternatives": [
+    "Cookies",
+    "Chips"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Leftover meal",
+   "alternatives": [
+    "Eggs",
+    "Salad"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Milk",
+   "alternatives": [
+    "Juice",
+    "Kefir"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Cooked grains",
+   "alternatives": [
+    "Hummus",
+    "Applesauce"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Greek yogurt",
+   "alternatives": [
+    "Sour cream",
+    "Cottage cheese"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Butter",
+   "alternatives": [
+    "Cheese",
+    "Tofu"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Tomato stew",
+   "alternatives": [
+    "Salsa",
+    "Cut fruit"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Cooked meal",
+   "alternatives": [
+    "Salad",
+    "Roasted meat"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Jam",
+   "alternatives": [
+    "Pickles",
+    "Pasta sauce"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Nut butter",
+   "alternatives": [
+    "Honey",
+    "Jam"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Butter",
+   "alternatives": [
+    "Juice boxes",
+    "Cheese"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Marinated dish",
+   "alternatives": [
+    "Cut vegetables",
+    "Berries"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Eggs",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Mushrooms",
+   "alternatives": [
+    "Garlic",
+    "Dinner rolls"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Produce",
+   "alternatives": [
+    "Meat",
+    "Cheese"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Leafy greens",
+   "alternatives": [
+    "Broccoli",
+    "Herbs"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Condiment",
+   "alternatives": [
+    "Salad dressing",
+    "Syrup"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Mustard",
+   "alternatives": [
+    "Mayonnaise",
+    "Cheese dip"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Avocado",
+   "alternatives": [
+    "Guacamole",
+    "Lime juice"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Juice",
+   "alternatives": [
+    "Cheese",
+    "Butter"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Sauce",
+   "alternatives": [
+    "Vinegar",
+    "Syrup"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Electrolyte drink",
+   "alternatives": [
+    "Aloe vera drink",
+    "Coconut water"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Hot sauce",
+   "alternatives": [
+    "Salad dressing",
+    "Syrup"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Salsa",
+   "alternatives": [
+    "Pasta sauce",
+    "Jam"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Tomato sauce",
+   "alternatives": [
+    "Hot sauce",
+    "Ketchup"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Dark bottle drink",
+   "alternatives": [
+    "Soy sauce",
+    "Vinegar"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Snack pouch",
+   "alternatives": [
+    "Cheese",
+    "Dried fruit"
+   ],
+   "confidence": "guess"
+  }
+ ]
+}

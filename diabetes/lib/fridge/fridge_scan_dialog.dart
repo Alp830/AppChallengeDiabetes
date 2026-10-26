@@ -34,6 +34,8 @@ class FridgeScanDialog extends StatefulWidget {
     required this.imageBytes,
     this.detect,
     this.detectWithProgress,
+    this.photos,
+    this.detectPhotos,
     this.retryPolicy = const AiRetryPolicy(
       // Measured: one lean call takes ~27 s on a 1080p photo, and a 2×2 tile
       // grid 33–39 s on a 24 MP one (the full v2 prompt took 87 s there). So
@@ -42,11 +44,27 @@ class FridgeScanDialog extends StatefulWidget {
       attemptTimeout: Duration(seconds: 120),
     ),
   }) : assert(
-         (detect == null) != (detectWithProgress == null),
-         'Pass exactly one of detect and detectWithProgress',
+         (detect == null ? 0 : 1) +
+                 (detectWithProgress == null ? 0 : 1) +
+                 (detectPhotos == null ? 0 : 1) ==
+             1,
+         'Pass exactly one of detect, detectWithProgress and detectPhotos',
        );
 
+  /// The first (or only) photo; the dialog shows it as the thumbnail.
   final Uint8List imageBytes;
+
+  /// Every photo of a multi-photo scan, [imageBytes] first. Defaults to just
+  /// [imageBytes].
+  final List<Uint8List>? photos;
+
+  /// [detectWithProgress] for several photos: receives all of [photos].
+  final Future<List<FoodItem>> Function(
+    List<Uint8List> photos,
+    Future<void> abort,
+    void Function(ScanProgress progress) onProgress,
+  )?
+  detectPhotos;
 
   /// [abort] completes when the retry loop gives up on this attempt; pass it
   /// on to the request so it is really stopped.
@@ -76,6 +94,8 @@ class _FridgeScanDialogState extends State<FridgeScanDialog> {
   Object? _error;
   ScanProgress? _progress;
 
+  List<Uint8List> get _photos => widget.photos ?? [widget.imageBytes];
+
   @override
   void initState() {
     super.initState();
@@ -96,14 +116,20 @@ class _FridgeScanDialogState extends State<FridgeScanDialog> {
     try {
       final foods = await runWithAbortableAiRetry(
         (abort) {
+          void onProgress(ScanProgress progress) {
+            if (!mounted || _cancellation.isCancelled) return;
+            setState(() => _progress = progress);
+          }
+
+          final forPhotos = widget.detectPhotos;
+          if (forPhotos != null) {
+            return forPhotos(_photos, abort, onProgress);
+          }
           final withProgress = widget.detectWithProgress;
           if (withProgress == null) {
             return widget.detect!(widget.imageBytes, abort);
           }
-          return withProgress(widget.imageBytes, abort, (progress) {
-            if (!mounted || _cancellation.isCancelled) return;
-            setState(() => _progress = progress);
-          });
+          return withProgress(widget.imageBytes, abort, onProgress);
         },
         policy: widget.retryPolicy,
         cancellation: _cancellation,
@@ -167,6 +193,13 @@ class _FridgeScanDialogState extends State<FridgeScanDialog> {
               ),
               const SizedBox(height: Spacing.s16),
               if (error == null) ...[
+                if (_photos.length > 1) ...[
+                  Text(
+                    'Reading ${_photos.length} photos…',
+                    style: theme.textTheme.titleSmall,
+                  ),
+                  const SizedBox(height: Spacing.s8),
+                ],
                 const LinearProgressIndicator(),
                 AiRetryStatus(
                   attempt: _attempt,

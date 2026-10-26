@@ -233,6 +233,59 @@ List<ScannedItem> mergeScans(
   return result;
 }
 
+/// Merges the items of several photos of the same fridge, each list already
+/// merged within its photo. Boxes of different photos don't line up, so items
+/// match on the normalized name and the zone alone (compared case-insensitively;
+/// an empty zone only matches an empty zone). The more confident of a pair is
+/// kept (the earlier on a tie) with the alternatives of both, together with its
+/// own box and photoIndex. Two items of the same photo never merge. Output
+/// order: the first photo's items, then new items in input order.
+List<ScannedItem> mergePhotos(List<List<ScannedItem>> perPhoto) {
+  final result = <ScannedItem>[];
+  final sources = <Set<int>>[];
+  for (var k = 0; k < perPhoto.length; k++) {
+    for (final item in perPhoto[k]) {
+      final name = _normalize(item.name);
+      final zone = _locationKey(item.location);
+      var match = -1;
+      if (name.isNotEmpty) {
+        for (var i = 0; i < result.length; i++) {
+          if (sources[i].contains(k)) continue;
+          if (_normalize(result[i].name) == name &&
+              _locationKey(result[i].location) == zone) {
+            match = i;
+            break;
+          }
+        }
+      }
+      if (match < 0) {
+        result.add(item);
+        sources.add({k});
+        continue;
+      }
+      final existing = result[match];
+      final kept = _moreConfident(item, existing) ? item : existing;
+      final other = identical(kept, item) ? existing : item;
+      final combined = _combine(kept, other);
+      result[match] = ScannedItem(
+        name: combined.name,
+        foodType: combined.foodType,
+        confidence: combined.confidence,
+        alternatives: combined.alternatives,
+        location: combined.location,
+        box2d: kept.box2d,
+        photoIndex: kept.photoIndex,
+        isFood: combined.isFood,
+        amount: combined.amount,
+        description: combined.description,
+        expiryEstimateDays: combined.expiryEstimateDays,
+      );
+      sources[match].add(k);
+    }
+  }
+  return result;
+}
+
 /// Folds a closer look ([zoomed], boxes in full-photo space) into [base].
 ///
 /// A zoomed item replaces its matching base item only when its confidence is

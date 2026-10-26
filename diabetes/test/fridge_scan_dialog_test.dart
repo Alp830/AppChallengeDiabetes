@@ -210,6 +210,44 @@ void main() {
       await tester.pumpAndSettle();
     });
 
+    testWidgets('several photos say so and are all passed to detect', (
+      tester,
+    ) async {
+      final scan = Completer<List<FoodItem>>();
+      List<Uint8List>? received;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (context) => TextButton(
+              onPressed: () => showDialog<FridgeScanResult>(
+                context: context,
+                barrierDismissible: false,
+                builder: (_) => FridgeScanDialog(
+                  imageBytes: _png,
+                  photos: [_png, _png, _png],
+                  detectPhotos: (photos, _, _) {
+                    received = photos;
+                    return scan.future;
+                  },
+                ),
+              ),
+              child: const Text('open'),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('open'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.text('Reading 3 photos…'), findsOneWidget);
+      expect(find.byType(Image), findsOneWidget);
+      expect(received, hasLength(3));
+
+      scan.complete(const []);
+      await tester.pumpAndSettle();
+    });
+
     testWidgets('a single call shows no part line', (tester) async {
       late void Function(ScanProgress) sink;
       final scan = Completer<List<FoodItem>>();

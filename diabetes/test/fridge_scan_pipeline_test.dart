@@ -688,4 +688,86 @@ void main() {
       expect(recorder.bodies, hasLength(1));
     });
   });
+
+  group('scanPhotos', () {
+    // Two small photos told apart by the colour of their overview.
+    PreparedPhoto tinted(int shade) {
+      final base = _makePhoto(1000, 800);
+      final overview = img.Image(width: 64, height: 48)
+        ..clear(img.ColorRgb8(shade, shade, shade));
+      return PreparedPhoto(
+        original: base.original,
+        overviewJpeg: Uint8List.fromList(img.encodeJpg(overview)),
+        originalWidth: 1000,
+        originalHeight: 800,
+        overviewWidth: 64,
+        overviewHeight: 48,
+      );
+    }
+
+    final first = tinted(40);
+    final second = tinted(200);
+
+    int photoOf(Map<String, dynamic> body) =>
+        _partsOf(body).first['inlineData']['data'] ==
+            base64Encode(first.overviewJpeg)
+        ? 0
+        : 1;
+
+    test('merges the same name and zone once, keeps zones apart', () async {
+      final recorder = _Recorder((_, body) {
+        if (photoOf(body) == 0) {
+          return _ok([
+            _item('Milk', [10, 10, 100, 100], zone: 'door'),
+            _item('Eggs', [200, 200, 300, 300], zone: 'shelf 1'),
+          ]);
+        }
+        return _ok([
+          // Different box, same name and zone: the same milk.
+          _item('milk', [600, 600, 700, 700], zone: 'door'),
+          // Same name in another zone: a second jar.
+          _item('Eggs', [200, 200, 300, 300], zone: 'shelf 2'),
+          _item('Butter', [400, 400, 500, 500], zone: 'shelf 2'),
+        ]);
+      });
+      final result = await FridgeScanPipeline.scanPhotos(
+        [first, second],
+        client: recorder.client,
+        apiKey: 'test-token',
+      );
+
+      expect(recorder.bodies, hasLength(2));
+      expect(result.calls, 2);
+      expect(result.items.where((i) => i.name.toLowerCase() == 'milk'), hasLength(1));
+      expect(result.items.where((i) => i.name == 'Eggs'), hasLength(2));
+      expect(result.items, hasLength(4));
+      final milk = result.items.firstWhere((i) => i.name.toLowerCase() == 'milk');
+      expect(milk.photoIndex, 0);
+      final butter = result.items.firstWhere((i) => i.name == 'Butter');
+      expect(butter.photoIndex, 1);
+    });
+
+    test('runs a grid on a big photo and shares the parallel limit', () async {
+      var running = 0;
+      var peak = 0;
+      final recorder = _Recorder((_, _) async {
+        running++;
+        peak = running > peak ? running : peak;
+        await Future<void>.delayed(const Duration(milliseconds: 30));
+        running--;
+        return _ok([]);
+      });
+      final result = await FridgeScanPipeline.scanPhotos(
+        [_big, first],
+        client: recorder.client,
+        apiKey: 'test-token',
+        maxParallel: 2,
+      );
+
+      // Four tiles of the big photo plus one overview of the small one.
+      expect(recorder.bodies, hasLength(5));
+      expect(result.calls, 5);
+      expect(peak, 2);
+    });
+  });
 }
