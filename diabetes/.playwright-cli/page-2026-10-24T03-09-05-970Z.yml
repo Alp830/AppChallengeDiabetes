@@ -1,0 +1,403 @@
+- main [ref=e2]:
+  - generic [ref=e3]:
+    - paragraph [ref=e4]: Engineering plan · Not implemented
+    - heading "Nutrition priorities for the meal picker" [level=1] [ref=e5]
+    - group [ref=e6]:
+      - generic "Metadata" [ref=e7]
+  - figure "Remembered nutrition priorities influence suggestions; budget tradeoffs remain explicit." [ref=e8]:
+    - img "Three independent checked preferences feed affordable and nutrition-first meal alternatives." [ref=e9]
+  - generic [ref=e11]:
+    - heading "Purpose" [level=2] [ref=e12]
+    - paragraph [ref=e13]:
+      - text: Add independent
+      - strong [ref=e14]: High protein
+      - text: ","
+      - strong [ref=e15]: High carbs
+      - text: ", and"
+      - strong [ref=e16]: High fiber
+      - text: checkboxes to the existing
+      - strong [ref=e17]: Meals → Preferences
+      - text: sheet. Save them per account and use them to guide the meal model’s selection and ordering. Deliver only this plan now.
+  - generic [ref=e18]:
+    - heading "Problem" [level=2] [ref=e19]
+    - paragraph [ref=e20]: The current picker has a remembered “Balance my meal” checkbox, but no explicit nutrient priorities. Suggestions are generated directly by Gemini rather than scored from a local recipe catalog. The prompt contains soft balance and evening guidance, and cost is currently a free-text, rough per-serving estimate. The parser truncates excess results but does not enforce an exact count or budget tradeoff policy.
+    - paragraph [ref=e21]: Simply adding prompt text would leave conflicts ambiguous and could silently show over-budget food or omit the required explanation.
+  - generic [ref=e22]:
+    - heading "Solution and agreed behavior" [level=2] [ref=e23]
+    - list [ref=e24]:
+      - listitem [ref=e25]: All three checkboxes default off, support any combination, and have equal priority. These are relative food preferences, not strict gram targets or verified nutritional claims.
+      - listitem [ref=e26]: Keep “Balance my meal” separate and unchanged as a control. Nutrient preferences work independently of it and of the diabetes feature flag.
+      - listitem [ref=e27]: Persist on the existing user document. With no account, changes remain local to the mounted picker; do not create anonymous cloud records.
+      - listitem [ref=e28]:
+        - text: Label the existing budget input
+        - strong [ref=e29]: Budget per serving
+        - text: ", validate a positive finite dollar amount, and use the same unit in prompts and results."
+      - listitem [ref=e30]: When all requirements are achievable, favor meals matching the selected nutrients within budget. Do not force a mixed fallback or exceed budget unnecessarily.
+      - listitem [ref=e31]: If constraints conflict, keep exactly the requested number and use the fallback allocation below. Nutrition-first alternatives may exceed budget, but must be clearly labeled. Budget-first options relax nutrition as necessary, never allergies or food safety.
+      - listitem [ref=e32]:
+        - text: For a single requested meal, budget wins. A
+        - strong [ref=e33]: persistent visible notice
+        - text: must explicitly say the full preference combination could not be met and identify relaxed preferences—not just imply this through ingredients.
+    - table [ref=e34]:
+      - rowgroup [ref=e35]:
+        - row [ref=e36]:
+          - columnheader "Requested meals" [ref=e37]
+          - columnheader "Nutrition-first fallback" [ref=e38]
+          - columnheader "Budget-first fallback" [ref=e39]
+      - rowgroup [ref=e40]:
+        - row [ref=e41]:
+          - cell "1" [ref=e42]
+          - cell "0" [ref=e43]
+          - cell "1 + prominent unmet-preference explanation" [ref=e44]
+        - row [ref=e45]:
+          - cell "2" [ref=e46]
+          - cell "1" [ref=e47]
+          - cell "1" [ref=e48]
+        - row [ref=e49]:
+          - cell "3" [ref=e50]
+          - cell "1" [ref=e51]
+          - cell "2" [ref=e52]
+        - row [ref=e53]:
+          - cell "4" [ref=e54]
+          - cell "2" [ref=e55]
+          - cell "2" [ref=e56]
+        - row [ref=e57]:
+          - cell "5" [ref=e58]
+          - cell "2" [ref=e59]
+          - cell "3" [ref=e60]
+    - paragraph [ref=e61]: Put budget-first fallback options first so an affordable choice is immediately discoverable; keep the split stable rather than letting evening scoring reorder it. Within each group, nutrient fit wins over soft balance/evening guidance. Explicit dishes, allergies, practical time constraints and safety remain respected. When no budget is set, preserve the requested count, prioritize the selected nutrients, and explain any remaining conflict without inventing a budget restriction. When no nutrients are selected, retain current behavior except for clearer budget input and exact-count validation.
+    - generic [ref=e62]:
+      - strong [ref=e63]: "Honesty boundary:"
+      - text: prices and nutrient fit remain model estimates. Validation can enforce response structure and compare numeric estimates to the entered budget; it cannot prove real grocery prices, actual nutrient content, or global impossibility. User-facing copy should say “I couldn’t find a meal meeting all your preferences within your budget,” not claim that no such meal exists anywhere.
+  - generic [ref=e64]:
+    - heading "Relevant files" [level=2] [ref=e65]
+    - heading "Existing" [level=3] [ref=e66]
+    - list [ref=e67]:
+      - listitem [ref=e68]:
+        - text: existing
+        - code [ref=e69]: lib/main.dart
+        - text: —
+        - code [ref=e70]: AgentPageState
+        - text: preferences UI and subscriptions; initial/follow-up requests;
+        - code [ref=e71]: AgentRequest
+        - text: ;
+        - code [ref=e72]: GeminiMealService
+        - text: prompt/parser;
+        - code [ref=e73]: MealRecommendation
+        - text: serialization and card rendering.
+      - listitem [ref=e74]:
+        - text: existing
+        - code [ref=e75]: lib/settings/data/app_preferences_repository.dart
+        - text: — user-scoped preference interface, streams, and merged Firestore writes.
+      - listitem [ref=e76]:
+        - text: existing
+        - code [ref=e77]: lib/meals/saved/saved_recipe.dart
+        - text: ","
+        - code [ref=e78]: lib/meals/saved/saved_recipe_page.dart
+        - text: ","
+        - code [ref=e79]: lib/meals/saved/saved_recipes_repository.dart
+        - text: — verify new tradeoff fields survive saved-recipe storage and display.
+      - listitem [ref=e80]:
+        - text: existing
+        - code [ref=e81]: test/agent_meal_balance_test.dart
+        - text: ","
+        - code [ref=e82]: test/support/fake_preferences_store.dart
+        - text: ","
+        - code [ref=e83]: test/diabetes_feature_navigation_test.dart
+        - text: — update all
+        - code [ref=e84]: AppPreferencesStore
+        - text: implementers when extending its interface.
+      - listitem [ref=e85]:
+        - text: existing
+        - code [ref=e86]: test/agent_retry_test.dart
+        - text: ","
+        - code [ref=e87]: test/meal_recommendation_card_test.dart
+        - text: ","
+        - code [ref=e88]: test/saved_recipes_test.dart
+        - text: ","
+        - code [ref=e89]: test/large_text_test.dart
+        - text: ","
+        - code [ref=e90]: test/accessibility_guidelines_test.dart
+        - text: — retry, card, persistence and accessibility regressions.
+      - listitem [ref=e91]:
+        - text: existing
+        - code [ref=e92]: firestore.rules
+        - text: — existing owner-only user-document access already covers preferences; no rules change expected.
+    - heading "New" [level=3] [ref=e93]
+    - list [ref=e94]:
+      - listitem [ref=e95]:
+        - text: new
+        - code [ref=e96]: lib/settings/models/meal_nutrition_preferences.dart
+        - text: — immutable three-boolean value object, robust map conversion, copy helper and selected labels.
+      - listitem [ref=e97]:
+        - text: new
+        - code [ref=e98]: lib/meals/services/meal_priority_policy.dart
+        - text: — pure count-allocation and response-validation helpers; avoid expanding unrelated architecture.
+      - listitem [ref=e99]:
+        - text: new
+        - code [ref=e100]: test/meal_nutrition_preferences_test.dart
+        - text: ","
+        - code [ref=e101]: test/agent_nutrition_preferences_test.dart
+        - text: ","
+        - code [ref=e102]: test/meal_priority_policy_test.dart
+        - text: ","
+        - code [ref=e103]: test/meal_budget_tradeoff_test.dart
+        - text: — model, UI, prompt, fallback and malformed-response coverage.
+  - generic [ref=e104]:
+    - heading "Implementation phases" [level=2] [ref=e105]
+    - paragraph [ref=e106]:
+      - strong [ref=e107]: Execute in order, top to bottom.
+      - text: "Status:"
+      - code [ref=e108]: "[]"
+      - text: idle ·
+      - code [ref=e109]: "[wip]"
+      - text: in progress ·
+      - code [ref=e110]: "[x]"
+      - text: complete ·
+      - code [ref=e111]: "[f]"
+      - text: failed. All work below remains unstarted. Write failing tests for each behavior before its implementation.
+    - generic [ref=e112]:
+      - heading [level=3] [ref=e113]:
+        - code [ref=e114]: "[]"
+        - text: "Phase 1: Durable nutrient preference contract"
+      - heading "1.1. Model and repository" [level=4] [ref=e115]
+      - list [ref=e116]:
+        - listitem [ref=e117]:
+          - code [ref=e118]: "[]"
+          - text: Add immutable
+          - code [ref=e119]: MealNutritionPreferences
+          - text: with
+          - code [ref=e120]: highProtein
+          - text: ","
+          - code [ref=e121]: highCarbs
+          - text: ","
+          - code [ref=e122]: highFiber
+          - text: ", all false by default. Treat missing/non-boolean stored values as false; ignore unknown keys."
+        - listitem [ref=e123]:
+          - code [ref=e124]: "[]"
+          - text: Extend
+          - code [ref=e125]: AppPreferencesStore
+          - text: with watch/save nutrition methods. Store a map under
+          - code [ref=e126]: "users/{uid}.mealNutritionPreferences"
+          - text: using existing merge and timestamp conventions, preserving all unrelated preferences.
+        - listitem [ref=e127]:
+          - code [ref=e128]: "[]"
+          - text: Update every fake implementation. Reuse existing injected-store patterns; add no package or Firestore migration.
+      - heading "1.2. Testing strategy" [level=4] [ref=e129]
+      - paragraph [ref=e130]: Unit-test all eight checkbox combinations, empty/legacy data, malformed fields, round trips and stable selected labels. Test the repository mapping/write payload using existing seams or a narrowly scoped test seam; do not add a mocking dependency solely for this change.
+      - list [ref=e131]:
+        - listitem [ref=e132]:
+          - code [ref=e133]: "[]"
+          - code [ref=e134]: flutter test test/meal_nutrition_preferences_test.dart test/agent_meal_balance_test.dart test/diabetes_feature_navigation_test.dart
+        - listitem [ref=e135]:
+          - code [ref=e136]: "[]"
+          - code [ref=e137]: flutter analyze
+          - text: — no missing interface implementations or introduced issues.
+      - generic [ref=e138]: Do not exit until every task is checked. Fix failures and rerun; record pre-existing blockers separately.
+    - generic [ref=e139]:
+      - heading [level=3] [ref=e140]:
+        - code [ref=e141]: "[]"
+        - text: "Phase 2: Checkboxes, lifecycle and request snapshots"
+      - 'figure "Conceptual UI: any combination can be selected and remembered. Illustration only; the existing app theme and written requirements govern implementation." [ref=e142]':
+        - img "Conceptual preferences sheet with High protein, High carbs and High fiber all independently checked, saved per account." [ref=e143]
+      - heading "2.1. Preferences UX" [level=4] [ref=e145]
+      - list [ref=e146]:
+        - listitem [ref=e147]:
+          - code [ref=e148]: "[]"
+          - text: Add a “Nutrition priorities” section with three
+          - code [ref=e149]: CheckboxListTile
+          - text: s using stable keys
+          - code [ref=e150]: agentHighProteinCheckbox
+          - text: ","
+          - code [ref=e151]: agentHighCarbsCheckbox
+          - text: ","
+          - code [ref=e152]: agentHighFiberCheckbox
+          - text: . Explain that multiple can be selected and budget tradeoffs will be shown.
+        - listitem [ref=e153]:
+          - code [ref=e154]: "[]"
+          - text: Subscribe once per mounted account and cancel on dispose. Handle stream failures with a visible, recoverable preference-load message; do not overwrite an unread saved preference with defaults. Disable edits/generation until the initial nutrition read resolves, or explicitly offer continuing without saved preferences after an error.
+        - listitem [ref=e155]:
+          - code [ref=e156]: "[]"
+          - text: Serialize preference saves and temporarily disable these three controls while saving; avoid rapid-toggle writes racing. On failure restore the last confirmed state and show a retryable plain-language error. Keep parent and open-sheet states synchronized; guard post-await updates after dismissal/disposal.
+        - listitem [ref=e157]:
+          - code [ref=e158]: "[]"
+          - text: Change budget label to “Budget per serving.” Reject empty, nonnumeric, zero, negative, NaN and infinite values when budget is enabled; allow positive decimals and show inline errors.
+      - heading "2.2. Request propagation" [level=4] [ref=e159]
+      - list [ref=e160]:
+        - listitem [ref=e161]:
+          - code [ref=e162]: "[]"
+          - text: Add a default-empty immutable nutrition value to
+          - code [ref=e163]: AgentRequest
+          - text: ", populate it during generation and preserve it in"
+          - code [ref=e164]: copyWith
+          - text: . Preserve the exact request snapshot through retries, feedback and “Make it more balanced.”
+        - listitem [ref=e165]:
+          - code [ref=e166]: "[]"
+          - text: Keep existing first-meal onboarding, balance checkbox, saved recipes and non-diabetes flows working. Do not auto-regenerate when checkboxes change.
+      - heading "2.3. Testing strategy" [level=4] [ref=e167]
+      - paragraph [ref=e168]:
+        - text: "Widget tests with injected fake streams/stores: independent toggles, all-on/all-off, account reload/remount, read/write failures, rapid taps, dismissal while saving, missing user, budget validation and outgoing request capture via"
+        - code [ref=e169]: MockClient
+        - text: .
+      - list [ref=e170]:
+        - listitem [ref=e171]:
+          - code [ref=e172]: "[]"
+          - code [ref=e173]: flutter test test/agent_nutrition_preferences_test.dart test/agent_meal_balance_test.dart test/first_meal_guide_test.dart test/agent_retry_test.dart
+      - generic [ref=e174]: Do not exit until every task is checked. Fix failures and rerun.
+    - generic [ref=e175]:
+      - heading [level=3] [ref=e176]:
+        - code [ref=e177]: "[]"
+        - text: "Phase 3: Nutrition-aware generation and checked budget fallback"
+      - 'figure "When requirements conflict: one option stays within the estimated budget and explains unmet preferences; four options split 2/2. Amber nutrition-first alternatives may exceed budget and must say so." [ref=e178]':
+        - 'img "Conflict fallback examples: one budget-first meal with an unmet-preference notice, or four meals split into two budget-first and two nutrition-first alternatives." [ref=e179]'
+      - heading "3.1. Prompt and structured response" [level=4] [ref=e181]
+      - list [ref=e182]:
+        - listitem [ref=e183]:
+          - code [ref=e184]: "[]"
+          - text: Add a nutrition-priority prompt section only for selected preferences. High carbs means a more carbohydrate-forward meal using suitable grains, legumes, fruit or starchy vegetables—not automatically added sugar. High protein and high fiber use practical ingredients without gram guarantees.
+        - listitem [ref=e185]:
+          - code [ref=e186]: "[]"
+          - text: Give one authoritative conflict hierarchy. Update contradictory evening “most sleep-compatible first” and balance guidance to defer to explicit nutrition priorities and fallback groups. Preserve optional diabetes notes without allowing them to veto high-carb selections.
+        - listitem [ref=e187]:
+          - code [ref=e188]: "[]"
+          - text: "Compute fallback group sizes in the pure policy helper: for N > 1, nutrition-first = floor(N/2), budget-first = N − floor(N/2); for N = 1, budget-first only. Include exact counts and required explanations in the prompt. Do not infer infeasibility locally from dish names."
+        - listitem [ref=e189]:
+          - code [ref=e190]: "[]"
+          - text: "Keep the current JSON array response shape. Add per-meal fields:"
+          - code [ref=e191]: priorityMode
+          - text: (“allPreferences”, “nutritionFirst”, “budgetFirst”),
+          - code [ref=e192]: unmetNutritionPreferences
+          - text: (stable protein/carbs/fiber keys),
+          - code [ref=e193]: constraintNotice
+          - text: (plain-language explanation or null), and
+          - code [ref=e194]: estimatedCostUpperBoundPerServing
+          - text: (finite nonnegative number for budgeted responses). Retain
+          - code [ref=e195]: estimatedCostPerServing
+          - text: for display; specify numeric upper bound and range use the same estimate.
+        - listitem [ref=e196]:
+          - code [ref=e197]: "[]"
+          - text: In fallback responses require explicit notices on affected meals, especially the sole budget-first result. Nutrition-first notices clearly identify budget overruns. Budget-first notices identify relaxed nutrient preferences and say the full combination could not be met. Non-budget conflicts can use unmet preference notices without creating a budget fallback split.
+      - heading "3.2. Response validation and compatibility" [level=4] [ref=e198]
+      - list [ref=e199]:
+        - listitem [ref=e200]:
+          - code [ref=e201]: "[]"
+          - text: Extend
+          - code [ref=e202]: MealRecommendation
+          - text: parsing, image
+          - code [ref=e203]: copyWith
+          - text: and
+          - code [ref=e204]: toJson
+          - text: to preserve metadata. Missing new fields in old saved recipes remain acceptable and render as before.
+        - listitem [ref=e205]:
+          - code [ref=e206]: "[]"
+          - text: Validate fresh generation before image attachment. Reject an empty/wrong-count list rather than silently truncating; reject invalid modes, malformed numeric estimates, unknown or unselected unmet keys, and fallback responses with wrong group sizes or missing notices. Only require nutrition-specific metadata when nutrient priorities are active.
+        - listitem [ref=e207]:
+          - code [ref=e208]: "[]"
+          - text: With budget enabled, every all-preferences/budget-first result must have an estimated upper bound ≤ the entered per-serving budget. A one-meal response may never exceed it. For mixed fallback, validate the approved split and at least one within-budget option, then place budget-first options first. Nutrition-first options over budget must have explicit notices.
+        - listitem [ref=e209]:
+          - code [ref=e210]: "[]"
+          - text: Use
+          - code [ref=e211]: FormatException
+          - text: for contract violations so the existing bounded AI retry path handles them. Preserve cancellation and request identity; do not add unbounded calls or a second retry loop. After exhaustion, display a recoverable failure, never fabricated cheap meals or an unmarked over-budget substitute.
+      - generic [ref=e212]: "if response.length != request.recommendationCount: reject if budgetEnabled: require valid numeric cost upper bounds if response is fallback: require approved mode counts and nonempty tradeoff notices require each budgetFirst/allPreferences estimate <= budget require at least one estimate <= budget if requestedCount == 1 and any selected preference unmet: require budgetFirst + explicit constraintNotice"
+      - heading "3.3. Testing strategy" [level=4] [ref=e213]
+      - paragraph [ref=e214]: "Pure policy tests and mocked Gemini responses, not paid live calls: all eight selections; counts 1–5; exact fallback splits; feasible/no-fallback; budget unset; budget equal to estimate; decimals; malformed/missing estimates and notices; wrong/extra/fewer results; single over-budget result; balance and evening guidance interactions; preserved selections on retries and feedback. Mocked responses demonstrate contracts, not nutritional accuracy."
+      - list [ref=e215]:
+        - listitem [ref=e216]:
+          - code [ref=e217]: "[]"
+          - code [ref=e218]: flutter test test/meal_priority_policy_test.dart test/meal_budget_tradeoff_test.dart test/agent_nutrition_preferences_test.dart test/agent_retry_test.dart test/agent_meal_balance_test.dart test/evening_food_context_service_test.dart
+      - generic [ref=e219]: Do not exit until every task is checked. Fix failures and rerun.
+    - generic [ref=e220]:
+      - heading [level=3] [ref=e221]:
+        - code [ref=e222]: "[]"
+        - text: "Phase 4: Visible tradeoffs and regression verification"
+      - heading "4.1. User-facing transparency" [level=4] [ref=e223]
+      - list [ref=e224]:
+        - listitem [ref=e225]:
+          - code [ref=e226]: "[]"
+          - text: Render nonempty constraint notices persistently near the card’s cost/reason, not only in a snackbar, hidden Q&A or diabetes-only glucose note. Label fallback cards “Budget-first option” or “Nutrition-first option”; identify over-budget estimates explicitly.
+        - listitem [ref=e227]:
+          - code [ref=e228]: "[]"
+          - text: For one-result fallback, prominently show “I couldn’t meet all your preferences within your budget” plus the specific relaxed preferences. Display “Costs are estimates” with budget results. Notifications must work with diabetes disabled.
+        - listitem [ref=e229]:
+          - code [ref=e230]: "[]"
+          - text: Use existing theme and spacing tokens, semantic labels and text rather than color alone. Ensure the expanded preference sheet and notices scroll/wrap on narrow screens at 200% text scale.
+        - listitem [ref=e231]:
+          - code [ref=e232]: "[]"
+          - text: Keep notices when saving/reopening a recipe, but describe budget fit as belonging to the original request rather than the user’s current settings. Verify existing recipes without metadata still load.
+      - heading "4.2. Testing strategy" [level=4] [ref=e233]
+      - paragraph [ref=e234]: Add card/widget assertions for visible single-meal failure explanations, over-budget labels, no-notice happy path, semantics/large text, persistence round trips and old recipe compatibility. Then run the full suite and manual smoke checks.
+      - list [ref=e235]:
+        - listitem [ref=e236]:
+          - code [ref=e237]: "[]"
+          - code [ref=e238]: flutter test test/meal_recommendation_card_test.dart test/meal_budget_tradeoff_test.dart test/saved_recipes_test.dart test/saved_recipes_page_test.dart test/large_text_test.dart test/accessibility_guidelines_test.dart
+        - listitem [ref=e239]:
+          - code [ref=e240]: "[]"
+          - code [ref=e241]: flutter analyze
+        - listitem [ref=e242]:
+          - code [ref=e243]: "[]"
+          - code [ref=e244]: flutter test
+        - listitem [ref=e245]:
+          - code [ref=e246]: "[]"
+          - text: "Manual smoke: save multiple preferences, remount, generate with 1 and 4 choices using deterministic fixtures, verify single-result notice and 2/2 fallback, reopen a saved meal, test 200% text and keyboard navigation."
+      - generic [ref=e247]: Do not exit until every task is checked. Fix failures and rerun; log any unavailable device/service checks honestly.
+  - generic [ref=e248]:
+    - heading "Global validation commands" [level=2] [ref=e249]
+    - list [ref=e250]:
+      - listitem [ref=e251]:
+        - code [ref=e252]: "[]"
+        - code [ref=e253]: dart format --output=none --set-exit-if-changed lib test
+        - text: — format gate; distinguish unrelated pre-existing formatting problems.
+      - listitem [ref=e254]:
+        - code [ref=e255]: "[]"
+        - code [ref=e256]: flutter analyze
+        - text: — static analysis.
+      - listitem [ref=e257]:
+        - code [ref=e258]: "[]"
+        - code [ref=e259]: flutter test
+        - text: — full regression suite.
+      - listitem [ref=e260]:
+        - code [ref=e261]: "[]"
+        - code [ref=e262]: git diff --check
+        - text: — whitespace integrity.
+    - generic [ref=e263]: Implementation is not complete until validation passes. If a check is impossible, mark it [f], record evidence and limits, and continue only independent work. Do not report skipped checks as passing.
+  - generic [ref=e264]:
+    - heading "Decisions, boundaries and implementation notes" [level=2] [ref=e265]
+    - group [ref=e266]:
+      - generic "User decisions recorded during planning" [ref=e267]
+      - list [ref=e268]:
+        - listitem [ref=e269]: Use existing Meals → Preferences; save per account.
+        - listitem [ref=e270]: Permit all checkbox combinations, equally prioritized; no strict nutrient gram targets.
+        - listitem [ref=e271]: Always return the requested meal count; approved 1–5 fallback allocations above.
+        - listitem [ref=e272]: Over-budget nutrition-first alternatives are permitted only when there is room for alternatives; always retain an option within the estimated budget.
+        - listitem [ref=e273]: With one requested option, prioritize budget and explicitly notify the user when all preferences cannot be achieved.
+        - listitem [ref=e274]: Budget is per serving.
+    - paragraph [ref=e275]:
+      - strong [ref=e276]: "Architecture:"
+      - text: stay within the current Flutter, Firestore and Gemini stack. No nutrition API, local recipe-ranking engine, new dependency, independent settings screen, calorie target editor, migration or medical-treatment change. Keep broad refactors of the large
+      - code [ref=e277]: main.dart
+      - text: out of scope. New helper/model filenames are local, reversible choices.
+    - paragraph [ref=e278]:
+      - strong [ref=e279]: "Extreme budgets:"
+      - text: if the model cannot supply even one safe meal within its estimated budget, fail transparently through the existing retry/error surface rather than falsely asserting compliance. The exact-count requirement applies to successful responses, not fabricated outputs. Explain that the user may revise constraints and retry.
+    - paragraph [ref=e280]:
+      - strong [ref=e281]: "Scalability:"
+      - text: one small preference map per user and one lifecycle-managed stream; no recipe database, fan-out generation or extra live model calls. The fixed 1–5 option limit keeps policy validation trivial.
+    - paragraph [ref=e282]:
+      - strong [ref=e283]: "Workspace preservation:"
+      - text: many app/platform files were already modified when inspected, including
+      - code [ref=e284]: lib/main.dart
+      - text: . Do not reset, reformat or overwrite unrelated work. Inspect current diffs and establish baseline checks again before implementation.
+    - paragraph [ref=e285]:
+      - strong [ref=e286]: "Planning evidence:"
+      - text: inspected settings repository, picker UI/request/prompt/parser/card model, existing tests, Firestore rules, project README and relevant UI guidance. No
+      - code [ref=e287]: AI_DOCS/
+      - text: or
+      - code [ref=e288]: APP_DOCS/
+      - text: directories were found. Tests and analyzer have not been run for this plan-only task. All three current illustrations generated with Gemini; contain no project data or credentials. The original Pollinations overview was replaced and removed.
+  - generic [ref=e289]:
+    - heading "Amendments" [level=2] [ref=e290]
+    - group [ref=e291]:
+      - generic "2026-10-24T03:02:05Z — Additional Gemini illustrations" [ref=e292]
+    - group [ref=e293]:
+      - generic "2026-10-24T03:03:01Z — Replace remaining Pollinations artwork" [ref=e294]

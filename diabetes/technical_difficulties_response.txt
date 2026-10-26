@@ -1,0 +1,5 @@
+Our meal-making agent performed well, but it occasionally made small mistakes or produced contradictory recommendations. While these issues were tolerable during prototyping, they were unacceptable for a production app.
+
+Our first instinct was to improve the agent itself. We refined prompts, experimented with output formats, and briefly explored a custom agent harness. Eventually, however, we realized that the solution did not have to come from the AI. Instead, we added deterministic code to validate the agent’s output, checking that recommendations followed our requirements before displaying them to users.
+
+The key challenge was shifting our approach: rather than relying on the model to enforce every rule, we combined its flexibility with the predictability of traditional software. This became one of our most valuable lessons. We learned to step back, question our initial assumptions, and weigh both ambitious ideas and simpler alternatives before committing to a solution. The most effective engineering solution is not always the most complex one.

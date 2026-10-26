@@ -1,0 +1,7 @@
+For version 2.0, we would focus on making the connection between fridge inventory and meal planning more accurate, personalized, and measurable.
+
+First, we would improve inventory accuracy beyond the initial scan. Recognizing an ingredient is only useful if the app can also track what remains after cooking. We would introduce recipe-based quantity deductions, with user confirmation, and make uncertain detections easier to review. This would help keep the digital fridge aligned with what users actually have.
+
+Second, we would strengthen the meal maker’s nutritional and budget estimates by integrating reliable food-composition data and, where available, current grocery prices. AI would remain responsible for generating creative suggestions, while conventional software would verify calculations and enforce constraints. We would also let users explicitly save preferences and provide feedback so recommendations become more relevant without reducing their control.
+
+Finally, we would expand our benchmarks to include more varied kitchens, lighting conditions, and ingredients, alongside usability testing with real users. We would measure not just detection accuracy, but whether people can find a suitable meal faster and use more of the food they already own. Our goal would be to make version 2.0 more dependable, not simply add more features.
