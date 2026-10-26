@@ -457,5 +457,14 @@
   "promptTokens": null,
   "outputTokens": null,
   "costUsd": 0.0924
+ },
+ {
+  "timestamp": "2026-10-25T20:30:00Z",
+  "variant": "judges demo HTML test (from page usageMetadata)",
+  "photo": "clear",
+  "run": 1,
+  "promptTokens": null,
+  "outputTokens": null,
+  "costUsd": 0.091728
  }
 ]

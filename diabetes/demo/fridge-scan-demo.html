@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- The page can only talk to Google's Gemini API; your key goes nowhere else. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src blob: data:; connect-src https://generativelanguage.googleapis.com">
+<title>Fridge Scan demo · Wellness Companion</title>
+<style>
+  :root {
+    --green: #257a5c; --green-dark: #1d5f48; --green-tint: #e8f2ec;
+    --amber: #8a5a00; --amber-tint: #fff3d6; --amber-line: #c88a12;
+    --red: #b3261e; --ink: #1b1f1d; --muted: #5b6460; --line: #dfe5e1; --bg: #f6f8f7;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--ink); background: var(--bg); }
+  main { max-width: 880px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font-size: 1.8rem; margin: 0 0 4px; }
+  h2 { font-size: 1.15rem; margin: 0 0 12px; }
+  p.lead { color: var(--muted); margin: 0 0 20px; }
+  section.card { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 20px; margin-bottom: 16px; }
+  label { font-weight: 600; display: block; margin-bottom: 6px; }
+  input[type=password], input[type=text] { width: 100%; padding: 12px 14px; font: inherit; border: 1px solid #9aa5a0; border-radius: 10px; }
+  .hint { color: var(--muted); font-size: .9rem; margin-top: 6px; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  button { font: inherit; font-weight: 600; min-height: 48px; padding: 0 18px; border-radius: 12px; cursor: pointer; border: 1px solid var(--green); background: #fff; color: var(--green); }
+  button.primary { background: var(--green); color: #fff; }
+  button.primary:hover { background: var(--green-dark); }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  button:focus-visible, input:focus-visible { outline: 3px solid #f0a35e; outline-offset: 2px; }
+  .thumbs { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 14px; }
+  .thumb { position: relative; width: 150px; }
+  .thumb img { width: 150px; height: 150px; object-fit: cover; border-radius: 12px; border: 1px solid var(--line); display: block; }
+  .thumb .rm { position: absolute; top: 6px; right: 6px; min-height: 36px; width: 36px; padding: 0; border-radius: 50%; background: #fff; }
+  .thumb .meta { font-size: .8rem; color: var(--muted); margin-top: 4px; }
+  .warn { color: var(--red); font-size: .85rem; font-weight: 600; }
+  .progress { display: none; }
+  .bar { height: 6px; background: var(--green-tint); border-radius: 3px; overflow: hidden; margin: 10px 0; }
+  .bar > div { height: 100%; width: 30%; background: var(--green); animation: slide 1.4s infinite ease-in-out; }
+  @keyframes slide { 0% { margin-left: -30%; } 100% { margin-left: 100%; } }
+  .latest { color: var(--muted); font-size: .9rem; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 16px; }
+  .stat { background: var(--green-tint); border-radius: 12px; padding: 10px 12px; }
+  .stat b { display: block; font-size: 1.3rem; }
+  .stat span { font-size: .85rem; color: var(--muted); }
+  .group h3 { font-size: 1rem; margin: 18px 0 8px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; }
+  .item { border: 1px solid var(--line); border-radius: 14px; padding: 12px; position: relative; background: #fff; }
+  .item .name { font-weight: 700; padding-right: 36px; word-break: break-word; }
+  .item .del { position: absolute; top: 6px; right: 6px; min-height: 40px; width: 40px; padding: 0; border: none; color: var(--muted); font-size: 1.2rem; }
+  .item .sub { font-size: .82rem; color: var(--muted); }
+  .badge { display: inline-block; font-size: .8rem; font-weight: 700; border-radius: 999px; padding: 1px 10px; margin: 6px 0 4px; }
+  .badge.maybe { color: var(--amber); background: var(--amber-tint); border: 1px solid var(--amber-line); }
+  .badge.likely { color: var(--muted); background: #eef1ef; }
+  .alts { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; align-items: center; font-size: .85rem; }
+  .alts button, .item .ok { min-height: 36px; padding: 0 10px; font-size: .85rem; border-radius: 999px; }
+  .item .ok { margin-top: 8px; }
+  .error { color: var(--red); font-weight: 600; white-space: pre-wrap; }
+  details { margin-top: 12px; }
+  summary { cursor: pointer; font-weight: 600; }
+  pre { background: #f0f3f1; padding: 12px; border-radius: 10px; overflow: auto; max-height: 360px; font-size: .8rem; }
+  .sr { position: absolute; left: -9999px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Fridge Scan</h1>
+  <p class="lead">A stand-alone copy of the Wellness Companion fridge scanner. Take or upload up to 3 photos of a fridge, pantry or grocery bag; the foods appear as they are found. Items the scan isn't sure of are marked <b>Maybe</b> with alternatives, and any item can be removed with ✕. Nothing is stored: this page only talks to Google's Gemini API.</p>
+
+  <section class="card">
+    <h2>1. Your Gemini API key</h2>
+    <label for="key">Gemini API key</label>
+    <input id="key" type="password" autocomplete="off" spellcheck="false" placeholder="Paste a key from Google AI Studio">
+    <div class="row" style="margin-top:8px">
+      <label style="font-weight:400;margin:0"><input id="remember" type="checkbox"> Remember the key in this browser</label>
+    </div>
+    <p class="hint">Get a free key at aistudio.google.com/apikey. The scan uses <code>gemini-4-argon</code>, which needs billing on the key; a scan costs about $0.03 (small photo) to $0.10 (large photo). The key is sent only to generativelanguage.googleapis.com.</p>
+  </section>
+
+  <section class="card">
+    <h2>2. Your photos</h2>
+    <div class="row">
+      <button id="takeBtn" type="button">📷 Take a photo</button>
+      <button id="pickBtn" type="button">🖼 Choose photos</button>
+      <input id="take" class="sr" type="file" accept="image/*" capture="environment" aria-hidden="true" tabindex="-1">
+      <input id="pick" class="sr" type="file" accept="image/*" multiple aria-hidden="true" tabindex="-1">
+    </div>
+    <p class="hint">Tip: one photo of the shelves and one close-up of the door bins works well. Photos of 3072 px or more are read as 4 overlapping tiles for small labels.</p>
+    <div id="thumbs" class="thumbs" aria-live="polite"></div>
+    <div class="row" style="margin-top:16px">
+      <button id="scan" class="primary" type="button" disabled>Scan</button>
+      <button id="cancel" type="button" hidden>Cancel</button>
+    </div>
+    <div id="progress" class="progress" role="status">
+      <div class="bar"><div></div></div>
+      <div id="progCount" aria-live="polite">Preparing photos…</div>
+      <div id="progLatest" class="latest"></div>
+      <div id="progPart" class="latest"></div>
+    </div>
+    <div id="error" class="error" role="alert"></div>
+  </section>
+
+  <section id="results" class="card" hidden>
+    <h2>3. What's in your fridge</h2>
+    <div id="stats" class="stats"></div>
+    <div id="groups"></div>
+    <details>
+      <summary>How this scan works</summary>
+      <ul>
+        <li>The prompt works zone by zone with a count first and never leaves an item out. Every item has a confidence (sure / likely / guess), up to two alternatives and a box. Medicine, supplements and skincare are recognised and skipped.</li>
+        <li>Large photos keep their original pixels: they are cut into 2×2 overlapping tiles that are read in parallel, then merged by box position so items in the overlap are not counted twice.</li>
+        <li>Answers stream in, so the first foods appear within seconds.</li>
+        <li>A sharpness and exposure check warns about blurry or back-lit photos, since no model can read detail that isn't in the photo.</li>
+      </ul>
+    </details>
+    <details>
+      <summary>Raw model output</summary>
+      <pre id="raw"></pre>
+    </details>
+  </section>
+</main>
+
+<script>
+'use strict';
+const MODEL = 'gemini-4-argon';
+const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:streamGenerateContent?alt=sse`;
+const PRICE_IN = 2 / 1e6, PRICE_OUT = 10 / 1e6; // Argon list price per token (doubles Dec 1, 2026)
+const FOOD_TYPES = ['Produce', 'Protein', 'Dairy', 'Grain', 'Snack', 'Drink', 'Other'];
+const MAX_PHOTOS = 3, OVERVIEW_SIDE = 2048, KEPT_SIDE = 4096, TILE_FROM = 3072;
+// Calibrated in Chrome on the project's eval photos: blurry webcam still 522,
+// its sharpest clip frame 687, sharp 24 MP phone photo 2718; blown-out pixels 4.6% vs 0.7%.
+const BLURRY_BELOW = 1200, OVEREXPOSED_ABOVE = 0.03;
+const TILE_NOTE = 'This image is one part of a larger fridge photo; list only what is in this part, including items cut off at its edges.';
+
+const PROMPT = `You are a fridge inventory assistant. Inspect the whole image and list every visible food and drink item. A missing item is worse than a doubtful one, but only list what you can point to.
+
+Work zone by zone: each shelf from top to bottom, then the drawers, then the door bins from top to bottom. For each zone, first state how many items you count in it, then list those items. Combine identical items into one entry.
+
+Rules:
+- Check every bag, jar, box and container, including partly visible, opaque or nested ones and items at the image edges.
+- Name the contents, not the container: "tomato stew", not "glass dish". If the contents are hidden, give your best guess.
+- READ any visible label and identify the product from it, not from shape or colour.
+- For bottles, jars and cartons, read the label or printed description whenever any text is legible and name the product from it. If nothing is legible, name an unlabeled dark bottle or carton with a generic drink such as "juice", conf "guess", rather than inventing a specific product.
+- Consider dried herbs, herbal teas (linden/ihlamur, chamomile, mint), spices and regional foods. Never call dried herbs "bread".
+- Unlabeled dry staples: fine matte white powder = flour; crystalline white = sugar or salt; small oblong translucent grains = rice; golden cracked grains = bulgur; round dried seeds = beans, chickpeas or lentils; also pasta, semolina, oats.
+- "sure" only when you can read the label or the item is unmistakable from its shape. Anything inferred from colour, a container or a partial view is "likely" or "guess".
+- The name is ONE item. Never write "X or Y" in a name; put other possibilities in "alts".
+- Do not list an item unless you can point to it: no items inferred from context (e.g. "canned fish" or "blueberries" because something dark is visible). If you see an object but cannot tell what it is, list your best guess as "guess".
+- Never output "Unknown", "Unidentified" or any placeholder name.
+- Keep every string short: names at most 4 words, zone names like "shelf 2", "door bin 1".
+
+Keys for each item:
+- "name": what it is.
+- "type": one of: ${FOOD_TYPES.join(', ')}
+- "conf": "sure", "likely" or "guess".
+- "alts": up to two other names it could be (empty array if "sure").
+- "zone": the zone it is in.
+- "box": [ymin, xmin, ymax, xmax] on a 0 to 1000 grid over the whole image.
+- "food": true for food and drink; false for medicine, supplements, vitamins, protein powders, skincare, household items and plants.
+- "days": typical whole days from today until it spoils in a fridge, or null if unknown.
+
+Also give "tilt": the clockwise rotation in degrees the photo needs to be level (0 if level, negative for counter-clockwise).
+
+Return only valid JSON, no Markdown, in this shape:
+{"zones": [{"name": "shelf 1", "count": 1}], "items": [{"name": "Bananas", "type": "Produce", "conf": "sure", "alts": [], "zone": "shelf 1", "box": [120, 80, 260, 310], "food": true, "days": 5}], "tilt": 0}
+`;
+
+const SCHEMA = {
+  type: 'OBJECT',
+  properties: {
+    zones: { type: 'ARRAY', items: { type: 'OBJECT', properties: { name: { type: 'STRING' }, count: { type: 'INTEGER' } }, required: ['name', 'count'], propertyOrdering: ['name', 'count'] } },
+    items: { type: 'ARRAY', items: { type: 'OBJECT', properties: {
+      name: { type: 'STRING' }, type: { type: 'STRING', enum: FOOD_TYPES }, conf: { type: 'STRING', enum: ['sure', 'likely', 'guess'] },
+      alts: { type: 'ARRAY', items: { type: 'STRING' } }, zone: { type: 'STRING' }, box: { type: 'ARRAY', items: { type: 'INTEGER' } },
+      food: { type: 'BOOLEAN' }, days: { type: 'INTEGER', nullable: true } },
+      required: ['name', 'type', 'conf', 'alts', 'zone', 'box', 'food'],
+      propertyOrdering: ['name', 'type', 'conf', 'alts', 'zone', 'box', 'food', 'days'] } },
+    tilt: { type: 'NUMBER' },
+  },
+  required: ['zones', 'items', 'tilt'],
+  propertyOrdering: ['zones', 'items', 'tilt'],
+};
+
+const $ = (id) => document.getElementById(id);
+const photos = []; // {file, url, bitmap, w, h, quality}
+let items = [];
+let abortCtrl = null;
+
+// ---------- key ----------
+const keyInput = $('key'), remember = $('remember');
+try { const saved = localStorage.getItem('fridgeScanKey'); if (saved) { keyInput.value = saved; remember.checked = true; } } catch (_) {}
+function persistKey() {
+  try {
+    if (remember.checked && keyInput.value.trim()) localStorage.setItem('fridgeScanKey', keyInput.value.trim());
+    else localStorage.removeItem('fridgeScanKey');
+  } catch (_) {}
+  updateScanButton();
+}
+keyInput.addEventListener('input', persistKey);
+remember.addEventListener('change', persistKey);
+
+// ---------- photos ----------
+$('takeBtn').onclick = () => $('take').click();
+$('pickBtn').onclick = () => $('pick').click();
+$('take').onchange = (e) => addFiles(e.target.files);
+$('pick').onchange = (e) => addFiles(e.target.files);
+document.addEventListener('dragover', (e) => e.preventDefault());
+document.addEventListener('drop', (e) => { e.preventDefault(); addFiles(e.dataTransfer.files); });
+
+async function addFiles(fileList) {
+  $('error').textContent = '';
+  for (const file of Array.from(fileList || [])) {
+    if (photos.length >= MAX_PHOTOS) { $('error').textContent = `Up to ${MAX_PHOTOS} photos per scan.`; break; }
+    if (!file.type.startsWith('image/')) continue;
+    try {
+      // The browser applies the EXIF rotation, so phone photos come out upright.
+      const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
+      const photo = { file, url: URL.createObjectURL(file), bitmap, w: bitmap.width, h: bitmap.height };
+      photo.quality = assessQuality(bitmap);
+      photos.push(photo);
+    } catch (err) {
+      $('error').textContent = `Couldn't read ${file.name}: ${err.message || err}`;
+    }
+  }
+  $('take').value = ''; $('pick').value = '';
+  renderThumbs();
+}
+
+function renderThumbs() {
+  const box = $('thumbs'); box.replaceChildren();
+  photos.forEach((p, i) => {
+    const div = document.createElement('div'); div.className = 'thumb';
+    const img = document.createElement('img'); img.src = p.url; img.alt = `Photo ${i + 1}`;
+    const rm = document.createElement('button'); rm.className = 'rm'; rm.type = 'button'; rm.textContent = '✕';
+    rm.setAttribute('aria-label', `Remove photo ${i + 1}`);
+    rm.onclick = () => { URL.revokeObjectURL(p.url); p.bitmap.close?.(); photos.splice(i, 1); renderThumbs(); };
+    const meta = document.createElement('div'); meta.className = 'meta';
+    meta.textContent = `${p.w}×${p.h}${Math.max(p.w, p.h) >= TILE_FROM ? ' · read as 4 tiles' : ''}`;
+    div.append(img, rm, meta);
+    for (const [bad, text] of [[p.quality.blurry, 'Looks blurry: hold steady and retake if you can.'], [p.quality.overExposed, 'Bright light behind: try another angle.']]) {
+      if (!bad) continue;
+      const w = document.createElement('div'); w.className = 'warn'; w.textContent = text; div.append(w);
+    }
+    box.append(div);
+  });
+  $('scan').textContent = photos.length > 1 ? `Scan ${photos.length} photos` : 'Scan';
+  updateScanButton();
+}
+function updateScanButton() { $('scan').disabled = !photos.length || !keyInput.value.trim() || !!abortCtrl; }
+
+// Laplacian variance (sharpness) and blown-out pixels on a 512 px grey copy.
+function assessQuality(bitmap) {
+  const s = 512 / Math.max(bitmap.width, bitmap.height);
+  const w = Math.max(3, Math.round(bitmap.width * s)), h = Math.max(3, Math.round(bitmap.height * s));
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const ctx = c.getContext('2d', { willReadFrequently: true });
+  ctx.drawImage(bitmap, 0, 0, w, h);
+  const d = ctx.getImageData(0, 0, w, h).data;
+  const g = new Float32Array(w * h); let clipped = 0;
+  for (let i = 0; i < w * h; i++) {
+    const y = 0.299 * d[4 * i] + 0.587 * d[4 * i + 1] + 0.114 * d[4 * i + 2];
+    g[i] = y; if (y > 245) clipped++;
+  }
+  let sum = 0, sum2 = 0, n = 0;
+  for (let y = 1; y < h - 1; y++) for (let x = 1; x < w - 1; x++) {
+    const i = y * w + x;
+    const l = g[i - 1] + g[i + 1] + g[i - w] + g[i + w] - 4 * g[i];
+    sum += l; sum2 += l * l; n++;
+  }
+  const sharpness = sum2 / n - (sum / n) ** 2, clippedFraction = clipped / (w * h);
+  return { sharpness, clippedFraction, blurry: sharpness < BLURRY_BELOW, overExposed: clippedFraction > OVEREXPOSED_ABOVE };
+}
+
+// ---------- image prep ----------
+function drawJpeg(bitmap, sx, sy, sw, sh, maxSide) {
+  const s = Math.min(1, maxSide / Math.max(sw, sh));
+  const c = document.createElement('canvas');
+  c.width = Math.round(sw * s); c.height = Math.round(sh * s);
+  const ctx = c.getContext('2d'); ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(bitmap, sx, sy, sw, sh, 0, 0, c.width, c.height);
+  return new Promise((res) => c.toBlob(res, 'image/jpeg', 0.85));
+}
+function blobToBase64(blob) {
+  return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(',')[1]); r.onerror = rej; r.readAsDataURL(blob); });
+}
+
+// Spans covering [0, len) with >= 12% overlap, each at most maxSide long.
+function splitAxis(len, maxSide) {
+  const ov = Math.ceil(0.12 * len) + 1;
+  const sizeFor = (n) => Math.min(len, Math.ceil((len + (n - 1) * ov) / n));
+  let n = 2; while (sizeFor(n) > maxSide && n < 12) n++;
+  const size = sizeFor(n);
+  return Array.from({ length: n }, (_, i) => ({ start: Math.round(i * (len - size) / (n - 1)), size }));
+}
+
+// One overview call for normal photos; 2x2 native-pixel tiles for large ones.
+async function planCalls(photo, photoIndex) {
+  const scale = Math.min(1, KEPT_SIDE / Math.max(photo.w, photo.h));
+  const W = photo.w, H = photo.h, keptLong = Math.max(W, H) * scale;
+  if (keptLong < TILE_FROM) {
+    const blob = await drawJpeg(photo.bitmap, 0, 0, W, H, OVERVIEW_SIDE);
+    return [{ id: `photo ${photoIndex + 1}`, photoIndex, rect: null, W, H, data: await blobToBase64(blob) }];
+  }
+  const maxSide = 0.6 * Math.max(W, H);
+  const cols = splitAxis(W, maxSide), rows = splitAxis(H, maxSide), calls = [];
+  for (const r of rows) for (const c of cols) {
+    const rect = { left: c.start, top: r.start, width: c.size, height: r.size };
+    // Cut from the original pixels, shrink only to the 2048 px upload size.
+    const blob = await drawJpeg(photo.bitmap, rect.left, rect.top, rect.width, rect.height, OVERVIEW_SIDE);
+    calls.push({ id: `photo ${photoIndex + 1} tile ${calls.length + 1}`, photoIndex, rect, W, H, data: await blobToBase64(blob) });
+  }
+  return calls;
+}
+
+// ---------- Gemini streaming ----------
+class ItemScanner { // yields each complete object of the top-level "items" array as text streams in
+  constructor(onItem) { this.t = ''; this.pos = -1; this.depth = 0; this.inStr = false; this.esc = false; this.start = -1; this.done = false; this.onItem = onItem; }
+  push(chunk) {
+    this.t += chunk;
+    if (this.pos < 0) { const m = this.t.search(/"items"\s*:\s*\[/); if (m < 0) return; this.pos = this.t.indexOf('[', m) + 1; }
+    for (; this.pos < this.t.length && !this.done; this.pos++) {
+      const c = this.t[this.pos];
+      if (this.inStr) { if (this.esc) this.esc = false; else if (c === '\\') this.esc = true; else if (c === '"') this.inStr = false; continue; }
+      if (c === '"') this.inStr = true;
+      else if (c === '{') { if (this.depth === 0) this.start = this.pos; this.depth++; }
+      else if (c === '}') { if (--this.depth === 0) { try { this.onItem(JSON.parse(this.t.slice(this.start, this.pos + 1))); } catch (_) {} } }
+      else if (c === ']' && this.depth === 0) this.done = true;
+    }
+  }
+}
+
+async function streamCall(call, key, signal, onItem) {
+  const body = {
+    contents: [{ parts: [
+      { inlineData: { mimeType: 'image/jpeg', data: call.data } },
+      { text: call.rect ? `${TILE_NOTE}\n\n${PROMPT}` : PROMPT },
+    ] }],
+    generationConfig: {
+      mediaResolution: 'MEDIA_RESOLUTION_HIGH',
+      thinkingConfig: { thinkingLevel: 'low' },
+      maxOutputTokens: 32768,
+      responseMimeType: 'application/json',
+      responseSchema: SCHEMA,
+    },
+  };
+  const res = await fetch(ENDPOINT, { method: 'POST', signal, headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key }, body: JSON.stringify(body) });
+  if (!res.ok) {
+    const text = await res.text();
+    let msg = text; try { msg = JSON.parse(text).error.message; } catch (_) {}
+    const err = new Error(`Gemini ${res.status}: ${msg}`); err.status = res.status; throw err;
+  }
+  const scanner = new ItemScanner(onItem), reader = res.body.getReader(), dec = new TextDecoder();
+  let buf = '', usage = null, finish = null, blocked = null;
+  for (;;) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buf += dec.decode(value, { stream: true });
+    let nl;
+    while ((nl = buf.indexOf('\n')) >= 0) {
+      const line = buf.slice(0, nl).trim(); buf = buf.slice(nl + 1);
+      if (!line.startsWith('data:')) continue;
+      let ev; try { ev = JSON.parse(line.slice(5)); } catch (_) { continue; }
+      if (ev.promptFeedback?.blockReason) blocked = ev.promptFeedback.blockReason;
+      if (ev.usageMetadata) usage = ev.usageMetadata;
+      const cand = ev.candidates?.[0];
+      if (cand?.finishReason) finish = cand.finishReason;
+      for (const part of cand?.content?.parts || []) if (part.text && !part.thought) scanner.push(part.text);
+    }
+  }
+  if (blocked || ['SAFETY', 'BLOCKLIST', 'PROHIBITED_CONTENT', 'SPII', 'IMAGE_SAFETY'].includes(finish)) {
+    const err = new Error(`Gemini declined this photo (${blocked || finish}).`); err.status = 400; throw err;
+  }
+  let parsed;
+  try { parsed = JSON.parse(scanner.t.replace(/^```(json)?|```$/g, '').trim()); }
+  catch (_) { const err = new Error('The answer was cut off or not valid JSON.'); err.retry = true; throw err; }
+  return { parsed, usage, text: scanner.t };
+}
+
+async function callWithRetry(call, key, signal, onItem, onRetry) {
+  for (let attempt = 1; ; attempt++) {
+    try { return await streamCall(call, key, signal, onItem); }
+    catch (err) {
+      if (signal.aborted) throw err;
+      const retryable = err.retry || err.status === 429 || err.status >= 500 || err.name === 'TypeError';
+      if (!retryable || attempt >= 3) throw err;
+      onRetry?.(attempt); await new Promise((r) => setTimeout(r, 2000 * attempt));
+    }
+  }
+}
+
+// ---------- items, merge ----------
+const PLACEHOLDERS = /^(unknown|unidentified|n\/?a|none|item|items|food|object|thing)$/i;
+function singular(w) {
+  if (w.length <= 3) return w;
+  if (w.endsWith('ies')) return w.slice(0, -3) + 'y';
+  if (/(ch|sh|x|z|o|ss)es$/.test(w)) return w.slice(0, -2);
+  if (w.endsWith('s') && !w.endsWith('ss')) return w.slice(0, -1);
+  return w;
+}
+const tokens = (s) => String(s).toLowerCase().replace(/[^a-z0-9%]+/g, ' ').trim().split(' ').filter(Boolean).map(singular);
+const norm = (s) => tokens(s).join(' ');
+function namesMatch(a, b) {
+  const A = new Set(tokens(a)), B = new Set(tokens(b));
+  if (!A.size || !B.size) return false;
+  const shared = [...A].filter((t) => B.has(t)).length;
+  return shared === A.size || shared === B.size;
+}
+const inAlts = (name, item) => item.alts.some((x) => norm(x) === norm(name));
+const area = (b) => Math.max(0, b[2] - b[0]) * Math.max(0, b[3] - b[1]);
+function inter(a, b) { return Math.max(0, Math.min(a[2], b[2]) - Math.max(a[0], b[0])) * Math.max(0, Math.min(a[3], b[3]) - Math.max(a[1], b[1])); }
+const iou = (a, b) => { const i = inter(a, b); return i / Math.max(1, area(a) + area(b) - i); };
+const contain = (a, b) => inter(a, b) / Math.max(1, Math.min(area(a), area(b)));
+const touching = (a, b) => Math.max(a[0], b[0]) - Math.min(a[2], b[2]) <= 20 && Math.max(a[1], b[1]) - Math.min(a[3], b[3]) <= 20;
+const CONF = { sure: 0, likely: 1, guess: 2 };
+
+// Same object across two different calls? (Items from one call never merge.)
+function matchScore(a, b) {
+  if (a.photoIndex !== b.photoIndex) return norm(a.name) === norm(b.name) && norm(a.zone) === norm(b.zone) ? 0 : null;
+  if (!a.box || !b.box) return norm(a.name) === norm(b.name) && (!a.zone || !b.zone || norm(a.zone) === norm(b.zone)) ? 0 : null;
+  const named = namesMatch(a.name, b.name) || inAlts(a.name, b) || inAlts(b.name, a);
+  if (!named) {
+    const c = contain(a.box, b.box), ratio = Math.max(area(a.box), area(b.box)) / Math.max(1, Math.min(area(a.box), area(b.box)));
+    return c >= 0.85 && ratio <= 2.5 ? c - 1 : null; // tiles naming one object differently
+  }
+  const o = iou(a.box, b.box); if (o >= 0.3) return o;
+  const c = contain(a.box, b.box); if (c >= 0.5) return c;
+  return touching(a.box, b.box) ? 0 : null;
+}
+function combine(kept, other) {
+  const seen = new Set([norm(kept.name)]), alts = [];
+  if (!namesMatch(kept.name, other.name)) { seen.add(norm(other.name)); alts.push(other.name); }
+  for (const a of [...kept.alts, ...other.alts]) if (!seen.has(norm(a))) { seen.add(norm(a)); alts.push(a); }
+  return { ...kept, alts: alts.slice(0, 2) };
+}
+function mergeLists(lists) {
+  const out = [], sources = [];
+  lists.forEach((list, k) => {
+    for (const item of list) {
+      let best = -1, bestScore = -Infinity;
+      out.forEach((o, i) => { if (sources[i].has(k)) return; const s = matchScore(o, item); if (s !== null && s > bestScore) { bestScore = s; best = i; } });
+      if (best < 0) { out.push(item); sources.push(new Set([k])); continue; }
+      const o = out[best];
+      out[best] = CONF[item.conf] < CONF[o.conf] ? combine(item, o) : combine(o, item);
+      sources[best].add(k);
+    }
+  });
+  return out;
+}
+
+function cleanItems(raw, call, counters) {
+  const list = [];
+  for (const it of raw?.items || []) {
+    const name = String(it.name || '').trim();
+    if (!name || PLACEHOLDERS.test(name)) continue;
+    if (it.food === false) { counters.nonFood++; continue; }
+    let box = Array.isArray(it.box) && it.box.length === 4 ? it.box.map((v) => Math.max(0, Math.min(1000, Math.round(+v || 0)))) : null;
+    if (box) {
+      box = [Math.min(box[0], box[2]), Math.min(box[1], box[3]), Math.max(box[0], box[2]), Math.max(box[1], box[3])];
+      if (call.rect) { // tile box -> whole-photo box
+        const y = (v) => Math.round((call.rect.top + v / 1000 * call.rect.height) / call.H * 1000);
+        const x = (v) => Math.round((call.rect.left + v / 1000 * call.rect.width) / call.W * 1000);
+        box = [y(box[0]), x(box[1]), y(box[2]), x(box[3])];
+      }
+    }
+    const alts = [...new Set((it.alts || []).map((a) => String(a).trim()).filter((a) => a && !PLACEHOLDERS.test(a) && norm(a) !== norm(name)))].slice(0, 2);
+    list.push({
+      name, type: FOOD_TYPES.includes(it.type) ? it.type : 'Other', conf: CONF[it.conf] !== undefined ? it.conf : 'likely',
+      alts, zone: String(it.zone || '').trim(), box, photoIndex: call.photoIndex, days: Number.isInteger(it.days) ? it.days : null,
+    });
+  }
+  return list;
+}
+
+// ---------- scan ----------
+$('cancel').onclick = () => abortCtrl?.abort();
+$('scan').onclick = scan;
+
+async function scan() {
+  const key = keyInput.value.trim();
+  if (!key || !photos.length) return;
+  $('error').textContent = ''; $('results').hidden = true;
+  abortCtrl = new AbortController(); const signal = abortCtrl.signal;
+  updateScanButton(); $('cancel').hidden = false; $('progress').style.display = 'block';
+  $('progCount').textContent = 'Preparing photos…'; $('progLatest').textContent = ''; $('progPart').textContent = '';
+  const t0 = performance.now(); let firstItemAt = null, streamed = 0, done = 0; const latest = [];
+  const counters = { nonFood: 0 };
+  try {
+    const calls = [];
+    for (let i = 0; i < photos.length; i++) calls.push(...await planCalls(photos[i], i));
+    const prepMs = performance.now() - t0;
+    const showPart = () => { $('progPart').textContent = calls.length > 1 ? `Reading part ${Math.min(done + 1, calls.length)} of ${calls.length}` : ''; };
+    $('progCount').textContent = photos.length > 1 ? `Reading ${photos.length} photos…` : 'Finding foods…'; showPart();
+    const onItem = (it) => {
+      if (it.food === false) return;
+      streamed++; firstItemAt ??= performance.now() - t0;
+      latest.push(it.name); if (latest.length > 3) latest.shift();
+      $('progCount').textContent = `Found ${streamed} item${streamed === 1 ? '' : 's'} so far…`;
+      $('progLatest').textContent = latest.join(', ');
+    };
+    // All calls run in parallel (at most 4 at a time); one failed tile doesn't fail the scan.
+    const results = new Array(calls.length), errors = [];
+    let next = 0;
+    async function worker() {
+      while (next < calls.length) {
+        const i = next++;
+        try { results[i] = await callWithRetry(calls[i], key, signal, onItem, () => { $('progPart').textContent = `Retrying ${calls[i].id}…`; }); }
+        catch (err) { if (signal.aborted) throw err; errors.push(`${calls[i].id}: ${err.message}`); }
+        done++; showPart();
+      }
+    }
+    await Promise.all(Array.from({ length: Math.min(4, calls.length) }, worker));
+    if (results.every((r) => !r)) throw new Error(errors[0] || 'Every call failed.');
+    const lists = results.map((r, i) => (r ? cleanItems(r.parsed, calls[i], counters) : []));
+    items = mergeLists(lists);
+    let tin = 0, tout = 0;
+    for (const r of results) if (r?.usage) { tin += r.usage.promptTokenCount || 0; tout += (r.usage.candidatesTokenCount || 0) + (r.usage.thoughtsTokenCount || 0); }
+    renderResults({
+      totalMs: performance.now() - t0, prepMs, firstItemAt, calls: calls.length, failed: errors,
+      cost: tin * PRICE_IN + tout * PRICE_OUT, rawCount: lists.flat().length, nonFood: counters.nonFood,
+    });
+    $('raw').textContent = results.map((r, i) => `// ${calls[i].id}\n${r ? JSON.stringify(r.parsed, null, 1) : '(failed)'}`).join('\n\n');
+  } catch (err) {
+    $('error').textContent = signal.aborted ? 'Scan cancelled.' : friendly(err);
+  } finally {
+    abortCtrl = null; $('cancel').hidden = true; $('progress').style.display = 'none'; updateScanButton();
+  }
+}
+
+function friendly(err) {
+  const m = err.message || String(err);
+  if (err.status === 400 && /api key/i.test(m)) return 'That API key was rejected. Check that it is a Gemini API key from Google AI Studio.';
+  if (err.status === 403) return `The key isn't allowed to use ${MODEL} (billing may be off). ${m}`;
+  if (err.status === 429) return 'Rate limit or quota reached on this key. Wait a minute and try again.';
+  if (err.name === 'TypeError') return `Couldn't reach Google's API (offline or blocked network). ${m}`;
+  return m;
+}
+
+// ---------- results ----------
+let lastStats = null;
+function renderResults(stats) {
+  lastStats = stats || lastStats; const s = lastStats;
+  $('results').hidden = false;
+  const toCheck = items.filter((i) => i.conf === 'guess').length;
+  const stat = (big, small) => { const d = document.createElement('div'); d.className = 'stat'; const b = document.createElement('b'); b.textContent = big; const sp = document.createElement('span'); sp.textContent = small; d.append(b, sp); return d; };
+  $('stats').replaceChildren(
+    stat(String(items.length), `items${toCheck ? `, ${toCheck} to check` : ''}`),
+    stat(s.firstItemAt ? `${(s.firstItemAt / 1000).toFixed(1)} s` : '—', 'first item on screen'),
+    stat(`${(s.totalMs / 1000).toFixed(1)} s`, `whole scan · ${s.calls} call${s.calls > 1 ? 's' : ''}`),
+    stat(`$${s.cost.toFixed(3)}`, 'cost of this scan'),
+    stat(String(s.nonFood), 'non-food skipped (medicine, supplements…)'),
+  );
+  if (s.failed.length) { const f = document.createElement('div'); f.className = 'warn'; f.textContent = `Some parts failed and were skipped: ${s.failed.join('; ')}`; $('stats').append(f); }
+
+  const groups = $('groups'); groups.replaceChildren();
+  for (const type of FOOD_TYPES) {
+    const inType = items.filter((i) => i.type === type);
+    if (!inType.length) continue;
+    const g = document.createElement('div'); g.className = 'group';
+    const h = document.createElement('h3'); h.textContent = `${type} (${inType.length})`;
+    const grid = document.createElement('div'); grid.className = 'grid';
+    for (const it of inType) grid.append(card(it));
+    g.append(h, grid); groups.append(g);
+  }
+}
+
+function card(it) {
+  const d = document.createElement('div'); d.className = 'item';
+  const name = document.createElement('div'); name.className = 'name'; name.textContent = it.name;
+  const del = document.createElement('button'); del.className = 'del'; del.type = 'button'; del.textContent = '✕';
+  del.setAttribute('aria-label', `Remove ${it.name}`);
+  del.onclick = () => { items = items.filter((x) => x !== it); renderResults(); };
+  d.append(name, del);
+  if (it.conf === 'guess') {
+    const b = document.createElement('span'); b.className = 'badge maybe'; b.textContent = 'Maybe';
+    b.setAttribute('aria-label', `Maybe ${it.name}, check this item`); d.append(b);
+  } else if (it.conf === 'likely') {
+    const b = document.createElement('span'); b.className = 'badge likely'; b.textContent = 'Likely'; d.append(b);
+  }
+  const sub = document.createElement('div'); sub.className = 'sub';
+  sub.textContent = [it.zone, it.days != null ? `keeps ~${it.days} day${it.days === 1 ? '' : 's'}` : '', photos.length > 1 ? `photo ${it.photoIndex + 1}` : ''].filter(Boolean).join(' · ');
+  d.append(sub);
+  if (it.conf !== 'sure' && it.alts.length) {
+    const alts = document.createElement('div'); alts.className = 'alts';
+    const or = document.createElement('span'); or.textContent = 'Or:'; alts.append(or);
+    for (const a of it.alts) {
+      const b = document.createElement('button'); b.type = 'button'; b.textContent = a;
+      b.setAttribute('aria-label', `Rename to ${a}`);
+      b.onclick = () => { it.name = a; it.conf = 'sure'; it.alts = []; renderResults(); };
+      alts.append(b);
+    }
+    d.append(alts);
+  }
+  if (it.conf !== 'sure') {
+    const ok = document.createElement('button'); ok.className = 'ok'; ok.type = 'button'; ok.textContent = '✓ Looks right';
+    ok.onclick = () => { it.conf = 'sure'; it.alts = []; renderResults(); };
+    d.append(ok);
+  }
+  return d;
+}
+</script>
+</body>
+</html>
