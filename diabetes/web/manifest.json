@@ -1,6 +1,6 @@
 {
-    "name": "Wellness Companion",
-    "short_name": "Wellness",
+    "name": "Replate",
+    "short_name": "Replate",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

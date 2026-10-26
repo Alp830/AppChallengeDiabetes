@@ -1,4 +1,4 @@
-# UI Best Practices: Wellness Companion
+# UI Best Practices: Replate
 
 Audit of the Flutter app in `diabetes/lib` (September 2026) against mobile, Material 3 (M3), accessibility and health-app practice. Scores: 5 = nothing to change, 1 = actively hurts the app. Contrast ratios were measured on the real seeded `ColorScheme` (probe at `/tmp/schemeprobe`). Items tagged **(D/S)** are diabetes or sleep surfaces. They are covered here but excluded from the implementation plan, which is limited to the meal tracker, Agent, Fridge and Home.
 

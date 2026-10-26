@@ -13,7 +13,7 @@ void main() {
 
   testWidgets('says what the app is and offers recovery', (tester) async {
     await pump(tester);
-    expect(find.text('Wellness Companion'), findsOneWidget);
+    expect(find.text('Replate'), findsOneWidget);
     expect(
       find.text("Turn what's in your fridge into meal ideas."),
       findsOneWidget,

@@ -145,7 +145,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Wellness Companion',
+      title: 'Replate',
       theme: AppTheme.light(),
       home: home ?? const AuthGate(),
     );
@@ -520,7 +520,7 @@ class _AuthPageState extends State<AuthPage> {
                       ),
                       const SizedBox(height: Spacing.s8),
                       Text(
-                        'Wellness Companion',
+                        'Replate',
                         style: Theme.of(context).textTheme.headlineMedium,
                         textAlign: TextAlign.center,
                       ),

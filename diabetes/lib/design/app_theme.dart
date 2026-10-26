@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 import 'app_radius.dart';
 import 'app_status_colors.dart';
 
-/// Central design system for the Wellness Companion app.
+/// Central design system for the Replate app.
 ///
 /// Every screen inherits from this single [ThemeData], so visual polish added
 /// here (rounded cards, soft borders, consistent typography, pill buttons)
