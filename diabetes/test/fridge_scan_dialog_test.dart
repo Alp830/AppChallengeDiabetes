@@ -126,6 +126,23 @@ void main() {
     expect(result!.foods.single.name, 'Eggs');
   });
 
+  testWidgets('the first frame says "Preparing photos…"', (tester) async {
+    final pending = Completer<List<FoodItem>>();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: FridgeScanDialog(imageBytes: _png, detect: (_, _) => pending.future),
+      ),
+    );
+
+    // No extra pump: this is the very first frame.
+    expect(find.text('Preparing photos…'), findsOneWidget);
+    expect(find.byType(LinearProgressIndicator), findsOneWidget);
+
+    // Finish the scan so the retry loop's timeout timer is cancelled.
+    pending.complete(const []);
+    await tester.pumpAndSettle();
+  });
+
   testWidgets('cancel closes immediately and ignores the late result', (
     tester,
   ) async {

@@ -140,7 +140,11 @@ void main() {
     expect(_result!.single, _png);
   });
 
-  testWidgets('a blurry photo warns, and Use anyway proceeds', (tester) async {
+  // Replaces the old 'a blurry photo warns, and Use anyway proceeds' test:
+  // there is no blocking screen any more, the photo is simply added.
+  testWidgets('a blurry photo is added at once with a note on its thumbnail', (
+    tester,
+  ) async {
     await _open(
       tester,
       openCamera: _fakeCamera,
@@ -149,23 +153,21 @@ void main() {
     );
     await _shoot(tester);
 
-    expect(find.text('Looks blurry, hold steady and retake'), findsOneWidget);
-    expect(find.text('Retake'), findsOneWidget);
-    expect(find.text('Scan photo'), findsNothing);
-
-    await tester.tap(find.text('Use anyway'));
-    await tester.pumpAndSettle();
-    expect(find.text('Looks blurry, hold steady and retake'), findsNothing);
-    expect(find.text('Scan photo'), findsOneWidget);
+    expect(find.text('Check your photo'), findsNothing);
+    expect(find.text('Retake'), findsNothing);
+    expect(find.text('Use anyway'), findsNothing);
+    expect(find.byKey(const Key('fridgePhotoThumb0')), findsOneWidget);
+    expect(find.text('Looks blurry — retake if you can'), findsOneWidget);
+    expect(find.bySemanticsLabel('Photo 1: Looks blurry — retake if you can'),
+        findsOneWidget);
 
     await tester.tap(find.text('Scan photo'));
     await tester.pumpAndSettle();
     expect(_result, hasLength(1));
   });
 
-  testWidgets('an over-exposed photo gets the lighting message', (
-    tester,
-  ) async {
+  // Replaces 'an over-exposed photo gets the lighting message'.
+  testWidgets('an over-exposed photo gets the lighting note', (tester) async {
     await _open(
       tester,
       pickPhoto: () async => _png,
@@ -173,31 +175,122 @@ void main() {
     );
     await _upload(tester);
 
-    expect(find.text('Bright light behind, try another angle'), findsOneWidget);
-    expect(find.text('Use anyway'), findsOneWidget);
+    expect(find.text('Bright light behind'), findsOneWidget);
+    expect(find.text('Scan photo'), findsOneWidget);
   });
 
-  testWidgets('Retake goes back to the camera', (tester) async {
-    var opened = 0;
+  // Replaces 'Retake goes back to the camera': the thumbnail's remove button
+  // is the retake path now.
+  testWidgets('removing a blurry photo returns to the chooser to retake', (
+    tester,
+  ) async {
     await _open(
       tester,
-      openCamera: () {
-        opened++;
-        return _fakeCamera();
-      },
+      openCamera: _fakeCamera,
       burst: _instantBurst,
       assess: (_) async => _blurry,
     );
     await _shoot(tester);
-    expect(find.text('Retake'), findsOneWidget);
 
-    await tester.tap(find.text('Retake'));
+    await tester.tap(find.byKey(const Key('fridgePhotoRemove0')));
     await tester.pumpAndSettle();
 
-    expect(opened, 2);
-    expect(find.text('Take picture'), findsOneWidget);
-    expect(find.text('Looks blurry, hold steady and retake'), findsNothing);
-    expect(find.text('Scan photo'), findsNothing);
+    expect(find.text('Take a picture'), findsOneWidget);
+    expect(find.text('Looks blurry — retake if you can'), findsNothing);
+  });
+
+  testWidgets('the note appears only after the background check finishes', (
+    tester,
+  ) async {
+    final check = Completer<PhotoQuality>();
+    await _open(
+      tester,
+      pickPhoto: () async => _png,
+      assess: (_) => check.future,
+    );
+    await _upload(tester);
+
+    // The photo and the Scan button are already there, check still running.
+    expect(find.byKey(const Key('fridgePhotoThumb0')), findsOneWidget);
+    expect(find.text('Scan photo'), findsOneWidget);
+    expect(find.text('Looks blurry — retake if you can'), findsNothing);
+
+    check.complete(_blurry);
+    await tester.pumpAndSettle();
+    expect(find.text('Looks blurry — retake if you can'), findsOneWidget);
+  });
+
+  testWidgets('a check that finishes after removal is ignored', (tester) async {
+    final check = Completer<PhotoQuality>();
+    await _open(
+      tester,
+      pickPhoto: () async => _png,
+      assess: (_) => check.future,
+    );
+    await _upload(tester);
+    await tester.tap(find.byKey(const Key('fridgePhotoRemove0')));
+    await tester.pumpAndSettle();
+
+    check.complete(_blurry);
+    await tester.pumpAndSettle();
+    expect(find.text('Looks blurry — retake if you can'), findsNothing);
+  });
+
+  testWidgets('an "Adding photo…" placeholder shows as the bytes arrive', (
+    tester,
+  ) async {
+    final picked = Completer<Uint8List?>();
+    await _open(
+      tester,
+      pickPhoto: () => picked.future,
+      assess: (_) async => _fine,
+    );
+    await tester.tap(find.text('Upload a photo'));
+    await tester.pump();
+
+    picked.complete(_png);
+    await tester.pump();
+    expect(find.text('Adding photo…'), findsOneWidget);
+    expect(find.byKey(const Key('fridgePhotoPending')), findsOneWidget);
+
+    await tester.pumpAndSettle();
+    expect(find.text('Adding photo…'), findsNothing);
+    expect(find.byKey(const Key('fridgePhotoThumb0')), findsOneWidget);
+  });
+
+  testWidgets('Upload is disabled with a spinner while the picker is open', (
+    tester,
+  ) async {
+    var opened = 0;
+    final picked = Completer<Uint8List?>();
+    await _open(
+      tester,
+      pickPhoto: () {
+        opened++;
+        return picked.future;
+      },
+      assess: (_) async => _fine,
+    );
+    await tester.tap(find.text('Upload a photo'));
+    await tester.pump();
+
+    final button = tester.widget<OutlinedButton>(
+      find.widgetWithText(OutlinedButton, 'Upload a photo'),
+    );
+    expect(button.onPressed, isNull);
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+    await tester.tap(find.text('Upload a photo'), warnIfMissed: false);
+    await tester.pump();
+    expect(opened, 1);
+
+    // Cancelling the picker re-enables the button.
+    picked.complete(null);
+    await tester.pumpAndSettle();
+    final again = tester.widget<OutlinedButton>(
+      find.widgetWithText(OutlinedButton, 'Upload a photo'),
+    );
+    expect(again.onPressed, isNotNull);
   });
 
   testWidgets('photos can be added up to three and removed', (tester) async {

@@ -183,6 +183,8 @@ class _FridgeScanDialogState extends State<FridgeScanDialog> {
                   opacity: 0.6,
                   child: Image.memory(
                     widget.imageBytes,
+                    // Decode for the 160 dp preview, not the full photo.
+                    cacheWidth: 560,
                     height: 160,
                     width: double.infinity,
                     fit: BoxFit.cover,
@@ -208,13 +210,24 @@ class _FridgeScanDialogState extends State<FridgeScanDialog> {
                 const SizedBox(height: Spacing.s12),
                 if (_progress case final progress?)
                   _ProgressText(progress: progress)
-                else
+                else ...[
+                  // Shown from the first frame: decoding and resizing the
+                  // photos runs before the first request goes out.
+                  Semantics(
+                    key: const Key('fridgeScanPreparing'),
+                    liveRegion: true,
+                    child: Text(
+                      'Preparing photos…',
+                      style: theme.textTheme.bodyMedium,
+                    ),
+                  ),
                   Text(
                     'This usually takes about 30 seconds.',
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
+                ],
               ] else
                 Text(
                   FriendlyErrors.ai(error, action: 'the foods from your photo'),

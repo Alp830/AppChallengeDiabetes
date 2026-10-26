@@ -26,7 +26,20 @@
   button { font: inherit; font-weight: 600; min-height: 48px; padding: 0 18px; border-radius: 12px; cursor: pointer; border: 1px solid var(--green); background: #fff; color: var(--green); }
   button.primary { background: var(--green); color: #fff; }
   button.primary:hover { background: var(--green-dark); }
+  button { transition: transform .06s, background-color .12s, box-shadow .12s; }
+  button:hover:not(:disabled) { background-color: var(--green-tint); }
+  button.primary:hover:not(:disabled) { background: var(--green-dark); }
+  button:active:not(:disabled) { transform: scale(.96); box-shadow: inset 0 2px 6px rgba(0,0,0,.18); }
   button:disabled { opacity: .5; cursor: not-allowed; }
+  button.busy { opacity: 1; cursor: progress; }
+  .spin { display: inline-block; width: 1em; height: 1em; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: rot .7s linear infinite; vertical-align: -2px; margin-right: 8px; }
+  @keyframes rot { to { transform: rotate(360deg); } }
+  .thumb .ph { width: 150px; height: 150px; border-radius: 12px; border: 1px dashed #9aa5a0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; color: var(--muted); font-size: .85rem; background: #fff; }
+  .thumb .ph .spin { width: 28px; height: 28px; margin: 0; color: var(--green); }
+  .note { font-size: .8rem; color: var(--muted); }
+  #toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(20px); background: #1b1f1d; color: #fff; padding: 12px 18px; border-radius: 12px; opacity: 0; pointer-events: none; transition: opacity .15s, transform .15s; display: flex; gap: 14px; align-items: center; max-width: 92vw; z-index: 10; }
+  #toast.show { opacity: 1; pointer-events: auto; transform: translateX(-50%) translateY(0); }
+  #toast button { min-height: 36px; background: transparent; color: #9fe0c3; border: none; padding: 0 6px; }
   button:focus-visible, input:focus-visible { outline: 3px solid #f0a35e; outline-offset: 2px; }
   .thumbs { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 14px; }
   .thumb { position: relative; width: 150px; }
@@ -45,7 +58,10 @@
   .stat span { font-size: .85rem; color: var(--muted); }
   .group h3 { font-size: 1rem; margin: 18px 0 8px; }
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; }
-  .item { border: 1px solid var(--line); border-radius: 14px; padding: 12px; position: relative; background: #fff; }
+  .item { border: 1px solid var(--line); border-radius: 14px; padding: 12px; position: relative; background: #fff; transition: opacity .15s, transform .15s; }
+  .item.gone { opacity: 0; transform: scale(.92); }
+  .item.flash { animation: flash .6s; }
+  @keyframes flash { from { background: var(--green-tint); } to { background: #fff; } }
   .item .name { font-weight: 700; padding-right: 36px; word-break: break-word; }
   .item .del { position: absolute; top: 6px; right: 6px; min-height: 40px; width: 40px; padding: 0; border: none; color: var(--muted); font-size: 1.2rem; }
   .item .sub { font-size: .82rem; color: var(--muted); }
@@ -88,7 +104,7 @@
     <p class="hint">Tip: one photo of the shelves and one close-up of the door bins works well. Photos of 3072 px or more are read as 4 overlapping tiles for small labels.</p>
     <div id="thumbs" class="thumbs" aria-live="polite"></div>
     <div class="row" style="margin-top:16px">
-      <button id="scan" class="primary" type="button" disabled>Scan</button>
+      <button id="scan" class="primary" type="button">Scan</button>
       <button id="cancel" type="button" hidden>Cancel</button>
     </div>
     <div id="progress" class="progress" role="status">
@@ -119,6 +135,7 @@
     </details>
   </section>
 </main>
+<div id="toast" role="status" aria-live="polite"><span id="toastText"></span><button id="toastUndo" type="button" hidden>Undo</button></div>
 
 <script>
 'use strict';
@@ -127,9 +144,10 @@ const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${MODE
 const PRICE_IN = 2 / 1e6, PRICE_OUT = 10 / 1e6; // Argon list price per token (doubles Dec 1, 2026)
 const FOOD_TYPES = ['Produce', 'Protein', 'Dairy', 'Grain', 'Snack', 'Drink', 'Other'];
 const MAX_PHOTOS = 3, OVERVIEW_SIDE = 2048, KEPT_SIDE = 4096, TILE_FROM = 3072;
-// Calibrated in Chrome on the project's eval photos: blurry webcam still 522,
-// its sharpest clip frame 687, sharp 24 MP phone photo 2718; blown-out pixels 4.6% vs 0.7%.
-const BLURRY_BELOW = 1200, OVEREXPOSED_ABOVE = 0.03;
+// Measured on a 512 px copy decoded by the browser (Chrome), on the project's eval
+// photos: blurry webcam still 200, its sharpest clip frame 260, sharp 24 MP phone
+// photo 694; blown-out pixels 4.5% vs 0.4%. The note never blocks the scan.
+const BLURRY_BELOW = 450, OVEREXPOSED_ABOVE = 0.03;
 const TILE_NOTE = 'This image is one part of a larger fridge photo; list only what is in this part, including items cut off at its edges.';
 
 const PROMPT = `You are a fridge inventory assistant. Inspect the whole image and list every visible food and drink item. A missing item is worse than a doubtful one, but only list what you can point to.
@@ -213,40 +231,66 @@ async function addFiles(fileList) {
     if (photos.length >= MAX_PHOTOS) { $('error').textContent = `Up to ${MAX_PHOTOS} photos per scan.`; break; }
     if (!file.type.startsWith('image/')) continue;
     try {
-      // The browser applies the EXIF rotation, so phone photos come out upright.
-      const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
-      const photo = { file, url: URL.createObjectURL(file), bitmap, w: bitmap.width, h: bitmap.height };
-      photo.quality = assessQuality(bitmap);
+      // Show the photo straight away; the full decode and the quality check
+      // finish in the background and never block the scan.
+      const photo = { file, url: URL.createObjectURL(file), bitmap: null, w: 0, h: 0, quality: null, ready: null };
       photos.push(photo);
+      renderThumbs();
+      photo.ready = (async () => {
+        // The browser applies the EXIF rotation, so phone photos come out upright.
+        photo.bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
+        photo.w = photo.bitmap.width; photo.h = photo.bitmap.height;
+        renderThumbs();
+        // Quick check on a small copy the browser decodes at 512 px.
+        const s = Math.min(1, 512 / Math.max(photo.w, photo.h));
+        const small = await createImageBitmap(file, { imageOrientation: 'from-image', resizeWidth: Math.max(3, Math.round(photo.w * s)), resizeQuality: 'medium' });
+        photo.quality = assessQuality(small); small.close?.();
+        renderThumbs();
+      })().catch((err) => {
+        const at = photos.indexOf(photo); if (at >= 0) photos.splice(at, 1);
+        URL.revokeObjectURL(photo.url);
+        $('error').textContent = `Couldn't read ${file.name}: ${err.message || err}`;
+        renderThumbs();
+      });
     } catch (err) {
       $('error').textContent = `Couldn't read ${file.name}: ${err.message || err}`;
     }
   }
   $('take').value = ''; $('pick').value = '';
-  renderThumbs();
 }
 
 function renderThumbs() {
   const box = $('thumbs'); box.replaceChildren();
   photos.forEach((p, i) => {
     const div = document.createElement('div'); div.className = 'thumb';
-    const img = document.createElement('img'); img.src = p.url; img.alt = `Photo ${i + 1}`;
+    const img = document.createElement('img'); img.src = p.url; img.alt = `Photo ${i + 1}`; img.decoding = 'async';
     const rm = document.createElement('button'); rm.className = 'rm'; rm.type = 'button'; rm.textContent = '✕';
     rm.setAttribute('aria-label', `Remove photo ${i + 1}`);
-    rm.onclick = () => { URL.revokeObjectURL(p.url); p.bitmap.close?.(); photos.splice(i, 1); renderThumbs(); };
+    rm.onclick = () => { URL.revokeObjectURL(p.url); p.bitmap?.close?.(); photos.splice(i, 1); renderThumbs(); toast(`Removed photo ${i + 1}`); };
     const meta = document.createElement('div'); meta.className = 'meta';
+    if (!p.bitmap) {
+      const ph = document.createElement('div'); ph.className = 'ph'; ph.setAttribute('role', 'status');
+      const sp = document.createElement('span'); sp.className = 'spin';
+      const t = document.createElement('span'); t.textContent = 'Adding photo…';
+      ph.append(sp, t); div.append(ph, rm); box.append(div); return;
+    }
     meta.textContent = `${p.w}×${p.h}${Math.max(p.w, p.h) >= TILE_FROM ? ' · read as 4 tiles' : ''}`;
     div.append(img, rm, meta);
-    for (const [bad, text] of [[p.quality.blurry, 'Looks blurry: hold steady and retake if you can.'], [p.quality.overExposed, 'Bright light behind: try another angle.']]) {
+    if (!p.quality) { const n = document.createElement('div'); n.className = 'note'; n.textContent = 'Checking sharpness…'; div.append(n); }
+    else for (const [bad, text] of [[p.quality.blurry, 'Looks blurry: hold steady and retake if you can.'], [p.quality.overExposed, 'Bright light behind: try another angle.']]) {
       if (!bad) continue;
       const w = document.createElement('div'); w.className = 'warn'; w.textContent = text; div.append(w);
     }
     box.append(div);
   });
-  $('scan').textContent = photos.length > 1 ? `Scan ${photos.length} photos` : 'Scan';
   updateScanButton();
 }
-function updateScanButton() { $('scan').disabled = !photos.length || !keyInput.value.trim() || !!abortCtrl; }
+function updateScanButton() {
+  const b = $('scan'); if (abortCtrl) return; // the busy label stays while scanning
+  // Never disabled when idle: a tap with something missing says what (see scan()).
+  b.disabled = false;
+  b.textContent = photos.length > 1 ? `Scan ${photos.length} photos` : 'Scan';
+}
 
 // Laplacian variance (sharpness) and blown-out pixels on a 512 px grey copy.
 function assessQuality(bitmap) {
@@ -472,21 +516,32 @@ function cleanItems(raw, call, counters) {
 }
 
 // ---------- scan ----------
-$('cancel').onclick = () => abortCtrl?.abort();
+$('cancel').onclick = () => { $('progCount').textContent = 'Cancelling…'; abortCtrl?.abort(); };
 $('scan').onclick = scan;
 
 async function scan() {
   const key = keyInput.value.trim();
-  if (!key || !photos.length) return;
+  if (!key) { $('error').textContent = 'Paste your Gemini API key in step 1 first.'; keyInput.focus(); keyInput.scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+  if (!photos.length) { $('error').textContent = 'Add a photo first: take one or choose one above.'; $('pickBtn').focus(); return; }
   $('error').textContent = ''; $('results').hidden = true;
   abortCtrl = new AbortController(); const signal = abortCtrl.signal;
-  updateScanButton(); $('cancel').hidden = false; $('progress').style.display = 'block';
+  const scanBtn = $('scan'); scanBtn.disabled = true; scanBtn.classList.add('busy');
+  scanBtn.innerHTML = '<span class="spin"></span>Scanning…';
+  $('cancel').hidden = false; $('progress').style.display = 'block';
   $('progCount').textContent = 'Preparing photos…'; $('progLatest').textContent = ''; $('progPart').textContent = '';
+  $('progress').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  await new Promise((r) => setTimeout(r, 20)); // paint the feedback first (rAF would stall in a background tab)
   const t0 = performance.now(); let firstItemAt = null, streamed = 0, done = 0; const latest = [];
   const counters = { nonFood: 0 };
   try {
     const calls = [];
-    for (let i = 0; i < photos.length; i++) calls.push(...await planCalls(photos[i], i));
+    for (let i = 0; i < photos.length; i++) {
+      $('progCount').textContent = photos.length > 1 ? `Preparing photo ${i + 1} of ${photos.length}…` : 'Preparing photo…';
+      await photos[i].ready;
+      if (!photos[i].bitmap) continue;
+      calls.push(...await planCalls(photos[i], i));
+    }
+    if (!calls.length) throw new Error('No photo could be read.');
     const prepMs = performance.now() - t0;
     const showPart = () => { $('progPart').textContent = calls.length > 1 ? `Reading part ${Math.min(done + 1, calls.length)} of ${calls.length}` : ''; };
     $('progCount').textContent = photos.length > 1 ? `Reading ${photos.length} photos…` : 'Finding foods…'; showPart();
@@ -522,7 +577,9 @@ async function scan() {
   } catch (err) {
     $('error').textContent = signal.aborted ? 'Scan cancelled.' : friendly(err);
   } finally {
-    abortCtrl = null; $('cancel').hidden = true; $('progress').style.display = 'none'; updateScanButton();
+    abortCtrl = null; $('cancel').hidden = true; $('progress').style.display = 'none';
+    $('scan').classList.remove('busy'); updateScanButton();
+    if (!$('results').hidden) $('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 }
 
@@ -535,10 +592,22 @@ function friendly(err) {
   return m;
 }
 
+// ---------- feedback ----------
+let toastTimer = null;
+function toast(text, undo) {
+  $('toastText').textContent = text;
+  const u = $('toastUndo'); u.hidden = !undo; u.onclick = () => { undo(); hideToast(); };
+  $('toast').classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(hideToast, undo ? 5000 : 2200);
+}
+function hideToast() { $('toast').classList.remove('show'); }
+
 // ---------- results ----------
 let lastStats = null;
-function renderResults(stats) {
-  lastStats = stats || lastStats; const s = lastStats;
+function renderResults(arg) {
+  const flashItem = arg && arg.name !== undefined ? arg : null; // an item to highlight
+  if (arg && !flashItem) lastStats = arg;
+  const s = lastStats;
   $('results').hidden = false;
   const toCheck = items.filter((i) => i.conf === 'guess').length;
   const stat = (big, small) => { const d = document.createElement('div'); d.className = 'stat'; const b = document.createElement('b'); b.textContent = big; const sp = document.createElement('span'); sp.textContent = small; d.append(b, sp); return d; };
@@ -558,7 +627,7 @@ function renderResults(stats) {
     const g = document.createElement('div'); g.className = 'group';
     const h = document.createElement('h3'); h.textContent = `${type} (${inType.length})`;
     const grid = document.createElement('div'); grid.className = 'grid';
-    for (const it of inType) grid.append(card(it));
+    for (const it of inType) { const c = card(it); if (it === flashItem) c.classList.add('flash'); grid.append(c); }
     g.append(h, grid); groups.append(g);
   }
 }
@@ -568,7 +637,13 @@ function card(it) {
   const name = document.createElement('div'); name.className = 'name'; name.textContent = it.name;
   const del = document.createElement('button'); del.className = 'del'; del.type = 'button'; del.textContent = '✕';
   del.setAttribute('aria-label', `Remove ${it.name}`);
-  del.onclick = () => { items = items.filter((x) => x !== it); renderResults(); };
+  del.onclick = () => {
+    const at = items.indexOf(it); d.classList.add('gone');
+    setTimeout(() => {
+      items = items.filter((x) => x !== it); renderResults();
+      toast(`Removed ${it.name}`, () => { items.splice(Math.min(at, items.length), 0, it); renderResults(it); });
+    }, 140);
+  };
   d.append(name, del);
   if (it.conf === 'guess') {
     const b = document.createElement('span'); b.className = 'badge maybe'; b.textContent = 'Maybe';
@@ -585,14 +660,14 @@ function card(it) {
     for (const a of it.alts) {
       const b = document.createElement('button'); b.type = 'button'; b.textContent = a;
       b.setAttribute('aria-label', `Rename to ${a}`);
-      b.onclick = () => { it.name = a; it.conf = 'sure'; it.alts = []; renderResults(); };
+      b.onclick = () => { const old = it.name; it.name = a; it.conf = 'sure'; it.alts = []; renderResults(it); toast(`Renamed ${old} to ${a}`); };
       alts.append(b);
     }
     d.append(alts);
   }
   if (it.conf !== 'sure') {
     const ok = document.createElement('button'); ok.className = 'ok'; ok.type = 'button'; ok.textContent = '✓ Looks right';
-    ok.onclick = () => { it.conf = 'sure'; it.alts = []; renderResults(); };
+    ok.onclick = () => { it.conf = 'sure'; it.alts = []; renderResults(it); toast(`Confirmed ${it.name}`); };
     d.append(ok);
   }
   return d;
