@@ -115,7 +115,7 @@
         <tr><td>Sure precision</td><td>Items marked <code>sure</code> that are correct</td><td>≥ 90%</td></tr>
         <tr><td>Non-food leaks</td><td>Medicine, supplements or skincare added as food</td><td>0</td></tr>
         <tr><td>Latency</td><td>Median wall time, including tiles and zoom</td><td>≤ 15 s</td></tr>
-        <tr><td>Cost</td><td>Median tokens × list price, from <code>usageMetadata</code></td><td>≤ 2× the Phase 1 baseline (otherwise ask)</td></tr>
+        <tr><td>Cost</td><td>Median tokens × list price, from <code>usageMetadata</code></td><td>≤ $0.10 per scan at today's Argon price (revision 3; was ≤ 2× the Phase 1 baseline)</td></tr>
       </tbody>
     </table>
     <p class="meta">Every result is the median of 3 runs per photo. One run proves nothing.</p>
@@ -185,7 +185,7 @@
       <h4>2.1. Keep the original</h4>
       <ul class="checklist">
         <li><code class="status">[x]</code> Gallery: remove the 2048 px <code>maxWidth</code>/<code>maxHeight</code> and <code>imageQuality</code> added earlier, so the picker returns the original. Camera: <code>ResolutionPreset.max</code>, falling back to <code>veryHigh</code> if initialization fails.</li>
-        <li><code class="status">[wip]</code> <code>photo_prep.dart</code>: bake EXIF orientation, keep the decoded original in memory, and derive a 2048 px q85 overview for upload. Uploads never carry the full original. On web, time a 24 MP decode; if it's over 1.5 s, cap the kept original at 4096 px and note it.</li>
+        <li><code class="status">[wip]</code> <code>photo_prep.dart</code>: bake EXIF orientation, keep the decoded original in memory, and derive a 2048 px q85 overview for upload. Uploads never carry the full original. On web, time a 24 MP decode; if it's over 1.5 s, cap the kept original at 4096 px and note it. <em>Measured 2026-10-25 (Dart VM, tool/scan_eval/bench/prep_timing_test.dart): 24 MP prep 2.9 s, already over 1.5 s before web's slower JS and with no isolate on web; a 4096 cap makes it slower (4.4 s), because the cost is the pure-Dart decode, not the size kept. Follow-up: decode with the engine's codec (<code>ui.instantiateImageCodec</code> with a target size, native on every platform) and keep pure Dart only for crops and the JPEG encode. To be measured in Chrome.</em></li>
       </ul>
       <h4>2.2. Prompt and schema v2</h4>
       <ul class="checklist">
@@ -205,8 +205,10 @@
           <tr><td><code>v2-high</code></td><td>Prompt and schema v2; overview at <code>MEDIA_RESOLUTION_HIGH</code></td><td>What does never-omit plus zones buy on its own?</td></tr>
           <tr><td><code>v2-ultra</code></td><td>Overview at per-part <code>ULTRA_HIGH</code> (2240 tokens, about +$0.002)</td><td>Does more budget on one image help? Theory predicts only about +41% detail per object.</td></tr>
           <tr><td><code>v2-medium</code></td><td>Thinking <code>medium</code></td><td>Do blurry items need more reasoning?</td></tr>
+          <tr><td><code>v2-lean</code> (revision 3)</td><td>Trimmed item schema (no description, amount or photo index; short keys) and a stricter prompt: "sure" only with a readable label or unmistakable shape; one guess per name, other guesses in alternatives</td><td>How much latency and cost does output size explain, and does the stricter prompt lift sure precision to 90%?</td></tr>
         </tbody>
       </table>
+      <p><strong>Measured 2026-10-25</strong> (median of 3; read+recog recall blurry / clear): baseline 32% / 47%, 11 s / 23 s, $0.009 / $0.015. <code>v2-high</code> 79% / 90%, sure precision 100% / 83%, 49 s / 87 s, $0.045 / $0.095. <code>v2-medium</code> 79% / 93%, 100% / 86%, 43 s / 78 s. <code>v2-ultra</code> 74% / 80%, slower, 3 of 6 runs dropped by the network. Recall targets met; latency and cost are output-bound (about 50 items at about 100 tokens/s).</p>
       <h4>2.5. Testing Strategy</h4>
       <ul class="checklist">
         <li><code class="status">[x]</code> <code>flutter test test/photo_prep_test.dart test/fridge_food_recognition_test.dart</code> — orientation bake, overview size, rotation of boxes, v2 parsing, never-omit, <code>isFood</code> filtering.</li>
@@ -237,10 +239,14 @@
       <ul class="checklist">
         <li><code class="status">[]</code> One call with <code>codeExecution</code> on Argon, as a comparison only. In 2610.09313 Gemini's own zoom agent used about <strong>376k input tokens per image</strong>, so it ships only if the eval shows it meeting the cost target, which is unlikely. If structured output doesn't work alongside the tool, mark <code>[f]</code>.</li>
       </ul>
+      <h4>3.6. Streaming (revision 3)</h4>
+      <ul class="checklist">
+        <li><code class="status">[]</code> Use <code>streamGenerateContent</code> (SSE) for the scan calls and parse complete item objects from the partial JSON as they arrive. The scan dialog shows the running count and the latest names, so the first items appear within seconds even when a full scan takes longer. Retry and abort keep working; usage comes from the final chunk.</li>
+      </ul>
       <h4>3.5. Testing Strategy</h4>
       <ul class="checklist">
         <li><code class="status">[]</code> <code>flutter test test/scan_merge_test.dart test/photo_prep_test.dart</code> — tile planner (no tile zooms out, overlap ≥ 12%, small photos skip tiling), coordinate mapping, dedupe in overlaps, confidence-only replacement, deadline drop.</li>
-        <li><code class="status">[]</code> Live: <code>v3-grid</code>, <code>v3-zones</code>, <code>v3-zoom</code> and the best combination on both photos. Pick the cheapest that meets the recall targets within 15 s; if none fits the 2× cost budget, report the numbers and ask the owner.</li>
+        <li><code class="status">[]</code> Live: <code>v3-grid</code>, <code>v3-zones</code>, <code>v3-zoom</code> and the best combination on both photos. Pick the cheapest that meets the recall targets within 15 s; if none fits the $0.10-per-scan cap, report the numbers and ask the owner.</li>
       </ul>
       <div class="loop">🔁 <strong>Do not exit this phase until every box above is checked.</strong> If any command fails, fix the cause and re-run — loop until all pass.</div>
     </div>
@@ -403,6 +409,10 @@
 
   <section id="amendments">
     <h2>Amendments</h2>
+    <details>
+      <summary>2026-10-25T15:10:00Z — Revision 3 during execution: speed first, absolute cost cap</summary>
+      <p>Phase 2 measured v2 meeting both recall targets but at 43–87 s and 5–6× the baseline's cost, because listing everything means about 50 items instead of 18 and output is generated at about 100 tokens/s. The owner chose speed first: trim the per-item output (<code>v2-lean</code>), stream items to the screen (new 3.6), and use parallel tiles to bring wall time near 15 s. The cost target "≤ 2× baseline" is replaced by "≤ $0.10 per scan", since the baseline was cheap only because it dropped two thirds of the food. The owner also approved a stricter prompt for "sure" and one guess per name. Scorer decision recorded: only an item's name (including each half of "X or Y") can make it a non-food leak; alternatives count toward hits only.</p>
+    </details>
     <details>
       <summary>2026-10-24T22:20:00Z — Revision 2 before execution: improvements for clear photos as well as blurry ones</summary>
       <p>The owner asked for improvements for both kinds of photo. New research: native-pixel tiles with overlap and the keep-the-original change for large clear photos; sharpest-of-burst capture and model-reported tilt for blurry photos; no upscaling or deblurring; agentic zoom demoted after its measured token cost; the answer key split into tiers; the clear-photo recall target raised to 90% on readable and recognizable items. The plan had not been executed, so no status markers changed.</p>

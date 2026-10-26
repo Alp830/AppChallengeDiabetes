@@ -377,6 +377,7 @@ class FridgeScanService {
     String mediaResolution = 'MEDIA_RESOLUTION_HIGH',
     bool perPartUltraHigh = false,
     String thinkingLevel = 'low',
+    ScanStyle style = ScanStyle.full,
   }) async {
     final token = apiKey ?? FridgePhotoFoodAgent._apiKey;
     if (token.isEmpty) {
@@ -402,6 +403,7 @@ class FridgeScanService {
               mediaResolution: mediaResolution,
               perPartUltraHigh: perPartUltraHigh,
               thinkingLevel: thinkingLevel,
+              style: style,
             ),
           );
 
@@ -453,6 +455,7 @@ class FridgeScanService {
       return parseScanResponse(
         jsonDecode(FridgePhotoFoodAgent._stripJsonFence(text)),
         usage: FridgeScanUsage.fromJson(data['usageMetadata']),
+        style: style,
       );
     } on TypeError catch (error) {
       throw FormatException('Gemini food scan returned an odd shape: $error');
@@ -465,6 +468,7 @@ class FridgeScanService {
     String mediaResolution = 'MEDIA_RESOLUTION_HIGH',
     bool perPartUltraHigh = false,
     String thinkingLevel = 'low',
+    ScanStyle style = ScanStyle.full,
   }) {
     return {
       'contents': [
@@ -477,7 +481,7 @@ class FridgeScanService {
               },
               if (perPartUltraHigh) 'mediaResolution': {'level': _ultraHigh},
             },
-            {'text': buildPrompt()},
+            {'text': buildPrompt(style: style)},
           ],
         },
       ],
@@ -489,7 +493,9 @@ class FridgeScanService {
         // JSON is longer than v1's, and a cut-off reply costs a whole retry.
         'maxOutputTokens': 32768,
         'responseMimeType': 'application/json',
-        'responseSchema': scanResponseSchema(),
+        'responseSchema': style == ScanStyle.lean
+            ? leanScanResponseSchema()
+            : scanResponseSchema(),
       },
     };
   }
@@ -500,7 +506,9 @@ class FridgeScanService {
   static ScanResponse parseScanResponse(
     Object? decoded, {
     FridgeScanUsage usage = const FridgeScanUsage(),
+    ScanStyle style = ScanStyle.full,
   }) {
+    final lean = style == ScanStyle.lean;
     final Map<String, dynamic> root = decoded is Map<String, dynamic>
         ? decoded
         : {'items': decoded};
@@ -518,7 +526,7 @@ class FridgeScanService {
     final items = <ScannedItem>[];
     for (final json in (root['items'] as List<dynamic>? ?? const [])
         .whereType<Map<String, dynamic>>()) {
-      if (json['isFood'] == false) {
+      if (json[lean ? 'food' : 'isFood'] == false) {
         droppedNonFood++;
         continue;
       }
@@ -526,24 +534,35 @@ class FridgeScanService {
       if (name.isEmpty || FridgePhotoFoodAgent._isPlaceholderName(name)) {
         continue;
       }
-      final description = (json['description'] ?? '').toString().trim();
+      final description = lean
+          ? ''
+          : (json['description'] ?? '').toString().trim();
       items.add(
         ScannedItem(
           name: name,
-          amount: (json['amount'] ?? '').toString().trim(),
-          foodType: FoodType.fromLabel((json['foodType'] ?? '').toString().trim()),
-          confidence: ScanConfidence.fromLabel(json['confidence']),
-          alternatives: _alternatives(json['alternatives'], name),
-          location: (json['location'] ?? '').toString().trim(),
-          box2d: _box(json['box_2d'] ?? json['box2d']),
-          photoIndex: _toInt(json['photoIndex']) ?? 0,
+          amount: lean ? '' : (json['amount'] ?? '').toString().trim(),
+          foodType: FoodType.fromLabel(
+            (json[lean ? 'type' : 'foodType'] ?? '').toString().trim(),
+          ),
+          confidence: ScanConfidence.fromLabel(
+            json[lean ? 'conf' : 'confidence'],
+          ),
+          alternatives: _alternatives(
+            json[lean ? 'alts' : 'alternatives'],
+            name,
+          ),
+          location: (json[lean ? 'zone' : 'location'] ?? '').toString().trim(),
+          box2d: _box(lean ? json['box'] : json['box_2d'] ?? json['box2d']),
+          photoIndex: lean ? 0 : _toInt(json['photoIndex']) ?? 0,
           description: description.isEmpty ? null : description,
-          expiryEstimateDays: _toInt(json['expiryEstimateDays']),
+          expiryEstimateDays: _toInt(
+            json[lean ? 'days' : 'expiryEstimateDays'],
+          ),
         ),
       );
     }
 
-    final tilt = root['tiltDegrees'];
+    final tilt = root[lean ? 'tilt' : 'tiltDegrees'];
     return ScanResponse(
       zones: zones,
       items: items,
@@ -592,10 +611,12 @@ class FridgeScanService {
   }
 
   /// The v2 prompt. Public so tests can check what it asks for.
-  static String buildPrompt() {
+  static String buildPrompt({ScanStyle style = ScanStyle.full}) {
     final foodTypes = FoodType.values
         .map((foodType) => foodType.label)
         .join(', ');
+
+    if (style == ScanStyle.lean) return _leanPrompt(foodTypes);
 
     return '''
 You are a fridge inventory assistant. Inspect the entire image and list every visible food and drink item. Do not leave anything out: a missing item is worse than a doubtful one.
@@ -645,6 +666,41 @@ Return only valid JSON, with no Markdown or explanation, in this shape:
   ],
   "tiltDegrees": 0
 }
+''';
+  }
+
+  static String _leanPrompt(String foodTypes) {
+    return '''
+You are a fridge inventory assistant. Inspect the whole image and list every visible food and drink item. A missing item is worse than a doubtful one, but only list what you can point to.
+
+Work zone by zone: each shelf from top to bottom, then the drawers, then the door bins from top to bottom. For each zone, first state how many items you count in it, then list those items. Combine identical items into one entry.
+
+Rules:
+- Check every bag, jar, box and container, including partly visible, opaque or nested ones and items at the image edges.
+- Name the contents, not the container: "tomato stew", not "glass dish". If the contents are hidden, give your best guess.
+- READ any visible label and identify the product from it, not from shape or colour.
+- Consider dried herbs, herbal teas (linden/ihlamur, chamomile, mint), spices and regional foods. Never call dried herbs "bread".
+- Unlabeled dry staples: fine matte white powder = flour; crystalline white = sugar or salt; small oblong translucent grains = rice; golden cracked grains = bulgur; round dried seeds = beans, chickpeas or lentils; also pasta, semolina, oats.
+- "sure" only when you can read the label or the item is unmistakable from its shape. Anything inferred from colour, a container or a partial view is "likely" or "guess".
+- The name is ONE item. Never write "X or Y" in a name; put other possibilities in "alts".
+- Do not list an item unless you can point to it: no items inferred from context (e.g. "canned fish" or "blueberries" because something dark is visible). If you see an object but cannot tell what it is, list your best guess as "guess".
+- Never output "Unknown", "Unidentified" or any placeholder name.
+- Keep every string short: names at most 4 words, zone names like "shelf 2", "door bin 1".
+
+Keys for each item:
+- "name": what it is.
+- "type": one of: $foodTypes
+- "conf": "sure", "likely" or "guess".
+- "alts": up to two other names it could be (empty array if "sure").
+- "zone": the zone it is in.
+- "box": [ymin, xmin, ymax, xmax] on a 0 to 1000 grid over the whole image.
+- "food": true for food and drink; false for medicine, supplements, vitamins, protein powders, skincare, household items and plants.
+- "days": typical whole days from today until it spoils in a fridge, or null if unknown.
+
+Also give "tilt": the clockwise rotation in degrees the photo needs to be level (0 if level, negative for counter-clockwise).
+
+Return only valid JSON, no Markdown, in this shape:
+{"zones": [{"name": "shelf 1", "count": 1}], "items": [{"name": "Bananas", "type": "Produce", "conf": "sure", "alts": [], "zone": "shelf 1", "box": [120, 80, 260, 310], "food": true, "days": 5}], "tilt": 0}
 ''';
   }
 }

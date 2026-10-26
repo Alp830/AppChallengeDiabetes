@@ -1,0 +1,261 @@
+{
+ "variant": "v2-lean",
+ "photo": "blurry",
+ "run": 3,
+ "latencyMs": 28581,
+ "promptTokens": 2380,
+ "candidatesTokens": 2897,
+ "thoughtsTokens": 0,
+ "items": [
+  {
+   "name": "Oats canister",
+   "alternatives": [
+    "Breadcrumbs",
+    "Cornmeal"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Eggs",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Wine",
+   "alternatives": [
+    "Sparkling water",
+    "Vinegar"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Cut fruit",
+   "alternatives": [
+    "Cooked vegetables",
+    "Leftovers"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Soup",
+   "alternatives": [
+    "Applesauce",
+    "Hummus"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Yogurt",
+   "alternatives": [
+    "Sour cream",
+    "Cottage cheese"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Butter",
+   "alternatives": [
+    "Cheese",
+    "Tofu"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Tomato stew",
+   "alternatives": [
+    "Salsa",
+    "Marinated meat"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Cooked meal",
+   "alternatives": [
+    "Baked goods",
+    "Cut vegetables"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Jam",
+   "alternatives": [
+    "Salsa",
+    "Pasta sauce"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Cheese block",
+   "alternatives": [
+    "Butter",
+    "Mustard packet"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Honey",
+   "alternatives": [
+    "Jam",
+    "Pickles"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Juice boxes",
+   "alternatives": [
+    "Butter sticks",
+    "Matcha boxes"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Salad",
+   "alternatives": [
+    "Mixed vegetables",
+    "Leftover pasta"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Eggs",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Cauliflower",
+   "alternatives": [
+    "Garlic bulbs",
+    "Mushrooms"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Peanut butter",
+   "alternatives": [
+    "Caramel sauce",
+    "Broth"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Tomato sauce",
+   "alternatives": [
+    "Salsa",
+    "Hot sauce"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Produce in bag",
+   "alternatives": [
+    "Meat",
+    "Cheese"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Leafy greens",
+   "alternatives": [
+    "Herbs",
+    "Celery"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Berry jam",
+   "alternatives": [
+    "Pickled beets",
+    "Salsa"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Mustard",
+   "alternatives": [
+    "Mayonnaise",
+    "Ghee"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Guacamole",
+   "alternatives": [
+    "Pesto",
+    "Relish"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Orange juice",
+   "alternatives": [
+    "Cheese",
+    "Melon"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Salad dressing",
+   "alternatives": [
+    "Creamer",
+    "Kefir"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Electrolyte drink",
+   "alternatives": [
+    "Aloe vera drink",
+    "Water"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Milk",
+   "alternatives": [
+    "Yogurt drink",
+    "Creamer"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Hot sauce",
+   "alternatives": [
+    "Ketchup",
+    "Chili oil"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Soy sauce",
+   "alternatives": [
+    "Balsamic vinegar",
+    "Dark beer"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Tortilla chips",
+   "alternatives": [
+    "Shredded cheese",
+    "Frozen berries"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Marinade",
+   "alternatives": [
+    "Worcestershire sauce",
+    "Maple syrup"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Barbecue sauce",
+   "alternatives": [
+    "Salsa",
+    "Jam"
+   ],
+   "confidence": "guess"
+  }
+ ]
+}

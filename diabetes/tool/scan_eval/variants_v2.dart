@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:diabetes/fridge/scan/fridge_scan_service.dart';
 import 'package:diabetes/fridge/scan/photo_prep.dart';
+import 'package:diabetes/fridge/scan/scan_models.dart';
 
 import 'scorer.dart';
 import 'variants.dart';
@@ -20,6 +21,8 @@ final Map<String, ScanVariantV2> v2Variants = {
       runV2(photoBytes, apiKey: apiKey, perPartUltraHigh: true),
   'v2-medium': (photoBytes, {required apiKey}) =>
       runV2(photoBytes, apiKey: apiKey, thinkingLevel: 'medium'),
+  'v2-lean': (photoBytes, {required apiKey}) =>
+      runV2(photoBytes, apiKey: apiKey, style: ScanStyle.lean),
 };
 
 /// The app's v2 path: derive the 2048 px overview from the original photo,
@@ -30,6 +33,7 @@ Future<VariantResult> runV2(
   String mediaResolution = 'MEDIA_RESOLUTION_HIGH',
   bool perPartUltraHigh = false,
   String thinkingLevel = 'low',
+  ScanStyle style = ScanStyle.full,
 }) async {
   final photo = preparePhoto(photoBytes);
   final response = await FridgeScanService.scanV2(
@@ -38,6 +42,7 @@ Future<VariantResult> runV2(
     mediaResolution: mediaResolution,
     perPartUltraHigh: perPartUltraHigh,
     thinkingLevel: thinkingLevel,
+    style: style,
   );
   return VariantResult(
     items: [

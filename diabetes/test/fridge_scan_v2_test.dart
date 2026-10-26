@@ -267,6 +267,163 @@ void main() {
     });
   });
 
+  group('scanV2 lean style', () {
+    late http.Request captured;
+    Future<Map<String, dynamic>> sendLean() async {
+      await FridgeScanService.scanV2(
+        _jpeg,
+        client: MockClient((request) async {
+          captured = request;
+          return _geminiResponse({'zones': [], 'items': [], 'tilt': 0});
+        }),
+        apiKey: 'test-token',
+        style: ScanStyle.lean,
+      );
+      return jsonDecode(captured.body) as Map<String, dynamic>;
+    }
+
+    Future<ScanResponse> scanLean(Object payload) => FridgeScanService.scanV2(
+      _jpeg,
+      client: MockClient((_) async => _geminiResponse(payload)),
+      apiKey: 'test-token',
+      style: ScanStyle.lean,
+    );
+
+    test('schema uses short keys and drops amount, description, photoIndex',
+        () async {
+      final body = await sendLean();
+      final schema =
+          (body['generationConfig'] as Map)['responseSchema'] as Map;
+      final top = schema['properties'] as Map;
+      final item = (top['items'] as Map)['items'] as Map;
+      final props = item['properties'] as Map;
+
+      expect(schema['propertyOrdering'], ['zones', 'items', 'tilt']);
+      expect(top.keys, containsAll(['zones', 'items', 'tilt']));
+      expect(item['propertyOrdering'], [
+        'name',
+        'type',
+        'conf',
+        'alts',
+        'zone',
+        'box',
+        'food',
+        'days',
+      ]);
+      expect(props.keys, unorderedEquals(item['propertyOrdering'] as List));
+      expect(props.containsKey('amount'), isFalse);
+      expect(props.containsKey('description'), isFalse);
+      expect(props.containsKey('photoIndex'), isFalse);
+      expect(item['required'], isNot(contains('days')));
+      expect((props['conf'] as Map)['enum'], ['sure', 'likely', 'guess']);
+      expect((props['type'] as Map)['enum'], contains('Produce'));
+    });
+
+    test('prompt carries the owner-approved confidence rules', () async {
+      final body = await sendLean();
+      final parts = (body['contents'] as List).single['parts'] as List;
+      final prompt = (parts.last as Map)['text'] as String;
+
+      expect(prompt, contains('Never write "X or Y" in a name'));
+      expect(prompt, contains('"sure" only when you can read the label'));
+      expect(prompt, contains('Do not list an item unless you can point to it'));
+      expect(prompt, contains('protein powders'));
+      expect(prompt, contains('names at most 4 words'));
+      expect(prompt, contains('zone by zone'));
+      expect(prompt, isNot(contains('photoIndex')));
+      expect(prompt, isNot(contains('amount')));
+    });
+
+    test('default style is still full', () async {
+      expect(
+        FridgeScanService.buildPrompt(),
+        FridgeScanService.buildPrompt(style: ScanStyle.full),
+      );
+      final body = FridgeScanService.buildRequestBody(_jpeg);
+      expect(
+        jsonEncode(body),
+        jsonEncode(
+          FridgeScanService.buildRequestBody(_jpeg, style: ScanStyle.full),
+        ),
+      );
+      expect(
+        (body['generationConfig'] as Map)['responseSchema'],
+        scanResponseSchema(),
+      );
+    });
+
+    test('maps lean keys onto ScannedItem', () async {
+      final response = await scanLean({
+        'zones': [
+          {'name': 'shelf 1', 'count': 1},
+        ],
+        'items': [
+          {
+            'name': 'Oat milk',
+            'type': 'Dairy',
+            'conf': 'guess',
+            'alts': ['Soy milk'],
+            'zone': 'door bin 1',
+            'box': [10, 20, 300, 400],
+            'food': true,
+            'days': 7,
+          },
+        ],
+        'tilt': -2.5,
+      });
+
+      final item = response.items.single;
+      expect(item.name, 'Oat milk');
+      expect(item.foodType, FoodType.fromLabel('Dairy'));
+      expect(item.confidence, ScanConfidence.guess);
+      expect(item.alternatives, ['Soy milk']);
+      expect(item.location, 'door bin 1');
+      expect(item.box2d, [10, 20, 300, 400]);
+      expect(item.expiryEstimateDays, 7);
+      expect(item.amount, isEmpty);
+      expect(item.description, isNull);
+      expect(item.photoIndex, 0);
+      expect(item.toFoodItem().amount, '1 Oat milk');
+      expect(response.zones.single.name, 'shelf 1');
+      expect(response.tiltDegrees, -2.5);
+    });
+
+    test('drops and counts food:false, drops placeholders', () async {
+      final response = await scanLean({
+        'zones': [],
+        'items': [
+          {'name': 'Vitamin D', 'food': false},
+          {'name': 'Unknown', 'food': true},
+          {'name': 'Eggs', 'food': true},
+        ],
+        'tilt': 0,
+      });
+
+      expect(response.items.map((item) => item.name), ['Eggs']);
+      expect(response.droppedNonFood, 1);
+    });
+
+    test('clamps alts to two and boxes to 0-1000', () async {
+      final response = await scanLean({
+        'zones': [],
+        'items': [
+          {
+            'name': 'Jam',
+            'conf': 'guess',
+            'alts': ['Honey', 'Syrup', 'Marmalade'],
+            'box': [-50, 20, 1200, 900],
+            'food': true,
+          },
+        ],
+        'tilt': 0,
+      });
+
+      final item = response.items.single;
+      expect(item.alternatives, ['Honey', 'Syrup']);
+      expect(item.box2d, [0, 20, 1000, 900]);
+    });
+  });
+
   group('scanV2 errors', () {
     test('a blocked prompt is not retryable', () async {
       final blocked = http.Response(

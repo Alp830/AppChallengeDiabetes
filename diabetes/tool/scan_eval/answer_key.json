@@ -1,6 +1,6 @@
 {
  "version": 1,
- "status": "confirmed by owner 2026-10-25 (Kirkland green boxes = butter; top-right door shelf = medicine/supplements); names refined from native-resolution crops",
+ "status": "confirmed by owner 2026-10-25 (Kirkland green boxes = butter; top-right door shelf = medicine/supplements); names refined from native-resolution crops; 2026-10-25 owner: dark top-shelf bottle is medicine (was dark_sauce), blue drawer container is figs, MSC can accepts 'canned fish'",
  "photos": {
   "blurry": {
    "file": "photos/blurry_webcam.jpg"
@@ -53,22 +53,6 @@
    "visibleInBlurryPhoto": true
   },
   {
-   "id": "dark_sauce",
-   "names": [
-    "dark sauce",
-    "soy sauce",
-    "balsamic vinegar",
-    "vinegar",
-    "pomegranate molasses",
-    "syrup",
-    "sauce"
-   ],
-   "zone": "top shelf",
-   "isFood": true,
-   "tier": "recognizable",
-   "visibleInBlurryPhoto": true
-  },
-  {
    "id": "orange_food_strainer",
    "names": [
     "apricots",
@@ -98,7 +82,11 @@
    "names": [
     "tuna",
     "canned tuna",
-    "tuna can"
+    "tuna can",
+    "canned fish",
+    "fish can",
+    "sardines",
+    "salmon"
    ],
    "zone": "shelf 2",
    "isFood": true,
@@ -653,6 +641,33 @@
    "zone": "door",
    "isFood": false,
    "tier": "recognizable",
+   "visibleInBlurryPhoto": false
+  },
+  {
+   "id": "nf_dark_bottle",
+   "names": [
+    "dark medicine bottle",
+    "medicine bottle",
+    "liquid medicine",
+    "tonic"
+   ],
+   "zone": "top shelf",
+   "isFood": false,
+   "tier": "recognizable",
+   "visibleInBlurryPhoto": true
+  },
+  {
+   "id": "figs",
+   "names": [
+    "figs",
+    "fig",
+    "fresh figs",
+    "blueberries",
+    "plums"
+   ],
+   "zone": "drawers",
+   "isFood": true,
+   "tier": "hidden",
    "visibleInBlurryPhoto": false
   }
  ]

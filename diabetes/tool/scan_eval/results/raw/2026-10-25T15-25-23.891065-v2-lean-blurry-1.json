@@ -1,0 +1,268 @@
+{
+ "variant": "v2-lean",
+ "photo": "blurry",
+ "run": 1,
+ "latencyMs": 26931,
+ "promptTokens": 2380,
+ "candidatesTokens": 2835,
+ "thoughtsTokens": 0,
+ "items": [
+  {
+   "name": "Quaker Oats",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Eggs",
+   "alternatives": [
+    "Mushrooms"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Glass bottle drink",
+   "alternatives": [
+    "Kefir",
+    "Vinegar"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Stacked tubs leftovers",
+   "alternatives": [
+    "Hummus",
+    "Soup"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Yogurt",
+   "alternatives": [
+    "Sour cream",
+    "Cottage cheese"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Butter",
+   "alternatives": [
+    "Cheese",
+    "Tofu"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Tomato stew",
+   "alternatives": [
+    "Salsa",
+    "Cooked vegetables"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Small jar condiment",
+   "alternatives": [
+    "Pesto",
+    "Jam"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Cooked meal in pot",
+   "alternatives": [
+    "Stew",
+    "Soup"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Salsa",
+   "alternatives": [
+    "Pasta sauce",
+    "Jam"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Mustard",
+   "alternatives": [
+    "Cheese",
+    "Butter"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Fruit jam",
+   "alternatives": [
+    "Honey",
+    "Pickles"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Green juice boxes",
+   "alternatives": [
+    "Butter sticks",
+    "Herbal tea boxes"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Cooked food leftovers",
+   "alternatives": [
+    "Cut vegetables",
+    "Salad"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Eggs",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Garlic",
+   "alternatives": [
+    "Cauliflower",
+    "Mushrooms"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Produce in bag",
+   "alternatives": [
+    "Lettuce",
+    "Cabbage"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Produce in bag",
+   "alternatives": [
+    "Potatoes",
+    "Onions"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Bagged greens",
+   "alternatives": [
+    "Broccoli",
+    "Spinach"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Snack pouch",
+   "alternatives": [
+    "Cheese",
+    "Sauce packet"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Mustard",
+   "alternatives": [
+    "Hot sauce",
+    "Vitamins"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Guacamole",
+   "alternatives": [
+    "Lime",
+    "Pesto"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Orange juice",
+   "alternatives": [
+    "Cheese",
+    "Butter"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Salad dressing",
+   "alternatives": [
+    "Syrup",
+    "Sauce"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Electrolyte drink",
+   "alternatives": [
+    "Aloe vera drink",
+    "Water"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "White bottle drink",
+   "alternatives": [
+    "Yogurt drink",
+    "Creamer"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Hot sauce",
+   "alternatives": [
+    "Ketchup",
+    "Chili oil"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Dark jar condiment",
+   "alternatives": [
+    "Jam",
+    "Better Than Bouillon"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Relish",
+   "alternatives": [
+    "Pesto",
+    "Pickles"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Peanut butter",
+   "alternatives": [
+    "Salsa",
+    "Pasta sauce"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Tomato sauce",
+   "alternatives": [
+    "Hot sauce",
+    "Salsa"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Dark bottle sauce",
+   "alternatives": [
+    "Soy sauce",
+    "Balsamic vinegar"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Blue snack bag",
+   "alternatives": [
+    "Frozen fruit",
+    "Cheese"
+   ],
+   "confidence": "guess"
+  }
+ ]
+}

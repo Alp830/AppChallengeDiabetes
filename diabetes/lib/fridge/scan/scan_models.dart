@@ -210,3 +210,73 @@ Map<String, dynamic> scanResponseSchema() => {
   'required': ['zones', 'items', 'tiltDegrees'],
   'propertyOrdering': ['zones', 'items', 'tiltDegrees'],
 };
+
+/// Which request shape [FridgeScanService] uses. [full] is the original
+/// camelCase item with amount, description and photoIndex; [lean] drops those
+/// and shortens the keys so Gemini writes fewer output tokens per item.
+enum ScanStyle { full, lean }
+
+/// Structured-output schema for [ScanStyle.lean]. Same layout as
+/// [scanResponseSchema] with short keys and no amount, description or
+/// photoIndex.
+Map<String, dynamic> leanScanResponseSchema() => {
+  'type': 'OBJECT',
+  'properties': {
+    'zones': {
+      'type': 'ARRAY',
+      'items': {
+        'type': 'OBJECT',
+        'properties': {
+          'name': {'type': 'STRING'},
+          'count': {'type': 'INTEGER'},
+        },
+        'required': ['name', 'count'],
+        'propertyOrdering': ['name', 'count'],
+      },
+    },
+    'items': {
+      'type': 'ARRAY',
+      'items': {
+        'type': 'OBJECT',
+        'properties': {
+          'name': {'type': 'STRING'},
+          'type': {
+            'type': 'STRING',
+            'enum': [for (final foodType in FoodType.values) foodType.label],
+          },
+          'conf': {
+            'type': 'STRING',
+            'enum': [
+              for (final confidence in ScanConfidence.values) confidence.label,
+            ],
+          },
+          'alts': {
+            'type': 'ARRAY',
+            'items': {'type': 'STRING'},
+          },
+          'zone': {'type': 'STRING'},
+          'box': {
+            'type': 'ARRAY',
+            'items': {'type': 'INTEGER'},
+          },
+          'food': {'type': 'BOOLEAN'},
+          'days': {'type': 'INTEGER', 'nullable': true},
+        },
+        'required': ['name', 'type', 'conf', 'alts', 'zone', 'box', 'food'],
+        'propertyOrdering': [
+          'name',
+          'type',
+          'conf',
+          'alts',
+          'zone',
+          'box',
+          'food',
+          'days',
+        ],
+      },
+    },
+    'tilt': {'type': 'NUMBER'},
+  },
+  'required': ['zones', 'items', 'tilt'],
+  'propertyOrdering': ['zones', 'items', 'tilt'],
+};

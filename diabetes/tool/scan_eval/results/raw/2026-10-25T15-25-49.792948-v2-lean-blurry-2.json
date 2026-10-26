@@ -1,0 +1,231 @@
+{
+ "variant": "v2-lean",
+ "photo": "blurry",
+ "run": 2,
+ "latencyMs": 25730,
+ "promptTokens": 2380,
+ "candidatesTokens": 2560,
+ "thoughtsTokens": 0,
+ "items": [
+  {
+   "name": "Oats",
+   "alternatives": [
+    "Cookies",
+    "Crackers"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Eggs",
+   "alternatives": [
+    "Butter"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Glass bottle drink",
+   "alternatives": [
+    "Sparkling water",
+    "Wine"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Lentil soup",
+   "alternatives": [
+    "Hummus",
+    "Applesauce"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Cooked food",
+   "alternatives": [
+    "Cheese",
+    "Dip"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Yogurt",
+   "alternatives": [
+    "Sour cream",
+    "Cottage cheese"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Cheese",
+   "alternatives": [
+    "Butter",
+    "Tofu"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Tomato stew",
+   "alternatives": [
+    "Salsa",
+    "Cut fruit"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Cooked meal",
+   "alternatives": [
+    "Meat",
+    "Vegetables"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Jam",
+   "alternatives": [
+    "Salsa",
+    "Tomato paste"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Fruit preserves",
+   "alternatives": [
+    "Pickles",
+    "Sauce"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Cooked vegetables",
+   "alternatives": [
+    "Salad",
+    "Stew"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Eggs",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Cauliflower",
+   "alternatives": [
+    "Mushrooms",
+    "Chicken"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Juice boxes",
+   "alternatives": [
+    "Butter",
+    "Broth"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Produce",
+   "alternatives": [
+    "Meat",
+    "Cheese"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Vegetables",
+   "alternatives": [
+    "Greens",
+    "Fruit"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Mustard",
+   "alternatives": [
+    "Sauce",
+    "Jam"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Guacamole",
+   "alternatives": [
+    "Pesto",
+    "Salsa"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Orange juice",
+   "alternatives": [
+    "Sauce",
+    "Cheese"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Condiment",
+   "alternatives": [
+    "Jam",
+    "Pickles"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Salad dressing",
+   "alternatives": [
+    "Sauce",
+    "Syrup"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Electrolyte drink",
+   "alternatives": [
+    "Water",
+    "Juice"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Sauce",
+   "alternatives": [
+    "Marinade",
+    "Juice"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Jam",
+   "alternatives": [
+    "Peanut butter",
+    "Salsa"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Tomato sauce",
+   "alternatives": [
+    "Hot sauce",
+    "Ketchup"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Snack bag",
+   "alternatives": [
+    "Cheese",
+    "Frozen fruit"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Sauce bottle",
+   "alternatives": [
+    "Soy sauce",
+    "Vinegar"
+   ],
+   "confidence": "guess"
+  }
+ ]
+}
