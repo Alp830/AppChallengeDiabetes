@@ -454,8 +454,8 @@
   "variant": "web manual run (estimated from eval median, not metered)",
   "photo": "clear",
   "run": 1,
-  "promptTokens": null,
-  "outputTokens": null,
+  "promptTokens": 0,
+  "outputTokens": 0,
   "costUsd": 0.0924
  },
  {
@@ -463,8 +463,8 @@
   "variant": "judges demo HTML test (from page usageMetadata)",
   "photo": "clear",
   "run": 1,
-  "promptTokens": null,
-  "outputTokens": null,
+  "promptTokens": 0,
+  "outputTokens": 0,
   "costUsd": 0.091728
  }
 ]

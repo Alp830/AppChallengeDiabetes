@@ -1,6 +1,6 @@
 {
  "version": 1,
- "status": "confirmed by owner 2026-10-25 (Kirkland green boxes = butter; top-right door shelf = medicine/supplements); names refined from native-resolution crops; 2026-10-25 owner: dark top-shelf bottle is medicine (was dark_sauce), blue drawer container is figs, MSC can accepts 'canned fish'; brand 'fontana farms' accepted for the peppercorn dressing (its readable label)",
+ "status": "confirmed by owner 2026-10-25 (Kirkland green boxes = butter; top-right door shelf = medicine/supplements); names refined from native-resolution crops; 2026-10-25 owner: dark top-shelf bottle is medicine (was dark_sauce), blue drawer container is figs, MSC can accepts 'canned fish'; brand 'fontana farms' accepted for the peppercorn dressing (its readable label); 2026-10-25: added freezer, pantry, jars and bottles scenes from the owner's new photos (root draft, not yet confirmed by the owner)",
  "photos": {
   "blurry": {
    "file": "photos/blurry_webcam.jpg"
@@ -10,6 +10,30 @@
   },
   "blurry_burst": {
    "file": "photos/clip_frames/f04.jpg"
+  },
+  "freezer": {
+   "file": "photos/fridge2.jpg",
+   "scene": "freezer"
+  },
+  "pantry_wide": {
+   "file": "photos/p1172.jpg",
+   "scene": "pantry"
+  },
+  "pantry_counter": {
+   "file": "photos/p1171.jpg",
+   "scene": "pantry"
+  },
+  "jars_close": {
+   "file": "photos/p1173.jpg",
+   "scene": "jars"
+  },
+  "jars_wide": {
+   "file": "photos/p1174.jpg",
+   "scene": "jars"
+  },
+  "bottles": {
+   "file": "photos/p1175.jpg",
+   "scene": "bottles"
   }
  },
  "items": [
@@ -673,6 +697,486 @@
    "isFood": true,
    "tier": "hidden",
    "visibleInBlurryPhoto": false
+  },
+  {
+   "id": "freezer_meat_packs",
+   "names": [
+    "frozen meat",
+    "meat",
+    "ground meat",
+    "ground beef",
+    "beef",
+    "chicken",
+    "lamb"
+   ],
+   "zone": "freezer",
+   "isFood": true,
+   "tier": "recognizable",
+   "visibleInBlurryPhoto": false,
+   "scene": "freezer"
+  },
+  {
+   "id": "freezer_frozen_berries_bag",
+   "names": [
+    "frozen strawberries",
+    "frozen fruit",
+    "frozen berries",
+    "organic frozen fruit"
+   ],
+   "zone": "freezer",
+   "isFood": true,
+   "tier": "recognizable",
+   "visibleInBlurryPhoto": false,
+   "scene": "freezer"
+  },
+  {
+   "id": "freezer_cevapi",
+   "names": [
+    "cevapi",
+    "ćevapi",
+    "kebab",
+    "sausages",
+    "frozen meat rolls"
+   ],
+   "zone": "freezer",
+   "isFood": true,
+   "tier": "readable",
+   "visibleInBlurryPhoto": false,
+   "scene": "freezer"
+  },
+  {
+   "id": "freezer_manti",
+   "names": [
+    "ohanyans manti",
+    "manti",
+    "beef tortellini",
+    "tortellini",
+    "dumplings"
+   ],
+   "zone": "freezer",
+   "isFood": true,
+   "tier": "readable",
+   "visibleInBlurryPhoto": false,
+   "scene": "freezer"
+  },
+  {
+   "id": "freezer_strawberries",
+   "names": [
+    "organic strawberries",
+    "strawberries",
+    "frozen strawberries",
+    "whole berries"
+   ],
+   "zone": "freezer",
+   "isFood": true,
+   "tier": "readable",
+   "visibleInBlurryPhoto": false,
+   "scene": "freezer"
+  },
+  {
+   "id": "freezer_bread_rolls",
+   "names": [
+    "bread rolls",
+    "buns",
+    "rolls",
+    "bread",
+    "pita"
+   ],
+   "zone": "freezer",
+   "isFood": true,
+   "tier": "recognizable",
+   "visibleInBlurryPhoto": false,
+   "scene": "freezer"
+  },
+  {
+   "id": "freezer_pasta_bag",
+   "names": [
+    "pasta",
+    "ditalini",
+    "macaroni",
+    "frozen pasta",
+    "dumplings"
+   ],
+   "zone": "freezer",
+   "isFood": true,
+   "tier": "recognizable",
+   "visibleInBlurryPhoto": false,
+   "scene": "freezer"
+  },
+  {
+   "id": "freezer_tortillas",
+   "names": [
+    "ezekiel tortillas",
+    "tortillas",
+    "flatbread",
+    "lavash",
+    "yufka"
+   ],
+   "zone": "freezer",
+   "isFood": true,
+   "tier": "readable",
+   "visibleInBlurryPhoto": false,
+   "scene": "freezer"
+  },
+  {
+   "id": "freezer_peas_corn",
+   "names": [
+    "peas and corn",
+    "mixed vegetables",
+    "frozen vegetables",
+    "peas",
+    "corn"
+   ],
+   "zone": "freezer",
+   "isFood": true,
+   "tier": "readable",
+   "visibleInBlurryPhoto": false,
+   "scene": "freezer"
+  },
+  {
+   "id": "freezer_vegetables_dark_bag",
+   "names": [
+    "frozen vegetables",
+    "sweet potato",
+    "carrots",
+    "root vegetables",
+    "vegetables"
+   ],
+   "zone": "freezer",
+   "isFood": true,
+   "tier": "recognizable",
+   "visibleInBlurryPhoto": false,
+   "scene": "freezer"
+  },
+  {
+   "id": "freezer_fries",
+   "names": [
+    "french fries",
+    "frozen potatoes",
+    "potatoes",
+    "fries",
+    "hash browns"
+   ],
+   "zone": "freezer",
+   "isFood": true,
+   "tier": "recognizable",
+   "visibleInBlurryPhoto": false,
+   "scene": "freezer"
+  },
+  {
+   "id": "freezer_montana",
+   "names": [
+    "montana",
+    "frozen pastry",
+    "borek",
+    "phyllo",
+    "frozen dough"
+   ],
+   "zone": "freezer",
+   "isFood": true,
+   "tier": "readable",
+   "visibleInBlurryPhoto": false,
+   "scene": "freezer"
+  },
+  {
+   "id": "freezer_ice",
+   "names": [
+    "ice",
+    "ice cubes"
+   ],
+   "zone": "freezer",
+   "isFood": false,
+   "tier": "hidden",
+   "visibleInBlurryPhoto": false,
+   "scene": "freezer"
+  },
+  {
+   "id": "pantry_lemons",
+   "names": [
+    "lemons",
+    "lemon"
+   ],
+   "zone": "pantry",
+   "isFood": true,
+   "tier": "readable",
+   "visibleInBlurryPhoto": false,
+   "scene": "pantry"
+  },
+  {
+   "id": "pantry_avocados",
+   "names": [
+    "avocados",
+    "avocado"
+   ],
+   "zone": "pantry",
+   "isFood": true,
+   "tier": "recognizable",
+   "visibleInBlurryPhoto": false,
+   "scene": "pantry"
+  },
+  {
+   "id": "pantry_herbs",
+   "names": [
+    "herbs",
+    "fresh herbs",
+    "parsley",
+    "dill",
+    "green herbs",
+    "mint"
+   ],
+   "zone": "pantry",
+   "isFood": true,
+   "tier": "recognizable",
+   "visibleInBlurryPhoto": false,
+   "scene": "pantry"
+  },
+  {
+   "id": "pantry_almonds",
+   "names": [
+    "almonds",
+    "raw almonds",
+    "nuts"
+   ],
+   "zone": "pantry",
+   "isFood": true,
+   "tier": "readable",
+   "visibleInBlurryPhoto": false,
+   "scene": "pantry"
+  },
+  {
+   "id": "pantry_mandarins",
+   "names": [
+    "mandarins",
+    "clementines",
+    "tangerines",
+    "oranges",
+    "cuties"
+   ],
+   "zone": "pantry",
+   "isFood": true,
+   "tier": "readable",
+   "visibleInBlurryPhoto": false,
+   "scene": "pantry"
+  },
+  {
+   "id": "pantry_tomatoes",
+   "names": [
+    "tomatoes",
+    "tomato"
+   ],
+   "zone": "pantry",
+   "isFood": true,
+   "tier": "readable",
+   "visibleInBlurryPhoto": false,
+   "scene": "pantry"
+  },
+  {
+   "id": "pantry_potatoes",
+   "names": [
+    "potatoes",
+    "potato",
+    "red potatoes",
+    "yellow potatoes"
+   ],
+   "zone": "pantry",
+   "isFood": true,
+   "tier": "recognizable",
+   "visibleInBlurryPhoto": false,
+   "scene": "pantry"
+  },
+  {
+   "id": "pantry_butternut",
+   "names": [
+    "butternut squash",
+    "squash"
+   ],
+   "zone": "pantry",
+   "isFood": true,
+   "tier": "recognizable",
+   "visibleInBlurryPhoto": false,
+   "scene": "pantry"
+  },
+  {
+   "id": "pantry_kabocha",
+   "names": [
+    "kabocha squash",
+    "green squash",
+    "squash",
+    "pumpkin"
+   ],
+   "zone": "pantry",
+   "isFood": true,
+   "tier": "recognizable",
+   "visibleInBlurryPhoto": false,
+   "scene": "pantry"
+  },
+  {
+   "id": "pantry_gullac",
+   "names": [
+    "gullac",
+    "güllaç",
+    "gaziogullari gullac",
+    "rice pastry sheets",
+    "pastry sheets"
+   ],
+   "zone": "pantry",
+   "isFood": true,
+   "tier": "readable",
+   "visibleInBlurryPhoto": false,
+   "scene": "pantry"
+  },
+  {
+   "id": "pantry_fruit_bites",
+   "names": [
+    "pure organic fruit bites",
+    "fruit bites",
+    "fruit snacks",
+    "twisted fruit bites"
+   ],
+   "zone": "pantry",
+   "isFood": true,
+   "tier": "readable",
+   "visibleInBlurryPhoto": false,
+   "scene": "pantry"
+  },
+  {
+   "id": "pantry_juice_box",
+   "names": [
+    "juice boxes",
+    "juice",
+    "fruit juice"
+   ],
+   "zone": "pantry",
+   "isFood": true,
+   "tier": "readable",
+   "visibleInBlurryPhoto": false,
+   "scene": "pantry"
+  },
+  {
+   "id": "pantry_spices",
+   "names": [
+    "spices",
+    "spice",
+    "seasoning",
+    "tea"
+   ],
+   "zone": "pantry",
+   "isFood": true,
+   "tier": "recognizable",
+   "visibleInBlurryPhoto": false,
+   "scene": "pantry"
+  },
+  {
+   "id": "pantry_kitchen_scale",
+   "names": [
+    "kitchen scale",
+    "scale"
+   ],
+   "zone": "pantry",
+   "isFood": false,
+   "tier": "readable",
+   "visibleInBlurryPhoto": false,
+   "scene": "pantry"
+  },
+  {
+   "id": "jars_honey",
+   "names": [
+    "simply organic raw honey",
+    "raw honey",
+    "honey",
+    "organic honey"
+   ],
+   "zone": "jars",
+   "isFood": true,
+   "tier": "readable",
+   "visibleInBlurryPhoto": false,
+   "scene": "jars"
+  },
+  {
+   "id": "jars_carob",
+   "names": [
+    "carob molasses",
+    "carob extract",
+    "carob syrup",
+    "keciboynuzu ozu",
+    "keçiboynuzu özü",
+    "molasses",
+    "syrup"
+   ],
+   "zone": "jars",
+   "isFood": true,
+   "tier": "readable",
+   "visibleInBlurryPhoto": false,
+   "scene": "jars"
+  },
+  {
+   "id": "jars_almond_butter",
+   "names": [
+    "harvest day almond butter",
+    "almond butter",
+    "creamy almond butter",
+    "nut butter"
+   ],
+   "zone": "jars",
+   "isFood": true,
+   "tier": "readable",
+   "visibleInBlurryPhoto": false,
+   "scene": "jars"
+  },
+  {
+   "id": "bottles_olive_oil",
+   "names": [
+    "olive oil",
+    "extra virgin olive oil",
+    "oil",
+    "cooking oil"
+   ],
+   "zone": "bottles",
+   "isFood": true,
+   "tier": "recognizable",
+   "visibleInBlurryPhoto": false,
+   "scene": "bottles"
+  },
+  {
+   "id": "bottles_soy_sauce",
+   "names": [
+    "soy sauce",
+    "less sodium soy sauce",
+    "sauce"
+   ],
+   "zone": "bottles",
+   "isFood": true,
+   "tier": "readable",
+   "visibleInBlurryPhoto": false,
+   "scene": "bottles"
+  },
+  {
+   "id": "bottles_dark_sauce",
+   "names": [
+    "worcestershire sauce",
+    "balsamic vinegar",
+    "dark sauce",
+    "sauce",
+    "vinegar"
+   ],
+   "zone": "bottles",
+   "isFood": true,
+   "tier": "recognizable",
+   "visibleInBlurryPhoto": false,
+   "scene": "bottles"
+  },
+  {
+   "id": "bottles_acv",
+   "names": [
+    "kirkland apple cider vinegar",
+    "apple cider vinegar",
+    "vinegar"
+   ],
+   "zone": "bottles",
+   "isFood": true,
+   "tier": "readable",
+   "visibleInBlurryPhoto": false,
+   "scene": "bottles"
   }
  ]
 }

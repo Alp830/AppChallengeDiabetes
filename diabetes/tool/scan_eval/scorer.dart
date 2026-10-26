@@ -13,6 +13,7 @@ class KeyItem {
     required this.isFood,
     required this.tier,
     required this.visibleInBlurryPhoto,
+    this.scene = defaultScene,
     this.zone = '',
   });
 
@@ -24,6 +25,7 @@ class KeyItem {
       isFood: (json['isFood'] ?? true) as bool,
       tier: (json['tier'] ?? 'hidden') as String,
       visibleInBlurryPhoto: (json['visibleInBlurryPhoto'] ?? false) as bool,
+      scene: (json['scene'] ?? defaultScene) as String,
     );
   }
 
@@ -33,10 +35,18 @@ class KeyItem {
   final bool isFood;
   final String tier;
   final bool visibleInBlurryPhoto;
+
+  /// Which physical place this item is in. A photo is only scored against the
+  /// items of its own scene (see [AnswerKey.photoScenes]).
+  final String scene;
 }
 
 class AnswerKey {
-  const AnswerKey({required this.photoFiles, required this.items});
+  const AnswerKey({
+    required this.photoFiles,
+    required this.items,
+    this.photoScenes = const {},
+  });
 
   factory AnswerKey.fromJson(Map<String, dynamic> json) {
     final photos = json['photos'] as Map<String, dynamic>;
@@ -49,6 +59,12 @@ class AnswerKey {
         for (final item in json['items'] as List<dynamic>)
           KeyItem.fromJson(item as Map<String, dynamic>),
       ],
+      photoScenes: {
+        for (final entry in photos.entries)
+          entry.key:
+              ((entry.value as Map<String, dynamic>)['scene'] ?? defaultScene)
+                  as String,
+      },
     );
   }
 
@@ -58,7 +74,23 @@ class AnswerKey {
   /// Photo id -> file path relative to tool/scan_eval/.
   final Map<String, String> photoFiles;
   final List<KeyItem> items;
+
+  /// Photo id -> the scene it shows. Photos without one show [defaultScene].
+  final Map<String, String> photoScenes;
+
+  /// Only the items in [photo]'s scene.
+  AnswerKey forPhoto(String photo) {
+    final scene = photoScenes[photo] ?? defaultScene;
+    return AnswerKey(
+      photoFiles: photoFiles,
+      photoScenes: photoScenes,
+      items: [for (final k in items) if (k.scene == scene) k],
+    );
+  }
 }
+
+/// The scene of the original two eval photos (the owner's home fridge).
+const defaultScene = 'home_fridge';
 
 /// One item a scan returned. [confidence] is null for the baseline scan,
 /// which has no such field; null counts as "sure".
@@ -229,10 +261,11 @@ List<String> splitNameGuesses(String name) {
 }
 
 PhotoScore scorePhoto(
-  AnswerKey key,
+  AnswerKey fullKey,
   String photo,
   List<ScanOutputItem> output,
 ) {
+  final key = fullKey.forPhoto(photo);
   bool inScope(KeyItem k) =>
       k.isFood && (!_blurryScope(photo) || k.visibleInBlurryPhoto);
   final scoped = key.items.where(inScope).toList();

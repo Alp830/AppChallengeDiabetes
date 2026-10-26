@@ -1233,6 +1233,21 @@ class _FridgeDraft {
   FoodItem item;
 }
 
+/// One Undo-able removal: the drafts taken out and the draft order before, so
+/// they can be put back relative to whatever neighbours remain.
+class _FridgeRemoval {
+  _FridgeRemoval({
+    required this.generation,
+    required this.orderBefore,
+    required this.removed,
+  });
+
+  final int generation;
+  final List<int> orderBefore;
+  final List<_FridgeDraft> removed;
+  bool restored = false;
+}
+
 enum _UnsavedChoice { save, discard, cancel }
 
 /// The Fridge tab. Edits (add / edit / delete) are staged in a local working
@@ -1267,6 +1282,18 @@ class FridgePageState extends State<FridgePage> {
   bool _isSaving = false;
   int _selectionCount = 0;
 
+  /// Bumped whenever the draft list is replaced wholesale (Discard, a reseed,
+  /// a save), so an Undo from before that point can't put a stale draft back.
+  int _draftGeneration = 0;
+
+  /// The latest removal; the only one the snackbar's Undo can restore.
+  _FridgeRemoval? _lastRemoval;
+
+  /// The undo snackbar on screen, and how many items were removed while it or
+  /// its predecessors were continuously showing.
+  ScaffoldFeatureController<SnackBar, SnackBarClosedReason>? _removalSnack;
+  int _removedInBurst = 0;
+
   /// Whether there are staged edits that have not been saved.
   bool get isDirty => _isDirty;
 
@@ -1287,6 +1314,8 @@ class FridgePageState extends State<FridgePage> {
   }
 
   void _seedFromInitial() {
+    _draftGeneration++;
+    _lastRemoval = null;
     _drafts
       ..clear()
       ..addAll(
@@ -1326,15 +1355,20 @@ class FridgePageState extends State<FridgePage> {
 
   /// Shows a fridge message clear of the unsaved-changes bar, so Save and
   /// Discard stay reachable while the message is on screen.
-  void _showFridgeSnackBar(
+  ScaffoldFeatureController<SnackBar, SnackBarClosedReason>
+  _showFridgeSnackBar(
     ScaffoldMessengerState messenger, {
     required Widget content,
     SnackBarAction? action,
     bool autoDismiss = false,
   }) {
     final liftAboveSaveBar = _isDirty;
-    messenger.hideCurrentSnackBar();
-    messenger.showSnackBar(
+    // Replace, don't queue: drop anything waiting and remove the visible one
+    // outright, so the new message shows at once instead of after the old
+    // one's exit animation and a line of earlier messages.
+    messenger.clearSnackBars();
+    messenger.removeCurrentSnackBar();
+    return messenger.showSnackBar(
       SnackBar(
         content: content,
         action: action,
@@ -1376,6 +1410,49 @@ class FridgePageState extends State<FridgePage> {
 
   void _editDraft(int index, FoodItem item) {
     _mutate(() => _drafts[index].item = item);
+  }
+
+  /// Removes the drafts at [indices] and returns what [_restoreRemoval]
+  /// needs to put them back.
+  _FridgeRemoval _removeDraftsRecorded(Iterable<int> indices) {
+    final removal = _FridgeRemoval(
+      generation: _draftGeneration,
+      orderBefore: [for (final draft in _drafts) draft.localId],
+      removed: [
+        for (final index in indices.toSet().toList()..sort()) _drafts[index],
+      ],
+    );
+    _removeDrafts(indices);
+    _lastRemoval = removal;
+    return removal;
+  }
+
+  /// Puts [removal] back, each draft right after the nearest earlier neighbour
+  /// that still exists (else at the start). Does nothing if it was already
+  /// restored, isn't the latest removal, or the draft list was replaced since.
+  void _restoreRemoval(_FridgeRemoval removal) {
+    if (!mounted ||
+        removal.restored ||
+        !identical(_lastRemoval, removal) ||
+        removal.generation != _draftGeneration) {
+      return;
+    }
+    removal.restored = true;
+    setState(() {
+      for (final draft in removal.removed) {
+        final position = removal.orderBefore.indexOf(draft.localId);
+        var insertAt = 0;
+        for (var i = position - 1; i >= 0; i--) {
+          final at = _draftIndex(removal.orderBefore[i]);
+          if (at >= 0) {
+            insertAt = at + 1;
+            break;
+          }
+        }
+        _drafts.insert(insertAt, draft);
+      }
+      _isDirty = !_buildChangeSet().isEmpty;
+    });
   }
 
   void _removeDrafts(Iterable<int> indices) {
@@ -1438,6 +1515,8 @@ class FridgePageState extends State<FridgePage> {
       setState(() {
         _isSaving = false;
         _isDirty = false;
+        _draftGeneration++;
+        _lastRemoval = null;
       });
       messenger.showSnackBar(
         const SnackBar(content: Text('Fridge changes saved.')),
@@ -1540,7 +1619,14 @@ class FridgePageState extends State<FridgePage> {
               _draftIndex(id),
             ),
             onRemoveSelected: (ids) async {
-              _removeDrafts(ids.map(_draftIndex));
+              final messenger = ScaffoldMessenger.of(context);
+              final indices = ids
+                  .map(_draftIndex)
+                  .where((index) => index >= 0)
+                  .toList();
+              if (indices.isNotEmpty) {
+                _stageRemoval(messenger, indices);
+              }
               // The grid clears its own selection first, and it unmounts
               // entirely when the last item goes, so it can never report the
               // count back down to zero itself.
@@ -1725,23 +1811,39 @@ class FridgePageState extends State<FridgePage> {
   /// the very same draft back where it was, so an undone delete leaves no
   /// pending change behind.
   void _stageDraftDeletion(ScaffoldMessengerState messenger, int index) {
-    final draft = _drafts[index];
-    _removeDrafts([index]);
-    _showFridgeSnackBar(
+    if (index < 0 || index >= _drafts.length) return;
+    _stageRemoval(messenger, [index]);
+  }
+
+  /// Removes the drafts at [indices] under one message. The message and its
+  /// Undo always belong to the latest removal; earlier ones stay staged until
+  /// Discard.
+  void _stageRemoval(ScaffoldMessengerState messenger, List<int> indices) {
+    final removal = _removeDraftsRecorded(indices);
+    final count = removal.removed.length;
+    final label = count == 1 ? removal.removed.single.item.name : '$count items';
+    _removedInBurst = (_removalSnack == null ? 0 : _removedInBurst) + count;
+    final controller = _showFridgeSnackBar(
       messenger,
-      content: Text('Removed ${draft.item.name}. Save to make it final.'),
+      content: Text(
+        _removedInBurst > count
+            ? 'Removed $label ($_removedInBurst removed). '
+                  'Undo restores the last one.'
+            : 'Removed $label. Save to make it final.',
+      ),
       autoDismiss: true,
       action: SnackBarAction(
         label: 'Undo',
-        onPressed: () {
-          if (!mounted) return;
-          setState(() {
-            _drafts.insert(index.clamp(0, _drafts.length), draft);
-            _isDirty = !_buildChangeSet().isEmpty;
-          });
-        },
+        onPressed: () => _restoreRemoval(removal),
       ),
     );
+    _removalSnack = controller;
+    controller.closed.then((_) {
+      if (identical(_removalSnack, controller)) {
+        _removalSnack = null;
+        _removedInBurst = 0;
+      }
+    });
   }
 
   Future<void> _showEditFoodSheet(BuildContext context, int index) async {

@@ -1,6 +1,6 @@
 # Scan eval (re-scored): baseline
 
-Date: 2026-10-25T17:02:57.750821
+Date: 2026-10-25T22:50:22.804888
 
 Re-scored 6 saved raw outputs against the current answer key. No API calls; the ledger was not touched. Cost is computed from saved token counts.
 
