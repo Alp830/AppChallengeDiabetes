@@ -1,0 +1,345 @@
+{
+ "variant": "v3-grid",
+ "photo": "pantry_counter",
+ "run": 1,
+ "latencyMs": 18242,
+ "promptTokens": 9724,
+ "candidatesTokens": 1505,
+ "thoughtsTokens": 0,
+ "calls": 4,
+ "callTimingsMs": [
+  6982,
+  7484,
+  10681,
+  15509
+ ],
+ "perCall": [
+  {
+   "id": "gr0c0",
+   "items": [
+    {
+     "name": "Fresh herbs",
+     "alternatives": [
+      "Leafy greens",
+      "Cilantro"
+     ],
+     "confidence": "likely",
+     "box": [
+      306,
+      10,
+      394,
+      198
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "Avocados",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      283,
+      185,
+      329,
+      331
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "Lemons",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      192,
+      333,
+      368,
+      458
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "Raw almonds",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      442,
+      252,
+      536,
+      504
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "Mandarins",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      499,
+      387,
+      560,
+      560
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "Tea",
+     "alternatives": [
+      "Spices",
+      "Coffee"
+     ],
+     "confidence": "guess",
+     "box": [
+      326,
+      458,
+      363,
+      495
+     ],
+     "location": "shelf 1"
+    }
+   ]
+  },
+  {
+   "id": "gr0c1",
+   "items": [
+    {
+     "name": "Lemons",
+     "alternatives": [
+      "Yellow squash",
+      "Potatoes"
+     ],
+     "confidence": "likely",
+     "box": [
+      230,
+      440,
+      356,
+      460
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "Almonds",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      464,
+      440,
+      517,
+      504
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "Mandarins",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      438,
+      440,
+      560,
+      703
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "Tomatoes",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      494,
+      773,
+      560,
+      1000
+     ],
+     "location": "shelf 1"
+    }
+   ]
+  },
+  {
+   "id": "gr1c0",
+   "items": [
+    {
+     "name": "Raw almonds",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      441,
+      249,
+      537,
+      517
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "Mandarins",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      501,
+      386,
+      653,
+      560
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "Watermelon",
+     "alternatives": [
+      "Cabbage",
+      "Squash"
+     ],
+     "confidence": "guess",
+     "box": [
+      767,
+      503,
+      846,
+      560
+     ],
+     "location": "drawer 1"
+    }
+   ]
+  },
+  {
+   "id": "gr1c1",
+   "items": [
+    {
+     "name": "Almonds",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      464,
+      440,
+      521,
+      505
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "Mandarins",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      440,
+      440,
+      655,
+      702
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "Tomatoes",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      494,
+      610,
+      747,
+      1000
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "Fruit strips and bites",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      750,
+      842,
+      969,
+      1000
+     ],
+     "location": "shelf 2"
+    },
+    {
+     "name": "Gullaç pastry sheets",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      838,
+      725,
+      1000,
+      987
+     ],
+     "location": "shelf 2"
+    },
+    {
+     "name": "Watermelon",
+     "alternatives": [
+      "Winter squash",
+      "Melon"
+     ],
+     "confidence": "likely",
+     "box": [
+      773,
+      502,
+      846,
+      602
+     ],
+     "location": "shelf 3"
+    }
+   ]
+  }
+ ],
+ "items": [
+  {
+   "name": "Fresh herbs",
+   "alternatives": [
+    "Leafy greens",
+    "Cilantro"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Avocados",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Lemons",
+   "alternatives": [
+    "Yellow squash",
+    "Potatoes"
+   ],
+   "confidence": "sure"
+  },
+  {
+   "name": "Raw almonds",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Mandarins",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Tea",
+   "alternatives": [
+    "Spices",
+    "Coffee"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Tomatoes",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Watermelon",
+   "alternatives": [
+    "Winter squash",
+    "Melon"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Fruit strips and bites",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Gullaç pastry sheets",
+   "alternatives": [],
+   "confidence": "sure"
+  }
+ ]
+}

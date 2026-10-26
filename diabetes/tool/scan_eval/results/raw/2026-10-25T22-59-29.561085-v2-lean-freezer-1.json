@@ -1,0 +1,124 @@
+{
+ "variant": "v2-lean",
+ "photo": "freezer",
+ "run": 1,
+ "latencyMs": 16683,
+ "promptTokens": 2403,
+ "candidatesTokens": 1267,
+ "thoughtsTokens": 0,
+ "items": [
+  {
+   "name": "frozen strawberries",
+   "alternatives": [
+    "frozen berries",
+    "frozen fruit"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "frozen meat",
+   "alternatives": [
+    "frozen chicken",
+    "frozen fish"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "frozen meat",
+   "alternatives": [
+    "sausages",
+    "minced meat"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Cevapi",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "frozen strawberries",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "frozen bread",
+   "alternatives": [
+    "frozen dough",
+    "frozen cheese"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Ohanyan's Manti",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "frozen manti",
+   "alternatives": [
+    "pelmeni",
+    "tortellini"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "frozen tortillas",
+   "alternatives": [
+    "pita bread",
+    "flatbread"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "mixed vegetables",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "sweet potato fries",
+   "alternatives": [
+    "frozen carrots",
+    "potato wedges"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Ezekiel 4:9 Tortillas",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "frozen corn",
+   "alternatives": [
+    "frozen mango",
+    "frozen fries"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "frozen pastries",
+   "alternatives": [
+    "frozen waffles",
+    "frozen bread"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "frozen berries",
+   "alternatives": [
+    "frozen acai",
+    "frozen vegetables"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "frozen molokhia",
+   "alternatives": [
+    "frozen spinach",
+    "frozen okra"
+   ],
+   "confidence": "likely"
+  }
+ ]
+}

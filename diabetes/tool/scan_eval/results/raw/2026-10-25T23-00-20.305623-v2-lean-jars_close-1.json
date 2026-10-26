@@ -1,0 +1,29 @@
+{
+ "variant": "v2-lean",
+ "photo": "jars_close",
+ "run": 1,
+ "latencyMs": 7563,
+ "promptTokens": 2403,
+ "candidatesTokens": 249,
+ "thoughtsTokens": 0,
+ "items": [
+  {
+   "name": "Raw Organic Honey",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Carob Extract",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Peanut Butter",
+   "alternatives": [
+    "Almond Butter",
+    "Tahini"
+   ],
+   "confidence": "likely"
+  }
+ ]
+}

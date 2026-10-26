@@ -1,0 +1,26 @@
+{
+ "variant": "v2-lean",
+ "photo": "jars_wide",
+ "run": 1,
+ "latencyMs": 7431,
+ "promptTokens": 2403,
+ "candidatesTokens": 297,
+ "thoughtsTokens": 0,
+ "items": [
+  {
+   "name": "Honey",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Almond butter",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Carob molasses",
+   "alternatives": [],
+   "confidence": "sure"
+  }
+ ]
+}

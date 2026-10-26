@@ -1,0 +1,70 @@
+{
+ "variant": "v2-lean",
+ "photo": "pantry_counter",
+ "run": 1,
+ "latencyMs": 11978,
+ "promptTokens": 2403,
+ "candidatesTokens": 744,
+ "thoughtsTokens": 0,
+ "items": [
+  {
+   "name": "Fresh herbs",
+   "alternatives": [
+    "Green onions",
+    "Celery"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Avocados",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Lemons",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Raw almonds",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Mandarin oranges",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Tomatoes",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Watermelon",
+   "alternatives": [
+    "Winter squash",
+    "Cabbage"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Fruit strips",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Gullac pastry",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Wrapped candies",
+   "alternatives": [
+    "Tea bags",
+    "Garlic bulbs"
+   ],
+   "confidence": "guess"
+  }
+ ]
+}

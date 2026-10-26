@@ -1,0 +1,132 @@
+{
+ "variant": "v3-grid",
+ "photo": "jars_wide",
+ "run": 1,
+ "latencyMs": 20202,
+ "promptTokens": 9724,
+ "candidatesTokens": 763,
+ "thoughtsTokens": 0,
+ "calls": 4,
+ "callTimingsMs": [
+  5285,
+  7325,
+  9228,
+  17073
+ ],
+ "perCall": [
+  {
+   "id": "gr0c0",
+   "items": [
+    {
+     "name": "Raw organic honey",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      380,
+      210,
+      560,
+      367
+     ],
+     "location": "counter"
+    }
+   ]
+  },
+  {
+   "id": "gr0c1",
+   "items": [
+    {
+     "name": "Carob molasses",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      248,
+      552,
+      560,
+      753
+     ],
+     "location": "counter"
+    }
+   ]
+  },
+  {
+   "id": "gr1c0",
+   "items": [
+    {
+     "name": "raw organic honey",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      440,
+      207,
+      592,
+      370
+     ],
+     "location": "countertop"
+    },
+    {
+     "name": "almond butter",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      547,
+      482,
+      769,
+      560
+     ],
+     "location": "countertop"
+    }
+   ]
+  },
+  {
+   "id": "gr1c1",
+   "items": [
+    {
+     "name": "Organic carob extract",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      440,
+      552,
+      571,
+      714
+     ],
+     "location": "countertop"
+    },
+    {
+     "name": "Creamy almond butter",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      547,
+      481,
+      769,
+      686
+     ],
+     "location": "countertop"
+    }
+   ]
+  }
+ ],
+ "items": [
+  {
+   "name": "Raw organic honey",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Carob molasses",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "almond butter",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Organic carob extract",
+   "alternatives": [],
+   "confidence": "sure"
+  }
+ ]
+}

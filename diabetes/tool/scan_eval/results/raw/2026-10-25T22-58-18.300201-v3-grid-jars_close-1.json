@@ -1,0 +1,147 @@
+{
+ "variant": "v3-grid",
+ "photo": "jars_close",
+ "run": 1,
+ "latencyMs": 12900,
+ "promptTokens": 9724,
+ "candidatesTokens": 782,
+ "thoughtsTokens": 0,
+ "calls": 4,
+ "callTimingsMs": [
+  6362,
+  6926,
+  10010,
+  8837
+ ],
+ "perCall": [
+  {
+   "id": "gr0c0",
+   "items": [
+    {
+     "name": "Iced tea",
+     "alternatives": [
+      "Juice",
+      "Cold brew coffee"
+     ],
+     "confidence": "likely",
+     "box": [
+      423,
+      101,
+      560,
+      329
+     ],
+     "location": "shelf 1"
+    }
+   ]
+  },
+  {
+   "id": "gr0c1",
+   "items": [
+    {
+     "name": "Carob extract",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      177,
+      586,
+      560,
+      810
+     ],
+     "location": "shelf 1"
+    }
+   ]
+  },
+  {
+   "id": "gr1c0",
+   "items": [
+    {
+     "name": "Raw Organic Honey",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      440,
+      100,
+      691,
+      341
+     ],
+     "location": "counter"
+    },
+    {
+     "name": "Peanut Butter",
+     "alternatives": [
+      "Almond Butter",
+      "Chocolate Spread"
+     ],
+     "confidence": "likely",
+     "box": [
+      611,
+      454,
+      913,
+      560
+     ],
+     "location": "counter"
+    }
+   ]
+  },
+  {
+   "id": "gr1c1",
+   "items": [
+    {
+     "name": "Carob molasses",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      440,
+      580,
+      695,
+      789
+     ],
+     "location": "countertop"
+    },
+    {
+     "name": "Peanut butter",
+     "alternatives": [
+      "Almond butter",
+      "Hazelnut spread"
+     ],
+     "confidence": "likely",
+     "box": [
+      611,
+      457,
+      913,
+      710
+     ],
+     "location": "countertop"
+    }
+   ]
+  }
+ ],
+ "items": [
+  {
+   "name": "Raw Organic Honey",
+   "alternatives": [
+    "Iced tea",
+    "Juice"
+   ],
+   "confidence": "sure"
+  },
+  {
+   "name": "Carob extract",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Peanut Butter",
+   "alternatives": [
+    "Almond Butter",
+    "Chocolate Spread"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Carob molasses",
+   "alternatives": [],
+   "confidence": "sure"
+  }
+ ]
+}

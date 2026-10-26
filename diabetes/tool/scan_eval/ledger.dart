@@ -18,7 +18,7 @@ const worstCaseUsdPerCall =
     maxOutputTokens * outputUsdPerMillion / 1e6;
 
 /// Hard cap on total spend recorded in the ledger plus the next run.
-const budgetCapUsd = 4.50;
+const budgetCapUsd = 6.0; // Raised from $4.50 by the owner on 2026-10-25 for the new photos.
 
 double costUsd({required int promptTokens, required int outputTokens}) =>
     promptTokens * inputUsdPerMillion / 1e6 +

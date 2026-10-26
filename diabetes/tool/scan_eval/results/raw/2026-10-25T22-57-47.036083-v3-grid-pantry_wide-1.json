@@ -1,0 +1,830 @@
+{
+ "variant": "v3-grid",
+ "photo": "pantry_wide",
+ "run": 1,
+ "latencyMs": 20318,
+ "promptTokens": 9724,
+ "candidatesTokens": 3549,
+ "thoughtsTokens": 0,
+ "calls": 4,
+ "callTimingsMs": [
+  8394,
+  11717,
+  17085,
+  16054
+ ],
+ "perCall": [
+  {
+   "id": "gr0c0",
+   "items": [
+    {
+     "name": "Lemons",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      94,
+      240,
+      243,
+      349
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "Avocados",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      183,
+      101,
+      224,
+      215
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "Leafy greens",
+     "alternatives": [
+      "Fresh herbs",
+      "Spinach"
+     ],
+     "confidence": "likely",
+     "box": [
+      222,
+      0,
+      279,
+      96
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "Almonds",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      291,
+      295,
+      350,
+      481
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "Mandarins",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      296,
+      459,
+      388,
+      560
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "Jam",
+     "alternatives": [
+      "Honey",
+      "Sauce"
+     ],
+     "confidence": "guess",
+     "box": [
+      243,
+      318,
+      267,
+      352
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "Potatoes",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      426,
+      396,
+      478,
+      560
+     ],
+     "location": "shelf 2"
+    },
+    {
+     "name": "Pantry item",
+     "alternatives": [
+      "Onions",
+      "Flour"
+     ],
+     "confidence": "guess",
+     "box": [
+      480,
+      373,
+      553,
+      553
+     ],
+     "location": "shelf 3"
+    }
+   ]
+  },
+  {
+   "id": "gr0c1",
+   "items": [
+    {
+     "name": "Mandarins",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      247,
+      459,
+      387,
+      667
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "Tomatoes",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      278,
+      621,
+      402,
+      908
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "Walnuts",
+     "alternatives": [
+      "Pecans",
+      "Almonds"
+     ],
+     "confidence": "likely",
+     "box": [
+      300,
+      440,
+      348,
+      480
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "Potatoes",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      414,
+      440,
+      504,
+      584
+     ],
+     "location": "shelf 2"
+    },
+    {
+     "name": "Güllaç",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      452,
+      557,
+      560,
+      873
+     ],
+     "location": "shelf 2"
+    },
+    {
+     "name": "Pure Organic Fruit Bites",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      395,
+      818,
+      498,
+      995
+     ],
+     "location": "shelf 2"
+    },
+    {
+     "name": "Stretch Island Fruit Strips",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      448,
+      769,
+      527,
+      900
+     ],
+     "location": "shelf 2"
+    },
+    {
+     "name": "Packaged food",
+     "alternatives": [
+      "Flour",
+      "Potatoes"
+     ],
+     "confidence": "guess",
+     "box": [
+      484,
+      440,
+      552,
+      551
+     ],
+     "location": "shelf 3"
+    },
+    {
+     "name": "Chocolate spread",
+     "alternatives": [
+      "Jam",
+      "Honey"
+     ],
+     "confidence": "guess",
+     "box": [
+      525,
+      614,
+      560,
+      676
+     ],
+     "location": "shelf 3"
+    },
+    {
+     "name": "Snack bar",
+     "alternatives": [
+      "Chocolate",
+      "Biscuits"
+     ],
+     "confidence": "guess",
+     "box": [
+      541,
+      671,
+      560,
+      727
+     ],
+     "location": "shelf 3"
+    },
+    {
+     "name": "Container",
+     "alternatives": [
+      "Spice jar",
+      "Condiment"
+     ],
+     "confidence": "guess",
+     "box": [
+      526,
+      863,
+      560,
+      913
+     ],
+     "location": "shelf 3"
+    },
+    {
+     "name": "Packaged item",
+     "alternatives": [
+      "Snack",
+      "Tea"
+     ],
+     "confidence": "guess",
+     "box": [
+      522,
+      602,
+      560,
+      637
+     ],
+     "location": "shelf 3"
+    }
+   ]
+  },
+  {
+   "id": "gr1c0",
+   "items": [
+    {
+     "name": "Potatoes",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      440,
+      392,
+      478,
+      560
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "Sweet potatoes",
+     "alternatives": [
+      "Red potatoes"
+     ],
+     "confidence": "likely",
+     "box": [
+      440,
+      454,
+      453,
+      498
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "Potatoes",
+     "alternatives": [
+      "Onions",
+      "Bread"
+     ],
+     "confidence": "guess",
+     "box": [
+      481,
+      374,
+      552,
+      551
+     ],
+     "location": "shelf 2"
+    },
+    {
+     "name": "Kabocha squash",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      565,
+      445,
+      618,
+      543
+     ],
+     "location": "shelf 3"
+    },
+    {
+     "name": "Butternut squash",
+     "alternatives": [
+      "Pumpkin",
+      "Cantaloupe"
+     ],
+     "confidence": "likely",
+     "box": [
+      550,
+      417,
+      584,
+      473
+     ],
+     "location": "shelf 3"
+    }
+   ]
+  },
+  {
+   "id": "gr1c1",
+   "items": [
+    {
+     "name": "Potatoes",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      440,
+      440,
+      480,
+      565
+     ],
+     "location": "left cart"
+    },
+    {
+     "name": "Onions",
+     "alternatives": [
+      "Potatoes",
+      "Flour"
+     ],
+     "confidence": "guess",
+     "box": [
+      485,
+      440,
+      554,
+      551
+     ],
+     "location": "left cart"
+    },
+    {
+     "name": "Kabocha squash",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      565,
+      447,
+      620,
+      543
+     ],
+     "location": "left cart"
+    },
+    {
+     "name": "Butternut squash",
+     "alternatives": [
+      "Sweet potato",
+      "Onion"
+     ],
+     "confidence": "likely",
+     "box": [
+      555,
+      440,
+      584,
+      474
+     ],
+     "location": "left cart"
+    },
+    {
+     "name": "Pure Organic fruit bites",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      440,
+      816,
+      499,
+      962
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "Stretch Island fruit strips",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      446,
+      767,
+      528,
+      904
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "Gazioglucler Gullac",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      453,
+      557,
+      577,
+      878
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "Turkish delight",
+     "alternatives": [
+      "Baklava",
+      "Tea"
+     ],
+     "confidence": "guess",
+     "box": [
+      440,
+      594,
+      518,
+      797
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "Kurukahveci Mehmet Efendi coffee",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      525,
+      613,
+      592,
+      676
+     ],
+     "location": "shelf 2"
+    },
+    {
+     "name": "Kurukahveci Mehmet Efendi coffee",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      538,
+      668,
+      594,
+      727
+     ],
+     "location": "shelf 2"
+    },
+    {
+     "name": "Dried herbs",
+     "alternatives": [
+      "Linden tea",
+      "Green lentil"
+     ],
+     "confidence": "likely",
+     "box": [
+      555,
+      695,
+      638,
+      859
+     ],
+     "location": "shelf 2"
+    },
+    {
+     "name": "Medjool dates",
+     "alternatives": [
+      "Dried figs",
+      "Prunes"
+     ],
+     "confidence": "likely",
+     "box": [
+      525,
+      848,
+      597,
+      913
+     ],
+     "location": "shelf 2"
+    },
+    {
+     "name": "Crackers",
+     "alternatives": [
+      "Biscuits",
+      "Pasta"
+     ],
+     "confidence": "guess",
+     "box": [
+      588,
+      585,
+      653,
+      678
+     ],
+     "location": "shelf 3"
+    },
+    {
+     "name": "Garlic",
+     "alternatives": [
+      "Nuts",
+      "Dried fruit"
+     ],
+     "confidence": "guess",
+     "box": [
+      589,
+      637,
+      655,
+      747
+     ],
+     "location": "shelf 3"
+    },
+    {
+     "name": "Tea bags",
+     "alternatives": [
+      "Spices",
+      "Cocoa"
+     ],
+     "confidence": "guess",
+     "box": [
+      635,
+      760,
+      664,
+      821
+     ],
+     "location": "shelf 3"
+    },
+    {
+     "name": "Seasoning mix",
+     "alternatives": [
+      "Spices",
+      "Instant soup"
+     ],
+     "confidence": "guess",
+     "box": [
+      607,
+      750,
+      646,
+      827
+     ],
+     "location": "shelf 3"
+    },
+    {
+     "name": "Walnuts",
+     "alternatives": [
+      "Pecans",
+      "Almonds"
+     ],
+     "confidence": "guess",
+     "box": [
+      648,
+      733,
+      700,
+      832
+     ],
+     "location": "shelf 3"
+    },
+    {
+     "name": "Eggs",
+     "alternatives": [
+      "Storage bags",
+      "Napkins"
+     ],
+     "confidence": "likely",
+     "box": [
+      634,
+      581,
+      704,
+      700
+     ],
+     "location": "shelf 4"
+    }
+   ]
+  }
+ ],
+ "items": [
+  {
+   "name": "Lemons",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Avocados",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Leafy greens",
+   "alternatives": [
+    "Fresh herbs",
+    "Spinach"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Almonds",
+   "alternatives": [
+    "Walnuts",
+    "Pecans"
+   ],
+   "confidence": "sure"
+  },
+  {
+   "name": "Mandarins",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Jam",
+   "alternatives": [
+    "Honey",
+    "Sauce"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Potatoes",
+   "alternatives": [
+    "Onions",
+    "Flour"
+   ],
+   "confidence": "sure"
+  },
+  {
+   "name": "Pantry item",
+   "alternatives": [
+    "Potatoes",
+    "Packaged food"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Tomatoes",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Güllaç",
+   "alternatives": [
+    "Gazioglucler Gullac"
+   ],
+   "confidence": "sure"
+  },
+  {
+   "name": "Pure Organic Fruit Bites",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Stretch Island Fruit Strips",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Kurukahveci Mehmet Efendi coffee",
+   "alternatives": [
+    "Chocolate spread",
+    "Jam"
+   ],
+   "confidence": "sure"
+  },
+  {
+   "name": "Snack bar",
+   "alternatives": [
+    "Chocolate",
+    "Biscuits"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Container",
+   "alternatives": [
+    "Spice jar",
+    "Condiment"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Packaged item",
+   "alternatives": [
+    "Snack",
+    "Tea"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Potatoes",
+   "alternatives": [
+    "Red potatoes"
+   ],
+   "confidence": "sure"
+  },
+  {
+   "name": "Kabocha squash",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Butternut squash",
+   "alternatives": [
+    "Pumpkin",
+    "Cantaloupe"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Turkish delight",
+   "alternatives": [
+    "Baklava",
+    "Tea"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Kurukahveci Mehmet Efendi coffee",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Dried herbs",
+   "alternatives": [
+    "Linden tea",
+    "Green lentil"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Medjool dates",
+   "alternatives": [
+    "Dried figs",
+    "Prunes"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Crackers",
+   "alternatives": [
+    "Biscuits",
+    "Pasta"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Garlic",
+   "alternatives": [
+    "Nuts",
+    "Dried fruit"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Tea bags",
+   "alternatives": [
+    "Spices",
+    "Cocoa"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Seasoning mix",
+   "alternatives": [
+    "Spices",
+    "Instant soup"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Walnuts",
+   "alternatives": [
+    "Pecans",
+    "Almonds"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Eggs",
+   "alternatives": [
+    "Storage bags",
+    "Napkins"
+   ],
+   "confidence": "likely"
+  }
+ ]
+}

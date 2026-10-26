@@ -1,0 +1,37 @@
+{
+ "variant": "v2-lean",
+ "photo": "bottles",
+ "run": 1,
+ "latencyMs": 26403,
+ "promptTokens": 2403,
+ "candidatesTokens": 320,
+ "thoughtsTokens": 0,
+ "items": [
+  {
+   "name": "Olive Oil",
+   "alternatives": [
+    "Avocado Oil",
+    "Vegetable Oil"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Soy Sauce",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Balsamic Vinegar",
+   "alternatives": [
+    "Dark Soy Sauce",
+    "Worcestershire Sauce"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Apple Cider Vinegar",
+   "alternatives": [],
+   "confidence": "sure"
+  }
+ ]
+}

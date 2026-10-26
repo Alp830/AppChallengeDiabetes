@@ -1,0 +1,141 @@
+{
+ "variant": "v2-lean",
+ "photo": "pantry_wide",
+ "run": 1,
+ "latencyMs": 30959,
+ "promptTokens": 2403,
+ "candidatesTokens": 1500,
+ "thoughtsTokens": 0,
+ "items": [
+  {
+   "name": "Leafy greens",
+   "alternatives": [
+    "Herbs",
+    "Spinach"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Avocados",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Lemons",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Almonds",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Mandarins",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Tomatoes",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Potatoes",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Produce in paper bag",
+   "alternatives": [
+    "Onions",
+    "Potatoes"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Butternut squash",
+   "alternatives": [
+    "Pumpkin",
+    "Melon"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Kabocha squash",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Gullac",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Simple Truth fruit strips",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Pure Organic fruit bites",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Nut butter",
+   "alternatives": [
+    "Honey",
+    "Jam"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Chocolates",
+   "alternatives": [
+    "Cookies",
+    "Tea"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Dried herbs",
+   "alternatives": [
+    "Linden tea",
+    "Spices"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Bread",
+   "alternatives": [
+    "Pastries",
+    "Potatoes"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Garlic",
+   "alternatives": [
+    "Shallots",
+    "Nuts"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Snack",
+   "alternatives": [
+    "Tomato paste",
+    "Tea"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Packaged food",
+   "alternatives": [
+    "Butter",
+    "Cheese"
+   ],
+   "confidence": "guess"
+  }
+ ]
+}
