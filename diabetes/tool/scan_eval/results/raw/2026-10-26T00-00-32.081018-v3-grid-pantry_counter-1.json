@@ -1,0 +1,410 @@
+{
+ "variant": "v3-grid",
+ "photo": "pantry_counter",
+ "run": 1,
+ "latencyMs": 14065,
+ "promptTokens": 10340,
+ "candidatesTokens": 1773,
+ "thoughtsTokens": 0,
+ "calls": 4,
+ "callTimingsMs": [
+  5613,
+  7258,
+  9476,
+  12144
+ ],
+ "perCall": [
+  {
+   "id": "gr0c0",
+   "items": [
+    {
+     "name": "fresh herbs",
+     "alternatives": [
+      "parsley",
+      "cilantro"
+     ],
+     "confidence": "likely",
+     "box": [
+      306,
+      11,
+      394,
+      198
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "avocados",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      283,
+      185,
+      329,
+      331
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "garlic bulbs",
+     "alternatives": [
+      "white tissue"
+     ],
+     "confidence": "guess",
+     "box": [
+      296,
+      162,
+      326,
+      191
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "lemons",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      192,
+      333,
+      368,
+      459
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "raw almonds",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      442,
+      252,
+      535,
+      504
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "mandarin oranges",
+     "alternatives": [
+      "clementines",
+      "tangerines"
+     ],
+     "confidence": "likely",
+     "box": [
+      500,
+      387,
+      560,
+      560
+     ],
+     "location": "shelf 1"
+    }
+   ]
+  },
+  {
+   "id": "gr0c1",
+   "items": [
+    {
+     "name": "Lemons",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      230,
+      440,
+      362,
+      460
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "Almonds",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      464,
+      440,
+      517,
+      503
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "Mandarins",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      438,
+      440,
+      560,
+      701
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "Tomatoes",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      494,
+      773,
+      560,
+      1000
+     ],
+     "location": "shelf 1"
+    }
+   ]
+  },
+  {
+   "id": "gr1c0",
+   "items": [
+    {
+     "name": "raw almonds",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      442,
+      252,
+      537,
+      507
+     ],
+     "location": "countertop"
+    },
+    {
+     "name": "mandarin oranges",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      500,
+      386,
+      651,
+      560
+     ],
+     "location": "countertop"
+    },
+    {
+     "name": "watermelon",
+     "alternatives": [
+      "winter squash",
+      "cabbage"
+     ],
+     "confidence": "guess",
+     "box": [
+      767,
+      496,
+      846,
+      560
+     ],
+     "location": "rolling cart"
+    }
+   ]
+  },
+  {
+   "id": "gr1c1",
+   "items": [
+    {
+     "name": "almonds",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      464,
+      440,
+      522,
+      507
+     ],
+     "location": "top shelf"
+    },
+    {
+     "name": "mandarins",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      441,
+      440,
+      655,
+      700
+     ],
+     "location": "top shelf"
+    },
+    {
+     "name": "tomatoes",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      494,
+      646,
+      747,
+      1000
+     ],
+     "location": "top shelf"
+    },
+    {
+     "name": "cherry tomatoes",
+     "alternatives": [
+      "plums"
+     ],
+     "confidence": "likely",
+     "box": [
+      583,
+      610,
+      631,
+      671
+     ],
+     "location": "top shelf"
+    },
+    {
+     "name": "Black Forest fruit strips",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      742,
+      842,
+      969,
+      1000
+     ],
+     "location": "middle shelf"
+    },
+    {
+     "name": "gullac",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      840,
+      722,
+      1000,
+      993
+     ],
+     "location": "middle shelf"
+    },
+    {
+     "name": "packaged item",
+     "alternatives": [
+      "tea",
+      "crackers"
+     ],
+     "confidence": "guess",
+     "box": [
+      838,
+      785,
+      877,
+      842
+     ],
+     "location": "middle shelf"
+    },
+    {
+     "name": "packaged food",
+     "alternatives": [
+      "crackers",
+      "pasta"
+     ],
+     "confidence": "guess",
+     "box": [
+      849,
+      645,
+      913,
+      717
+     ],
+     "location": "middle shelf"
+    },
+    {
+     "name": "watermelon",
+     "alternatives": [
+      "squash",
+      "melon"
+     ],
+     "confidence": "likely",
+     "box": [
+      769,
+      507,
+      846,
+      602
+     ],
+     "location": "side cart"
+    }
+   ]
+  }
+ ],
+ "items": [
+  {
+   "name": "fresh herbs",
+   "alternatives": [
+    "parsley",
+    "cilantro"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "avocados",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "garlic bulbs",
+   "alternatives": [
+    "white tissue"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "lemons",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "raw almonds",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Mandarins",
+   "alternatives": [
+    "clementines",
+    "tangerines"
+   ],
+   "confidence": "sure"
+  },
+  {
+   "name": "Tomatoes",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "watermelon",
+   "alternatives": [
+    "squash",
+    "melon"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "cherry tomatoes",
+   "alternatives": [
+    "plums"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Black Forest fruit strips",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "gullac",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "packaged item",
+   "alternatives": [
+    "tea",
+    "crackers"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "packaged food",
+   "alternatives": [
+    "crackers",
+    "pasta"
+   ],
+   "confidence": "guess"
+  }
+ ]
+}

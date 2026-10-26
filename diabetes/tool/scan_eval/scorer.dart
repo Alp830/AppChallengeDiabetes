@@ -14,6 +14,7 @@ class KeyItem {
     required this.tier,
     required this.visibleInBlurryPhoto,
     this.scene = defaultScene,
+    this.onlyPhotos,
     this.zone = '',
   });
 
@@ -26,6 +27,7 @@ class KeyItem {
       tier: (json['tier'] ?? 'hidden') as String,
       visibleInBlurryPhoto: (json['visibleInBlurryPhoto'] ?? false) as bool,
       scene: (json['scene'] ?? defaultScene) as String,
+      onlyPhotos: (json['photos'] as List<dynamic>?)?.cast<String>(),
     );
   }
 
@@ -39,6 +41,9 @@ class KeyItem {
   /// Which physical place this item is in. A photo is only scored against the
   /// items of its own scene (see [AnswerKey.photoScenes]).
   final String scene;
+
+  /// When set, the photos of [scene] that actually show this item.
+  final List<String>? onlyPhotos;
 }
 
 class AnswerKey {
@@ -84,7 +89,10 @@ class AnswerKey {
     return AnswerKey(
       photoFiles: photoFiles,
       photoScenes: photoScenes,
-      items: [for (final k in items) if (k.scene == scene) k],
+      items: [
+        for (final k in items)
+          if (k.scene == scene && (k.onlyPhotos?.contains(photo) ?? true)) k,
+      ],
     );
   }
 }

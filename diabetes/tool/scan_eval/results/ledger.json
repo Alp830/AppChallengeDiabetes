@@ -574,5 +574,77 @@
     "promptTokens": 2403,
     "outputTokens": 320,
     "costUsd": 0.008006000000000001
+  },
+  {
+    "timestamp": "2026-10-25T23:59:58.761614",
+    "variant": "v3-grid",
+    "photo": "freezer",
+    "run": 1,
+    "promptTokens": 10340,
+    "outputTokens": 3242,
+    "costUsd": 0.053099999999999994
+  },
+  {
+    "timestamp": "2026-10-26T00:00:17.964020",
+    "variant": "v3-grid",
+    "photo": "pantry_wide",
+    "run": 1,
+    "promptTokens": 10340,
+    "outputTokens": 3321,
+    "costUsd": 0.05389000000000001
+  },
+  {
+    "timestamp": "2026-10-26T00:00:32.076956",
+    "variant": "v3-grid",
+    "photo": "pantry_counter",
+    "run": 1,
+    "promptTokens": 10340,
+    "outputTokens": 1773,
+    "costUsd": 0.03841
+  },
+  {
+    "timestamp": "2026-10-26T00:00:41.973579",
+    "variant": "v3-grid",
+    "photo": "bottles",
+    "run": 1,
+    "promptTokens": 10340,
+    "outputTokens": 1156,
+    "costUsd": 0.032240000000000005
+  },
+  {
+    "timestamp": "2026-10-26T00:01:16.923313",
+    "variant": "v2-lean",
+    "photo": "freezer",
+    "run": 1,
+    "promptTokens": 2557,
+    "outputTokens": 1319,
+    "costUsd": 0.018304
+  },
+  {
+    "timestamp": "2026-10-26T00:01:34.335801",
+    "variant": "v2-lean",
+    "photo": "pantry_wide",
+    "run": 1,
+    "promptTokens": 2557,
+    "outputTokens": 1572,
+    "costUsd": 0.020834000000000002
+  },
+  {
+    "timestamp": "2026-10-26T00:01:47.625440",
+    "variant": "v2-lean",
+    "photo": "pantry_counter",
+    "run": 1,
+    "promptTokens": 2557,
+    "outputTokens": 714,
+    "costUsd": 0.012254
+  },
+  {
+    "timestamp": "2026-10-26T00:01:53.778670",
+    "variant": "v2-lean",
+    "photo": "bottles",
+    "run": 1,
+    "promptTokens": 2557,
+    "outputTokens": 318,
+    "costUsd": 0.008294
   }
 ]

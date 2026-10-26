@@ -1,0 +1,268 @@
+{
+ "variant": "v3-grid",
+ "photo": "bottles",
+ "run": 1,
+ "latencyMs": 9862,
+ "promptTokens": 10340,
+ "candidatesTokens": 1156,
+ "thoughtsTokens": 0,
+ "calls": 4,
+ "callTimingsMs": [
+  4940,
+  7147,
+  6664,
+  8788
+ ],
+ "perCall": [
+  {
+   "id": "gr0c0",
+   "items": [
+    {
+     "name": "Lemon juice",
+     "alternatives": [
+      "cooking oil",
+      "sparkling water"
+     ],
+     "confidence": "guess",
+     "box": [
+      427,
+      23,
+      560,
+      259
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "Reduced sodium soy sauce",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      384,
+      396,
+      560,
+      511
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "Pomegranate molasses",
+     "alternatives": [
+      "balsamic vinegar",
+      "soy sauce"
+     ],
+     "confidence": "likely",
+     "box": [
+      382,
+      463,
+      560,
+      553
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "Apple cider vinegar",
+     "alternatives": [
+      "apple juice"
+     ],
+     "confidence": "likely",
+     "box": [
+      376,
+      540,
+      522,
+      560
+     ],
+     "location": "shelf 1"
+    }
+   ]
+  },
+  {
+   "id": "gr0c1",
+   "items": [
+    {
+     "name": "Soy sauce",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      384,
+      440,
+      560,
+      512
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "Pomegranate molasses",
+     "alternatives": [
+      "Balsamic vinegar",
+      "Dark sauce"
+     ],
+     "confidence": "likely",
+     "box": [
+      380,
+      464,
+      560,
+      551
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "Apple cider vinegar",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      327,
+      540,
+      554,
+      664
+     ],
+     "location": "shelf 1"
+    }
+   ]
+  },
+  {
+   "id": "gr1c0",
+   "items": [
+    {
+     "name": "Olive oil",
+     "alternatives": [
+      "Cooking oil",
+      "Vegetable oil"
+     ],
+     "confidence": "likely",
+     "box": [
+      440,
+      22,
+      771,
+      323
+     ],
+     "location": "countertop"
+    },
+    {
+     "name": "Reduced sodium soy sauce",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      440,
+      394,
+      610,
+      517
+     ],
+     "location": "countertop"
+    },
+    {
+     "name": "Dark sauce",
+     "alternatives": [
+      "Balsamic vinegar",
+      "Worcestershire sauce"
+     ],
+     "confidence": "guess",
+     "box": [
+      440,
+      478,
+      568,
+      553
+     ],
+     "location": "countertop"
+    },
+    {
+     "name": "Apple cider vinegar",
+     "alternatives": [
+      "Cooking wine",
+      "Fruit juice"
+     ],
+     "confidence": "guess",
+     "box": [
+      440,
+      543,
+      523,
+      560
+     ],
+     "location": "countertop"
+    }
+   ]
+  },
+  {
+   "id": "gr1c1",
+   "items": [
+    {
+     "name": "Reduced Sodium Soy Sauce",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      440,
+      440,
+      610,
+      515
+     ],
+     "location": "countertop"
+    },
+    {
+     "name": "Dark liquid",
+     "alternatives": [
+      "Soy sauce",
+      "Balsamic vinegar"
+     ],
+     "confidence": "guess",
+     "box": [
+      440,
+      480,
+      568,
+      552
+     ],
+     "location": "countertop"
+    },
+    {
+     "name": "Apple Cider Vinegar",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      440,
+      544,
+      554,
+      664
+     ],
+     "location": "countertop"
+    }
+   ]
+  }
+ ],
+ "items": [
+  {
+   "name": "Lemon juice",
+   "alternatives": [
+    "cooking oil",
+    "sparkling water"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Reduced sodium soy sauce",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Pomegranate molasses",
+   "alternatives": [
+    "Dark liquid",
+    "Dark sauce"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Apple cider vinegar",
+   "alternatives": [
+    "apple juice",
+    "Cooking wine"
+   ],
+   "confidence": "sure"
+  },
+  {
+   "name": "Olive oil",
+   "alternatives": [
+    "Cooking oil",
+    "Vegetable oil"
+   ],
+   "confidence": "likely"
+  }
+ ]
+}

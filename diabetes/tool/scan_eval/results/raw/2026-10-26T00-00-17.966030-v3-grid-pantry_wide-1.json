@@ -1,0 +1,754 @@
+{
+ "variant": "v3-grid",
+ "photo": "pantry_wide",
+ "run": 1,
+ "latencyMs": 19116,
+ "promptTokens": 10340,
+ "candidatesTokens": 3321,
+ "thoughtsTokens": 0,
+ "calls": 4,
+ "callTimingsMs": [
+  13073,
+  14261,
+  14136,
+  17240
+ ],
+ "perCall": [
+  {
+   "id": "gr0c0",
+   "items": [
+    {
+     "name": "Greens",
+     "alternatives": [
+      "Spinach",
+      "Herbs"
+     ],
+     "confidence": "likely",
+     "box": [
+      222,
+      0,
+      281,
+      95
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "Avocados",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      183,
+      100,
+      224,
+      216
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "Lemons",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      94,
+      239,
+      244,
+      349
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "Jam",
+     "alternatives": [
+      "Honey",
+      "Sauce"
+     ],
+     "confidence": "guess",
+     "box": [
+      243,
+      318,
+      268,
+      352
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "Raw almonds",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      292,
+      295,
+      350,
+      479
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "Mandarins",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      296,
+      458,
+      387,
+      560
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "Potatoes",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      426,
+      396,
+      478,
+      560
+     ],
+     "location": "drawer 1"
+    },
+    {
+     "name": "Onions",
+     "alternatives": [
+      "Potatoes",
+      "Flour"
+     ],
+     "confidence": "guess",
+     "box": [
+      480,
+      373,
+      553,
+      551
+     ],
+     "location": "drawer 2"
+    }
+   ]
+  },
+  {
+   "id": "gr0c1",
+   "items": [
+    {
+     "name": "Almonds",
+     "alternatives": [
+      "Walnuts",
+      "Pecans"
+     ],
+     "confidence": "likely",
+     "box": [
+      301,
+      440,
+      349,
+      482
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "Mandarins",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      247,
+      459,
+      387,
+      667
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "Tomatoes",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      279,
+      626,
+      387,
+      904
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "Potatoes",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      428,
+      440,
+      478,
+      561
+     ],
+     "location": "shelf 2"
+    },
+    {
+     "name": "Turkish delight",
+     "alternatives": [
+      "Cookies",
+      "Chocolates"
+     ],
+     "confidence": "guess",
+     "box": [
+      424,
+      594,
+      518,
+      796
+     ],
+     "location": "shelf 2"
+    },
+    {
+     "name": "Güllac pastry sheets",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      438,
+      557,
+      560,
+      876
+     ],
+     "location": "shelf 2"
+    },
+    {
+     "name": "Pure Organic fruit bites",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      399,
+      816,
+      496,
+      993
+     ],
+     "location": "shelf 2"
+    },
+    {
+     "name": "Black Forest fruit strips",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      447,
+      769,
+      527,
+      904
+     ],
+     "location": "shelf 2"
+    },
+    {
+     "name": "Potatoes",
+     "alternatives": [
+      "Onions",
+      "Flour"
+     ],
+     "confidence": "guess",
+     "box": [
+      484,
+      440,
+      553,
+      551
+     ],
+     "location": "shelf 3"
+    },
+    {
+     "name": "Chocolate spread",
+     "alternatives": [
+      "Jam",
+      "Tahini"
+     ],
+     "confidence": "guess",
+     "box": [
+      523,
+      610,
+      560,
+      677
+     ],
+     "location": "shelf 3"
+    },
+    {
+     "name": "Biscuits",
+     "alternatives": [
+      "Nuts",
+      "Dried fruit"
+     ],
+     "confidence": "guess",
+     "box": [
+      538,
+      671,
+      560,
+      731
+     ],
+     "location": "shelf 3"
+    },
+    {
+     "name": "Honey",
+     "alternatives": [
+      "Spices",
+      "Jam"
+     ],
+     "confidence": "guess",
+     "box": [
+      525,
+      857,
+      560,
+      913
+     ],
+     "location": "shelf 3"
+    }
+   ]
+  },
+  {
+   "id": "gr1c0",
+   "items": [
+    {
+     "name": "Potatoes",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      440,
+      394,
+      477,
+      559
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "Red potato",
+     "alternatives": [
+      "Sweet potato",
+      "Red onion"
+     ],
+     "confidence": "likely",
+     "box": [
+      440,
+      454,
+      452,
+      496
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "Potatoes",
+     "alternatives": [
+      "Onions",
+      "Produce"
+     ],
+     "confidence": "guess",
+     "box": [
+      481,
+      374,
+      551,
+      551
+     ],
+     "location": "shelf 2"
+    },
+    {
+     "name": "Butternut squash",
+     "alternatives": [
+      "Pumpkin",
+      "Melon"
+     ],
+     "confidence": "likely",
+     "box": [
+      548,
+      417,
+      583,
+      475
+     ],
+     "location": "shelf 3"
+    },
+    {
+     "name": "Kabocha squash",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      564,
+      446,
+      616,
+      544
+     ],
+     "location": "shelf 3"
+    }
+   ]
+  },
+  {
+   "id": "gr1c1",
+   "items": [
+    {
+     "name": "Potatoes",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      440,
+      440,
+      480,
+      565
+     ],
+     "location": "left cart top"
+    },
+    {
+     "name": "Packaged produce bag",
+     "alternatives": [
+      "Onions",
+      "Potatoes"
+     ],
+     "confidence": "guess",
+     "box": [
+      485,
+      440,
+      554,
+      551
+     ],
+     "location": "left cart middle"
+    },
+    {
+     "name": "Sweet potato",
+     "alternatives": [
+      "Onion",
+      "Butternut squash"
+     ],
+     "confidence": "likely",
+     "box": [
+      555,
+      440,
+      586,
+      474
+     ],
+     "location": "left cart bottom"
+    },
+    {
+     "name": "Kabocha squash",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      565,
+      447,
+      620,
+      544
+     ],
+     "location": "left cart bottom"
+    },
+    {
+     "name": "Pure Organic Fruit Bites",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      440,
+      818,
+      499,
+      962
+     ],
+     "location": "rack top"
+    },
+    {
+     "name": "Stretch Island Fruit Strips",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      447,
+      767,
+      529,
+      904
+     ],
+     "location": "rack top"
+    },
+    {
+     "name": "Gazioglucler Gullac",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      450,
+      556,
+      577,
+      886
+     ],
+     "location": "rack top"
+    },
+    {
+     "name": "Kurukahveci Mehmet Efendi Coffee",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      525,
+      612,
+      592,
+      676
+     ],
+     "location": "rack basket 1"
+    },
+    {
+     "name": "Kurukahveci Mehmet Efendi Pouch",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      539,
+      667,
+      594,
+      728
+     ],
+     "location": "rack basket 1"
+    },
+    {
+     "name": "Dried oregano",
+     "alternatives": [
+      "Dried mint",
+      "Herbal tea"
+     ],
+     "confidence": "likely",
+     "box": [
+      556,
+      695,
+      632,
+      860
+     ],
+     "location": "rack basket 1"
+    },
+    {
+     "name": "Clamshell container",
+     "alternatives": [
+      "Dates",
+      "Dried fruit"
+     ],
+     "confidence": "guess",
+     "box": [
+      527,
+      848,
+      597,
+      913
+     ],
+     "location": "rack basket 1"
+    },
+    {
+     "name": "Bread",
+     "alternatives": [
+      "Cookies",
+      "Crackers"
+     ],
+     "confidence": "guess",
+     "box": [
+      588,
+      585,
+      653,
+      680
+     ],
+     "location": "rack basket 2"
+    },
+    {
+     "name": "Red spice packet",
+     "alternatives": [
+      "Tea",
+      "Seasoning mix"
+     ],
+     "confidence": "likely",
+     "box": [
+      632,
+      760,
+      665,
+      825
+     ],
+     "location": "rack basket 2"
+    },
+    {
+     "name": "Black box",
+     "alternatives": [
+      "Tea",
+      "Spices"
+     ],
+     "confidence": "guess",
+     "box": [
+      608,
+      750,
+      648,
+      834
+     ],
+     "location": "rack basket 2"
+    },
+    {
+     "name": "Dry biscuits",
+     "alternatives": [
+      "Nuts",
+      "Dried fruit"
+     ],
+     "confidence": "guess",
+     "box": [
+      645,
+      676,
+      700,
+      826
+     ],
+     "location": "rack basket 2"
+    }
+   ]
+  }
+ ],
+ "items": [
+  {
+   "name": "Greens",
+   "alternatives": [
+    "Spinach",
+    "Herbs"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Avocados",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Lemons",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Jam",
+   "alternatives": [
+    "Honey",
+    "Sauce"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Raw almonds",
+   "alternatives": [
+    "Walnuts",
+    "Pecans"
+   ],
+   "confidence": "sure"
+  },
+  {
+   "name": "Mandarins",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Potatoes",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Onions",
+   "alternatives": [
+    "Packaged produce bag",
+    "Potatoes"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Tomatoes",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Turkish delight",
+   "alternatives": [
+    "Cookies",
+    "Chocolates"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Güllac pastry sheets",
+   "alternatives": [
+    "Gazioglucler Gullac"
+   ],
+   "confidence": "sure"
+  },
+  {
+   "name": "Pure Organic fruit bites",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Black Forest fruit strips",
+   "alternatives": [
+    "Stretch Island Fruit Strips"
+   ],
+   "confidence": "sure"
+  },
+  {
+   "name": "Kurukahveci Mehmet Efendi Coffee",
+   "alternatives": [
+    "Chocolate spread",
+    "Jam"
+   ],
+   "confidence": "sure"
+  },
+  {
+   "name": "Biscuits",
+   "alternatives": [
+    "Nuts",
+    "Dried fruit"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Honey",
+   "alternatives": [
+    "Clamshell container",
+    "Spices"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Potatoes",
+   "alternatives": [
+    "Sweet potato",
+    "Red onion"
+   ],
+   "confidence": "sure"
+  },
+  {
+   "name": "Butternut squash",
+   "alternatives": [
+    "Sweet potato",
+    "Pumpkin"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Kabocha squash",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Kurukahveci Mehmet Efendi Pouch",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Dried oregano",
+   "alternatives": [
+    "Dried mint",
+    "Herbal tea"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Bread",
+   "alternatives": [
+    "Cookies",
+    "Crackers"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Red spice packet",
+   "alternatives": [
+    "Tea",
+    "Seasoning mix"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Black box",
+   "alternatives": [
+    "Tea",
+    "Spices"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Dry biscuits",
+   "alternatives": [
+    "Nuts",
+    "Dried fruit"
+   ],
+   "confidence": "guess"
+  }
+ ]
+}

@@ -1,6 +1,6 @@
 {
  "version": 1,
- "status": "confirmed by owner 2026-10-25 (Kirkland green boxes = butter; top-right door shelf = medicine/supplements); names refined from native-resolution crops; 2026-10-25 owner: dark top-shelf bottle is medicine (was dark_sauce), blue drawer container is figs, MSC can accepts 'canned fish'; brand 'fontana farms' accepted for the peppercorn dressing (its readable label); 2026-10-25: added freezer, pantry, jars and bottles scenes from the owner's new photos (root draft, not yet confirmed by the owner)",
+ "status": "confirmed by owner 2026-10-25 (Kirkland green boxes = butter; top-right door shelf = medicine/supplements); names refined from native-resolution crops; 2026-10-25 owner: dark top-shelf bottle is medicine (was dark_sauce), blue drawer container is figs, MSC can accepts 'canned fish'; brand 'fontana farms' accepted for the peppercorn dressing (its readable label); 2026-10-25: added freezer, pantry, jars and bottles scenes from the owner's new photos (root draft, not yet confirmed by the owner); 2026-10-25 owner feedback applied: no eggs, jam, soda or fries; Güllaç counted only in the wide pantry shot; dark bottle is balsamic vinegar; scans' other finds added",
  "photos": {
   "blurry": {
    "file": "photos/blurry_webcam.jpg"
@@ -849,21 +849,6 @@
    "scene": "freezer"
   },
   {
-   "id": "freezer_fries",
-   "names": [
-    "french fries",
-    "frozen potatoes",
-    "potatoes",
-    "fries",
-    "hash browns"
-   ],
-   "zone": "freezer",
-   "isFood": true,
-   "tier": "recognizable",
-   "visibleInBlurryPhoto": false,
-   "scene": "freezer"
-  },
-  {
    "id": "freezer_montana",
    "names": [
     "montana",
@@ -994,7 +979,10 @@
    "isFood": true,
    "tier": "recognizable",
    "visibleInBlurryPhoto": false,
-   "scene": "pantry"
+   "scene": "pantry",
+   "photos": [
+    "pantry_wide"
+   ]
   },
   {
    "id": "pantry_kabocha",
@@ -1008,7 +996,10 @@
    "isFood": true,
    "tier": "recognizable",
    "visibleInBlurryPhoto": false,
-   "scene": "pantry"
+   "scene": "pantry",
+   "photos": [
+    "pantry_wide"
+   ]
   },
   {
    "id": "pantry_gullac",
@@ -1023,7 +1014,10 @@
    "isFood": true,
    "tier": "readable",
    "visibleInBlurryPhoto": false,
-   "scene": "pantry"
+   "scene": "pantry",
+   "photos": [
+    "pantry_wide"
+   ]
   },
   {
    "id": "pantry_fruit_bites",
@@ -1031,13 +1025,18 @@
     "pure organic fruit bites",
     "fruit bites",
     "fruit snacks",
-    "twisted fruit bites"
+    "twisted fruit bites",
+    "pure organic fruit bars",
+    "fruit bars"
    ],
    "zone": "pantry",
    "isFood": true,
    "tier": "readable",
    "visibleInBlurryPhoto": false,
-   "scene": "pantry"
+   "scene": "pantry",
+   "photos": [
+    "pantry_wide"
+   ]
   },
   {
    "id": "pantry_juice_box",
@@ -1050,7 +1049,10 @@
    "isFood": true,
    "tier": "readable",
    "visibleInBlurryPhoto": false,
-   "scene": "pantry"
+   "scene": "pantry",
+   "photos": [
+    "pantry_wide"
+   ]
   },
   {
    "id": "pantry_spices",
@@ -1064,7 +1066,10 @@
    "isFood": true,
    "tier": "recognizable",
    "visibleInBlurryPhoto": false,
-   "scene": "pantry"
+   "scene": "pantry",
+   "photos": [
+    "pantry_wide"
+   ]
   },
   {
    "id": "pantry_kitchen_scale",
@@ -1076,7 +1081,10 @@
    "isFood": false,
    "tier": "readable",
    "visibleInBlurryPhoto": false,
-   "scene": "pantry"
+   "scene": "pantry",
+   "photos": [
+    "pantry_wide"
+   ]
   },
   {
    "id": "jars_honey",
@@ -1153,11 +1161,10 @@
   {
    "id": "bottles_dark_sauce",
    "names": [
-    "worcestershire sauce",
     "balsamic vinegar",
-    "dark sauce",
-    "sauce",
-    "vinegar"
+    "balsamic",
+    "vinegar",
+    "dark vinegar"
    ],
    "zone": "bottles",
    "isFood": true,
@@ -1177,6 +1184,203 @@
    "tier": "readable",
    "visibleInBlurryPhoto": false,
    "scene": "bottles"
+  },
+  {
+   "id": "pantry_watermelon",
+   "names": [
+    "watermelon",
+    "melon"
+   ],
+   "zone": "pantry",
+   "isFood": true,
+   "tier": "recognizable",
+   "visibleInBlurryPhoto": false,
+   "scene": "pantry",
+   "photos": [
+    "pantry_counter"
+   ]
+  },
+  {
+   "id": "pantry_tea",
+   "names": [
+    "tea",
+    "tea bags",
+    "loose tea",
+    "dried herbs"
+   ],
+   "zone": "pantry",
+   "isFood": true,
+   "tier": "recognizable",
+   "visibleInBlurryPhoto": false,
+   "scene": "pantry"
+  },
+  {
+   "id": "pantry_fruit_strips",
+   "names": [
+    "stretch island fruit strips",
+    "simple truth fruit strips",
+    "fruit strips",
+    "fruit leather"
+   ],
+   "zone": "pantry",
+   "isFood": true,
+   "tier": "readable",
+   "visibleInBlurryPhoto": false,
+   "scene": "pantry"
+  },
+  {
+   "id": "pantry_coffee",
+   "names": [
+    "kurukahveci mehmet efendi coffee",
+    "turkish coffee",
+    "coffee",
+    "kurukahveci mehmet efendi"
+   ],
+   "zone": "pantry",
+   "isFood": true,
+   "tier": "readable",
+   "visibleInBlurryPhoto": false,
+   "scene": "pantry",
+   "photos": [
+    "pantry_wide"
+   ]
+  },
+  {
+   "id": "pantry_dates",
+   "names": [
+    "medjool dates",
+    "dates"
+   ],
+   "zone": "pantry",
+   "isFood": true,
+   "tier": "recognizable",
+   "visibleInBlurryPhoto": false,
+   "scene": "pantry",
+   "photos": [
+    "pantry_wide"
+   ]
+  },
+  {
+   "id": "pantry_turkish_delight",
+   "names": [
+    "turkish delight",
+    "lokum",
+    "candy",
+    "chocolates",
+    "sweets",
+    "wrapped candies"
+   ],
+   "zone": "pantry",
+   "isFood": true,
+   "tier": "recognizable",
+   "visibleInBlurryPhoto": false,
+   "scene": "pantry",
+   "photos": [
+    "pantry_wide"
+   ]
+  },
+  {
+   "id": "pantry_crackers",
+   "names": [
+    "crackers",
+    "snack bar",
+    "snack",
+    "biscuits"
+   ],
+   "zone": "pantry",
+   "isFood": true,
+   "tier": "recognizable",
+   "visibleInBlurryPhoto": false,
+   "scene": "pantry",
+   "photos": [
+    "pantry_wide"
+   ]
+  },
+  {
+   "id": "pantry_garlic",
+   "names": [
+    "garlic"
+   ],
+   "zone": "pantry",
+   "isFood": true,
+   "tier": "recognizable",
+   "visibleInBlurryPhoto": false,
+   "scene": "pantry",
+   "photos": [
+    "pantry_wide"
+   ]
+  },
+  {
+   "id": "pantry_walnuts",
+   "names": [
+    "walnuts",
+    "nuts"
+   ],
+   "zone": "pantry",
+   "isFood": true,
+   "tier": "recognizable",
+   "visibleInBlurryPhoto": false,
+   "scene": "pantry",
+   "photos": [
+    "pantry_wide"
+   ]
+  },
+  {
+   "id": "pantry_seasoning",
+   "names": [
+    "seasoning mix",
+    "seasoning"
+   ],
+   "zone": "pantry",
+   "isFood": true,
+   "tier": "recognizable",
+   "visibleInBlurryPhoto": false,
+   "scene": "pantry",
+   "photos": [
+    "pantry_wide"
+   ]
+  },
+  {
+   "id": "pantry_bread",
+   "names": [
+    "bread"
+   ],
+   "zone": "pantry",
+   "isFood": true,
+   "tier": "recognizable",
+   "visibleInBlurryPhoto": false,
+   "scene": "pantry",
+   "photos": [
+    "pantry_wide"
+   ]
+  },
+  {
+   "id": "pantry_nut_butter",
+   "names": [
+    "nut butter",
+    "peanut butter"
+   ],
+   "zone": "pantry",
+   "isFood": true,
+   "tier": "recognizable",
+   "visibleInBlurryPhoto": false,
+   "scene": "pantry",
+   "photos": [
+    "pantry_wide"
+   ]
+  },
+  {
+   "id": "freezer_molokhia",
+   "names": [
+    "molokhia",
+    "frozen molokhia",
+    "jute leaves"
+   ],
+   "zone": "freezer",
+   "isFood": true,
+   "tier": "recognizable",
+   "visibleInBlurryPhoto": false,
+   "scene": "freezer"
   }
  ]
 }

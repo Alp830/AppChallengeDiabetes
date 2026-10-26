@@ -874,6 +874,8 @@ Rules:
 - Unlabeled dry staples: fine matte white powder = flour; crystalline white = sugar or salt; small oblong translucent grains = rice; golden cracked grains = bulgur; round dried seeds = beans, chickpeas or lentils; also pasta, semolina, oats.
 - "sure" only when you can read the label or the item is unmistakable from its shape. Anything inferred from colour, a container or a partial view is "likely" or "guess".
 - The name is ONE item. Never write "X or Y" in a name; put other possibilities in "alts".
+- A container is not its contents: an egg carton, a jam jar, a takeout box or a bottle shape does not mean eggs, jam or soda. List the contents only if you can see them or read them on the label; otherwise name what you can read, or skip it.
+- Be specific. Never use a category as a name ("frozen food", "packaged food", "frozen vegetables", "snack", "condiment", "pantry item", "container"). Read the brand, the product name and the picture on the front of bags and boxes and name the product ("frozen peas and corn", "beef manti", "Ezekiel tortillas"). If you truly cannot tell, give your most specific best guess with conf "guess".
 - Do not list an item unless you can point to it: no items inferred from context (e.g. "canned fish" or "blueberries" because something dark is visible). If you see an object but cannot tell what it is, list your best guess as "guess".
 - Never output "Unknown", "Unidentified" or any placeholder name.
 - Keep every string short: names at most 4 words, zone names like "shelf 2", "door bin 1".

@@ -1,0 +1,807 @@
+{
+ "variant": "v3-grid",
+ "photo": "freezer",
+ "run": 1,
+ "latencyMs": 30540,
+ "promptTokens": 10340,
+ "candidatesTokens": 3242,
+ "thoughtsTokens": 0,
+ "calls": 4,
+ "callTimingsMs": [
+  12844,
+  11828,
+  15613,
+  26945
+ ],
+ "perCall": [
+  {
+   "id": "gr0c0",
+   "items": [
+    {
+     "name": "wrapped meat",
+     "alternatives": [
+      "frozen dough",
+      "butter blocks"
+     ],
+     "confidence": "guess",
+     "box": [
+      181,
+      342,
+      255,
+      484
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "frozen strawberries",
+     "alternatives": [
+      "frozen mixed berries",
+      "frozen fruit"
+     ],
+     "confidence": "likely",
+     "box": [
+      114,
+      486,
+      249,
+      560
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "frozen meat in bag",
+     "alternatives": [
+      "frozen chicken",
+      "frozen vegetables"
+     ],
+     "confidence": "guess",
+     "box": [
+      249,
+      346,
+      296,
+      473
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "frozen meat in bag",
+     "alternatives": [
+      "frozen chicken",
+      "frozen fruit"
+     ],
+     "confidence": "guess",
+     "box": [
+      237,
+      430,
+      296,
+      560
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "frozen meat in bag",
+     "alternatives": [
+      "frozen chicken",
+      "frozen fruit"
+     ],
+     "confidence": "guess",
+     "box": [
+      258,
+      502,
+      299,
+      560
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "frozen flatbread",
+     "alternatives": [
+      "frozen meat",
+      "frozen fish"
+     ],
+     "confidence": "guess",
+     "box": [
+      338,
+      360,
+      395,
+      560
+     ],
+     "location": "shelf 2"
+    },
+    {
+     "name": "frozen pastry box",
+     "alternatives": [
+      "frozen dessert",
+      "frozen meal"
+     ],
+     "confidence": "guess",
+     "box": [
+      373,
+      352,
+      415,
+      560
+     ],
+     "location": "shelf 2"
+    },
+    {
+     "name": "dough balls",
+     "alternatives": [
+      "bread rolls",
+      "cheese balls"
+     ],
+     "confidence": "likely",
+     "box": [
+      481,
+      384,
+      547,
+      484
+     ],
+     "location": "shelf 3"
+    },
+    {
+     "name": "frozen strawberries",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      469,
+      505,
+      519,
+      560
+     ],
+     "location": "shelf 3"
+    },
+    {
+     "name": "Ohanyan's beef manti",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      504,
+      440,
+      560,
+      560
+     ],
+     "location": "shelf 3"
+    }
+   ]
+  },
+  {
+   "id": "gr0c1",
+   "items": [
+    {
+     "name": "Frozen strawberries",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      57,
+      488,
+      250,
+      659
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "Frozen berries",
+     "alternatives": [
+      "Frozen cherries",
+      "Frozen strawberries"
+     ],
+     "confidence": "likely",
+     "box": [
+      111,
+      580,
+      258,
+      667
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "Frozen meat",
+     "alternatives": [
+      "Frozen chicken",
+      "Frozen beef"
+     ],
+     "confidence": "likely",
+     "box": [
+      237,
+      440,
+      299,
+      648
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "Frozen bread",
+     "alternatives": [
+      "Frozen dough",
+      "Frozen meat"
+     ],
+     "confidence": "guess",
+     "box": [
+      182,
+      440,
+      283,
+      485
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "Frozen meat",
+     "alternatives": [
+      "Frozen fish",
+      "Frozen ribs"
+     ],
+     "confidence": "likely",
+     "box": [
+      337,
+      440,
+      380,
+      639
+     ],
+     "location": "shelf 2"
+    },
+    {
+     "name": "Cevapi",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      357,
+      440,
+      411,
+      653
+     ],
+     "location": "shelf 2"
+    },
+    {
+     "name": "Organic frozen strawberries",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      448,
+      506,
+      538,
+      628
+     ],
+     "location": "shelf 3"
+    },
+    {
+     "name": "Ohanyan's beef manti",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      504,
+      440,
+      560,
+      640
+     ],
+     "location": "shelf 3"
+    },
+    {
+     "name": "Frozen dough",
+     "alternatives": [
+      "Frozen bread",
+      "Frozen cheese"
+     ],
+     "confidence": "guess",
+     "box": [
+      483,
+      440,
+      513,
+      482
+     ],
+     "location": "shelf 3"
+    }
+   ]
+  },
+  {
+   "id": "gr1c0",
+   "items": [
+    {
+     "name": "Frozen dough balls",
+     "alternatives": [
+      "Dumplings",
+      "Cheese balls"
+     ],
+     "confidence": "guess",
+     "box": [
+      483,
+      387,
+      555,
+      486
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "Frozen whole strawberries",
+     "alternatives": [
+      "Frozen berries"
+     ],
+     "confidence": "likely",
+     "box": [
+      471,
+      504,
+      517,
+      560
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "Ohanyan's beef manti",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      505,
+      439,
+      597,
+      560
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "Frozen manti dumplings",
+     "alternatives": [
+      "Tortellini",
+      "Chickpeas"
+     ],
+     "confidence": "likely",
+     "box": [
+      555,
+      365,
+      650,
+      532
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "Frozen mixed vegetables",
+     "alternatives": [
+      "Frozen carrots"
+     ],
+     "confidence": "likely",
+     "box": [
+      684,
+      366,
+      876,
+      465
+     ],
+     "location": "shelf 2"
+    },
+    {
+     "name": "SuperFresh peas and carrots",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      675,
+      465,
+      752,
+      560
+     ],
+     "location": "shelf 2"
+    },
+    {
+     "name": "Ezekiel 4:9 tortillas",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      729,
+      430,
+      909,
+      537
+     ],
+     "location": "shelf 2"
+    },
+    {
+     "name": "Frozen corn",
+     "alternatives": [
+      "Frozen peas",
+      "Frozen vegetables"
+     ],
+     "confidence": "guess",
+     "box": [
+      751,
+      526,
+      829,
+      560
+     ],
+     "location": "shelf 2"
+    },
+    {
+     "name": "Frozen pastry",
+     "alternatives": [
+      "Frozen vegetables",
+      "Frozen meat"
+     ],
+     "confidence": "guess",
+     "box": [
+      813,
+      523,
+      900,
+      560
+     ],
+     "location": "shelf 2"
+    },
+    {
+     "name": "Frozen berries",
+     "alternatives": [
+      "Frozen vegetables",
+      "Frozen acai"
+     ],
+     "confidence": "guess",
+     "box": [
+      917,
+      387,
+      989,
+      510
+     ],
+     "location": "drawer 1"
+    },
+    {
+     "name": "Montana frozen vegetables",
+     "alternatives": [
+      "Frozen okra",
+      "Frozen fava beans"
+     ],
+     "confidence": "likely",
+     "box": [
+      934,
+      473,
+      999,
+      560
+     ],
+     "location": "drawer 1"
+    }
+   ]
+  },
+  {
+   "id": "gr1c1",
+   "items": [
+    {
+     "name": "organic strawberries",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      448,
+      511,
+      537,
+      629
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "Ohanyan's beef manti",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      505,
+      440,
+      602,
+      641
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "manti dumplings",
+     "alternatives": [
+      "chickpeas",
+      "tortellini"
+     ],
+     "confidence": "likely",
+     "box": [
+      565,
+      440,
+      639,
+      534
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "frozen vegetables",
+     "alternatives": [
+      "frozen fruit",
+      "frozen meal"
+     ],
+     "confidence": "guess",
+     "box": [
+      579,
+      515,
+      616,
+      623
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "yufka flatbread",
+     "alternatives": [
+      "tortillas",
+      "lavash"
+     ],
+     "confidence": "likely",
+     "box": [
+      601,
+      441,
+      671,
+      640
+     ],
+     "location": "shelf 1"
+    },
+    {
+     "name": "Superfresh mixed vegetables",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      677,
+      464,
+      752,
+      579
+     ],
+     "location": "shelf 2"
+    },
+    {
+     "name": "Ezekiel tortillas",
+     "alternatives": [],
+     "confidence": "sure",
+     "box": [
+      724,
+      440,
+      909,
+      539
+     ],
+     "location": "shelf 2"
+    },
+    {
+     "name": "frozen corn",
+     "alternatives": [
+      "frozen mango",
+      "frozen peas"
+     ],
+     "confidence": "guess",
+     "box": [
+      695,
+      525,
+      826,
+      626
+     ],
+     "location": "shelf 2"
+    },
+    {
+     "name": "sliced bread",
+     "alternatives": [
+      "pita bread",
+      "rolls"
+     ],
+     "confidence": "likely",
+     "box": [
+      777,
+      524,
+      923,
+      626
+     ],
+     "location": "shelf 2"
+    },
+    {
+     "name": "Montana frozen okra",
+     "alternatives": [
+      "frozen fava beans",
+      "frozen green beans"
+     ],
+     "confidence": "likely",
+     "box": [
+      932,
+      473,
+      999,
+      584
+     ],
+     "location": "shelf 3"
+    },
+    {
+     "name": "frozen berries",
+     "alternatives": [
+      "acai",
+      "frozen cherries"
+     ],
+     "confidence": "guess",
+     "box": [
+      900,
+      440,
+      990,
+      524
+     ],
+     "location": "shelf 3"
+    }
+   ]
+  }
+ ],
+ "items": [
+  {
+   "name": "wrapped meat",
+   "alternatives": [
+    "frozen dough",
+    "butter blocks"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Frozen strawberries",
+   "alternatives": [
+    "frozen mixed berries",
+    "frozen fruit"
+   ],
+   "confidence": "sure"
+  },
+  {
+   "name": "frozen meat in bag",
+   "alternatives": [
+    "frozen chicken",
+    "frozen vegetables"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "frozen meat in bag",
+   "alternatives": [
+    "frozen chicken",
+    "frozen fruit"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Frozen meat",
+   "alternatives": [
+    "Frozen chicken",
+    "Frozen beef"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Frozen meat",
+   "alternatives": [
+    "frozen flatbread",
+    "Frozen fish"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "frozen pastry box",
+   "alternatives": [
+    "frozen dessert",
+    "frozen meal"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "dough balls",
+   "alternatives": [
+    "bread rolls",
+    "cheese balls"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "frozen strawberries",
+   "alternatives": [
+    "Frozen berries"
+   ],
+   "confidence": "sure"
+  },
+  {
+   "name": "Ohanyan's beef manti",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Frozen berries",
+   "alternatives": [
+    "Frozen cherries",
+    "Frozen strawberries"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Frozen bread",
+   "alternatives": [
+    "Frozen dough",
+    "Frozen meat"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Cevapi",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Frozen dough",
+   "alternatives": [
+    "Frozen bread",
+    "Frozen cheese"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Frozen manti dumplings",
+   "alternatives": [
+    "Tortellini",
+    "Chickpeas"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Frozen mixed vegetables",
+   "alternatives": [
+    "Frozen carrots"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "SuperFresh peas and carrots",
+   "alternatives": [
+    "Superfresh mixed vegetables"
+   ],
+   "confidence": "sure"
+  },
+  {
+   "name": "Ezekiel 4:9 tortillas",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Frozen corn",
+   "alternatives": [
+    "Frozen peas",
+    "Frozen vegetables"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Frozen pastry",
+   "alternatives": [
+    "Frozen vegetables",
+    "Frozen meat"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Frozen berries",
+   "alternatives": [
+    "Frozen vegetables",
+    "Frozen acai"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Montana frozen vegetables",
+   "alternatives": [
+    "Montana frozen okra",
+    "Frozen okra"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "organic strawberries",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "frozen vegetables",
+   "alternatives": [
+    "frozen fruit",
+    "frozen meal"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "yufka flatbread",
+   "alternatives": [
+    "tortillas",
+    "lavash"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "sliced bread",
+   "alternatives": [
+    "pita bread",
+    "rolls"
+   ],
+   "confidence": "likely"
+  }
+ ]
+}

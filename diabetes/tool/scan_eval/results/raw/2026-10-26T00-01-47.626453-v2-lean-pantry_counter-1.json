@@ -1,0 +1,62 @@
+{
+ "variant": "v2-lean",
+ "photo": "pantry_counter",
+ "run": 1,
+ "latencyMs": 13251,
+ "promptTokens": 2557,
+ "candidatesTokens": 714,
+ "thoughtsTokens": 0,
+ "items": [
+  {
+   "name": "Leafy greens",
+   "alternatives": [
+    "Celery",
+    "Fresh herbs"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Avocados",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Lemons",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Raw almonds",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Mandarins",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Tomatoes",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Black Forest fruit strips",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Gazi Güllaç pastry sheets",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Watermelon",
+   "alternatives": [
+    "Winter squash",
+    "Cabbage"
+   ],
+   "confidence": "guess"
+  }
+ ]
+}

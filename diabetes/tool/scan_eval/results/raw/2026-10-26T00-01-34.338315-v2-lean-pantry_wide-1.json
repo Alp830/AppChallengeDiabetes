@@ -1,0 +1,133 @@
+{
+ "variant": "v2-lean",
+ "photo": "pantry_wide",
+ "run": 1,
+ "latencyMs": 17348,
+ "promptTokens": 2557,
+ "candidatesTokens": 1572,
+ "thoughtsTokens": 0,
+ "items": [
+  {
+   "name": "Avocados",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Fresh Greens",
+   "alternatives": [
+    "Fresh Herbs",
+    "Spinach"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Lemons",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Almonds",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Mandarins",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Tomatoes",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Potatoes",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Gazioglucler Gullac",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Simple Truth Fruit Strips",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Pure Organic Fruit Bars",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Onions",
+   "alternatives": [
+    "Potatoes",
+    "Garlic"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Kabocha Squash",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "Canned Food",
+   "alternatives": [
+    "Jarred Sauce",
+    "Pickles"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Packaged Snack",
+   "alternatives": [
+    "Nuts",
+    "Dried Fruit"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Dried Lentils",
+   "alternatives": [
+    "Spices",
+    "Bulgur"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Bread",
+   "alternatives": [
+    "Potatoes",
+    "Pastries"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "Onions",
+   "alternatives": [
+    "Garlic",
+    "Shallots"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Tomato Paste",
+   "alternatives": [
+    "Canned Beans",
+    "Red Pepper Paste"
+   ],
+   "confidence": "guess"
+  },
+  {
+   "name": "Crackers",
+   "alternatives": [
+    "Cookies",
+    "Cereal Bar"
+   ],
+   "confidence": "guess"
+  }
+ ]
+}

@@ -1,0 +1,37 @@
+{
+ "variant": "v2-lean",
+ "photo": "bottles",
+ "run": 1,
+ "latencyMs": 6133,
+ "promptTokens": 2557,
+ "candidatesTokens": 318,
+ "thoughtsTokens": 0,
+ "items": [
+  {
+   "name": "olive oil",
+   "alternatives": [
+    "cooking oil",
+    "vegetable oil"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "soy sauce",
+   "alternatives": [],
+   "confidence": "sure"
+  },
+  {
+   "name": "balsamic vinegar",
+   "alternatives": [
+    "soy sauce",
+    "sesame oil"
+   ],
+   "confidence": "likely"
+  },
+  {
+   "name": "apple cider vinegar",
+   "alternatives": [],
+   "confidence": "sure"
+  }
+ ]
+}
