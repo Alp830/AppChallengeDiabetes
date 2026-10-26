@@ -33,13 +33,13 @@ void main() {
 
     test('one call is allowed while spent + bound stays within the cap', () {
       final ledger = Ledger(path);
-      spend(ledger, 4.0);
+      spend(ledger, budgetCapUsd - 0.5);
       expect(() => ledger.assertBudgetFor(1), returnsNormally);
     });
 
     test('refuses when spent + bound would cross the cap', () {
       final ledger = Ledger(path);
-      spend(ledger, 4.2);
+      spend(ledger, budgetCapUsd - 0.3);
       expect(
         () => ledger.assertBudgetFor(1),
         throwsA(
@@ -54,7 +54,7 @@ void main() {
 
     test('a multi-call run reserves the bound for every call', () {
       final ledger = Ledger(path);
-      spend(ledger, 3.8);
+      spend(ledger, budgetCapUsd - 0.7);
       expect(() => ledger.assertBudgetFor(1), returnsNormally);
       expect(() => ledger.assertBudgetFor(2), throwsStateError);
     });
